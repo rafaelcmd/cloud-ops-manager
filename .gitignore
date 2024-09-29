@@ -27,3 +27,12 @@ go.work.sum
 # IDE files
 .idea/
 .vscode/
+
+# Terraform files
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfstate.backup.*
+*.tfvars
+*.tfplan
