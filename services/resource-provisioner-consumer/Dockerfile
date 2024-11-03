@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /resource-provisioner-service ./cmd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /resource-provisioner-consumer ./cmd
 
 FROM alpine:latest
 
@@ -18,8 +18,8 @@ RUN apk --no-cache add ca-certificates bash && \
     mv terraform /usr/local/bin/ && \
     rm terraform_1.9.8_linux_amd64.zip
 
-COPY --from=builder /resource-provisioner-service /usr/local/bin/
+COPY --from=builder /resource-provisioner-consumer /usr/local/bin/
 
-RUN chmod +x /usr/local/bin/resource-provisioner-service
+RUN chmod +x /usr/local/bin/resource-provisioner-consumer
 
-ENTRYPOINT ["/usr/local/bin/resource-provisioner-service"]
+ENTRYPOINT ["/usr/local/bin/resource-provisioner-consumer"]

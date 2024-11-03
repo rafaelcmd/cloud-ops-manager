@@ -1,7 +1,6 @@
-version: '3.8'
 services:
-  resource-provisioner-service:
-    container_name: resource-provisioner-service
+  resource-provisioner-consumer:
+    container_name: resource-provisioner-consumer
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,6 +10,8 @@ services:
       KAFKA_BROKER: "kafka:9092"
     depends_on:
       - kafka
+    networks:
+      - kafka-network
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -22,6 +23,8 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - kafka-network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -30,3 +33,9 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafka-network
+
+networks:
+  kafka-network:
+    external: true
