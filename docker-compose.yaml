@@ -3,7 +3,7 @@ services:
     container_name: resource-provisioner-api
     build:
       context: ./api
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "5000:5000"
     environment:
@@ -19,7 +19,7 @@ services:
     container_name: resource-provisioner-consumer
     build:
       context: ./services/resource-provisioner-consumer
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "6000:6000"
     environment:
