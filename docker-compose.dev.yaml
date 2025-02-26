@@ -2,6 +2,8 @@ services:
   resource-provisioner-api:
     container_name: resource-provisioner-api
     build:
+      args:
+        - GO_VERSION=${GO_VERSION:-1.24}
       context: ./api
       dockerfile: Dockerfile.dev
     ports:
@@ -18,6 +20,8 @@ services:
   resource-provisioner-consumer:
     container_name: resource-provisioner-consumer
     build:
+      args:
+        - GO_VERSION=${GO_VERSION:-1.24}
       context: ./services/resource-provisioner-consumer
       dockerfile: Dockerfile.dev
     ports:
