@@ -1,0 +1,19 @@
+services:
+  resource-provisioner-api:
+    container_name: resource-provisioner-api
+    build:
+      args:
+        - GO_VERSION=${GO_VERSION:-1.24}
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - public-network
+      - internal-network
+    restart: on-failure

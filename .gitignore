@@ -38,4 +38,4 @@ go.work.sum
 *.tfplan
 
 # Kafka data
-/services/resource-provisioner-consumer/data/
+/resource-provisioner-consumer/data/

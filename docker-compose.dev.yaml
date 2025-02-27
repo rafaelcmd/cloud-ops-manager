@@ -1,45 +1,12 @@
+include:
+  - ./resource-provisioner-api/docker-compose.dev.yaml
+  - ./resource-provisioner-consumer/docker-compose.dev.yaml
+
 services:
-  resource-provisioner-api:
-    container_name: resource-provisioner-api
-    build:
-      args:
-        - GO_VERSION=${GO_VERSION:-1.24}
-      context: ./api
-      dockerfile: Dockerfile.dev
-    ports:
-      - "5000:5000"
-    environment:
-      - KAFKA_BROKER=kafka:9092
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks:
-      - resource-provisioner-consumer-network
-    restart: on-failure
-
-  resource-provisioner-consumer:
-    container_name: resource-provisioner-consumer
-    build:
-      args:
-        - GO_VERSION=${GO_VERSION:-1.24}
-      context: ./services/resource-provisioner-consumer
-      dockerfile: Dockerfile.dev
-    ports:
-      - "6000:6000"
-    environment:
-      - KAFKA_BROKER=kafka:9092
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks:
-      - resource-provisioner-consumer-network
-    restart: on-failure
-
   kafka:
     image: confluentinc/cp-kafka:latest
     container_name: kafka
-    ports:
-      - "9092:9092"
+    ports: []
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -56,22 +23,23 @@ services:
     healthcheck:
       test: [ "CMD", "nc", "-z", "localhost", "9092" ]
       interval: 10s
-      retries: 10
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       - zookeeper
     networks:
-      - resource-provisioner-consumer-network
+      - internal-network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
-    ports:
-      - "2181:2181"
+    ports: []
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - resource-provisioner-consumer-network
+      - internal-network
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -85,24 +53,28 @@ services:
       kafka:
         condition: service_healthy
     networks:
-      - resource-provisioner-consumer-network
+      - public-network
+      - internal-network
 
   prometheus:
     image: prom/prometheus:v2.55.0
     container_name: prometheus
     volumes:
-      - ./services/resource-provisioner-consumer/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./resource-provisioner-consumer/prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     depends_on:
       kafka:
         condition: service_healthy
     networks:
-      - resource-provisioner-consumer-network
+      - public-network
+      - internal-network
 
 networks:
-  resource-provisioner-consumer-network:
-    external: true
+  internal-network:
+    driver: bridge
+  public-network:
+    driver: bridge
 
 volumes:
   kafka-data:
