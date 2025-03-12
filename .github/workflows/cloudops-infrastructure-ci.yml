@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'infrastructure/**'
+      - 'infrastructure/environments/dev/**'
   pull_request:
     paths:
-      - 'infrastructure/**'
+      - 'infrastructure/environments/dev/**'
   workflow_dispatch:
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: infrastructure
+        working-directory: infrastructure/environments/dev/
 
     steps:
       - name: Checkout Repository
