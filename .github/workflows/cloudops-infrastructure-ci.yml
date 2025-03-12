@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'infrastructure/environments/dev/**'
+      - 'infrastructure/**'
   pull_request:
     paths:
-      - 'infrastructure/environments/dev/**'
+      - 'infrastructure/**'
   workflow_dispatch:
 
 jobs:
