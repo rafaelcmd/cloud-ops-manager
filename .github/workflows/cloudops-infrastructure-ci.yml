@@ -32,7 +32,7 @@ jobs:
       - name: Terraform Init
         run: terraform init
         env:
-          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
 
       # Terraform Format
       - name: Terraform Format
@@ -45,11 +45,11 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -var="environment=dev" -out=tfplan
         env:
-          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
 
       # Terraform Apply
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
         env:
-          TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
