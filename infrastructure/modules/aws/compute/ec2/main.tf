@@ -7,6 +7,5 @@ resource "aws_instance" "resource-provisioner-api" {
 
   tags = {
     Name = "resource-provisioner-api"
-    Environment = var.environment
   }
 }
