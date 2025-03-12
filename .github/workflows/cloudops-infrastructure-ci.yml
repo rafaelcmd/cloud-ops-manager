@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - 'infrastructure/environments/dev/**'
+  workflow_dispatch:
 
 jobs:
   terraform:
