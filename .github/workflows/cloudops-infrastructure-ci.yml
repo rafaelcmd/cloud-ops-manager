@@ -9,7 +9,6 @@ on:
   pull_request:
     paths:
       - 'infrastructure/environments/dev/**'
-  workflow_dispatch:
 
 jobs:
   terraform:
@@ -17,7 +16,10 @@ jobs:
 
     defaults:
       run:
-        working-directory: infrastructure/environments/dev/
+        working-directory: infrastructure/environments/dev
+
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
 
     steps:
       - name: Checkout Repository
@@ -28,15 +30,7 @@ jobs:
         with:
           terraform_version: 1.7.x
 
-      # Configure AWS Credentials (Recommended)
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      # Initialize Terraform
+      # Terraform Init (Terraform Cloud Backend)
       - name: Terraform Init
         run: terraform init
 
@@ -49,10 +43,9 @@ jobs:
 
       # Terraform Plan
       - name: Terraform Plan
-        run: terraform plan -var="environment=prod"
-
+        run: terraform plan -var="environment=prod" -out=tfplan
 
       # Terraform Apply
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve -var="environment=prod"      
+        run: terraform apply -auto-approve tfplan      
