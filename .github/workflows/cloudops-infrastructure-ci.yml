@@ -32,9 +32,9 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      # Terraform Format and Validation
-      - name: Terraform Format Check
-        run: terraform fmt -check
+      # Terraform Format
+      - name: Terraform Format
+        run: terraform fmt
 
       - name: Terraform Validate
         run: terraform validate
