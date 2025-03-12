@@ -5,10 +5,11 @@ on:
     branches:
       - main
     paths:
-      - 'infrastructure/**'
+      - 'infrastructure/environments/dev/**'
   pull_request:
     paths:
-      - 'infrastructure/**'
+      - 'infrastructure/environments/dev/**'
+  workflow_dispatch:
 
 jobs:
   terraform:
