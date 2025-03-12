@@ -2,11 +2,6 @@ name: Terraform Destroy
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment (e.g. dev, staging, prod)'
-        required: true
-        default: prod
 
 jobs:
   terraform-destroy:
@@ -14,7 +9,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: infrastructure/environments/dev
+        working-directory: infrastructure/environments/dev/
 
     steps:
       - uses: actions/checkout@v4
