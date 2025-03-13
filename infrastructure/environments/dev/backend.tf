@@ -1,10 +1,10 @@
 terraform {
-  backend "remote" {
-    hostname     = "app.terraform.io"
+  cloud {
+
     organization = "cloudops-manager-org"
 
     workspaces {
-      name = "cloud-ops-manager"
+      name = "cloud-ops-manager-workspace"
     }
   }
 }

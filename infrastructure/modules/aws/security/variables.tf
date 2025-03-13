@@ -4,6 +4,6 @@ variable "vpc_id" {
 }
 
 variable "private_key" {
-  description = "Keypair name for the EC2 instance"
+  description = "Private key name for the EC2 instance"
   type        = string
 }
