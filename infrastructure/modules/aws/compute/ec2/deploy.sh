@@ -27,7 +27,9 @@ if [ ! -d "$APP_DIR" ]; then
 else
   echo "Pulling the latest changes"
   cd $APP_DIR
-  sudo git pull origin main
+  git reset --hard origin/main  # Resets local changes
+  git clean -fd                 # Removes untracked files
+  git pull origin main          # Pull latest changes
 fi
 
 # Fix permissions to ensure Go can write compiled binary
