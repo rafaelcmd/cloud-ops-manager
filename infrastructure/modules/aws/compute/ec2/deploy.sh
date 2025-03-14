@@ -51,7 +51,7 @@ go build -buildvcs=false -o resource-provisioner-api .
 
 # Move binary to /usr/local/bin for easy execution
 echo "Moving binary to /usr/local/bin/$SERVICE_NAME"
-sudo mv myapp /usr/local/bin/"$SERVICE_NAME"
+sudo mv resource-provisioner-api /usr/local/bin/"$SERVICE_NAME"
 
 # Create systemd service file if it does not exist
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
@@ -65,7 +65,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/$SERVICE_NAME
-WorkingDirectory=$APP_DIR/api/cmd/server
+WorkingDirectory=$APP_DIR/resource-provisioner-api/cmd/server
 Restart=always
 User=ec2-user
 StandardOutput=journal
