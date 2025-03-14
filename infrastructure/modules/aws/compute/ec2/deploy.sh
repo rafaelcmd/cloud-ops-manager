@@ -37,7 +37,7 @@ sudo chmod -R 755 $APP_DIR
 
 # Navigate to the application directory
 echo "Navigating to the Go application directory..."
-cd $APP_DIR/api/cmd/server
+cd $APP_DIR/resource-provisioner-api/cmd/server
 
 # Install dependencies
 echo "Installing dependencies..."
