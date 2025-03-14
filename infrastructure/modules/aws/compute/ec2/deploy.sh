@@ -30,9 +30,21 @@ else
   sudo git pull origin main
 fi
 
+# Fix permissions to ensure Go can write compiled binary
+echo "Fixing directory ownership and permissions..."
+sudo chown -R ec2-user:ec2-user $APP_DIR
+sudo chmod -R 755 $APP_DIR
+
+# Navigate to the application directory
+echo "Navigating to the Go application directory..."
+cd $APP_DIR/api/cmd/server
+
+# Install dependencies
+echo "Installing dependencies..."
+go mod tidy
+
 # Build the application
 echo "Building the application"
-cd $APP_DIR/resource-provisioner-api/cmd/server
 go build -buildvcs=false -o resource-provisioner-api
 
 # Move the binary to the bin directory
