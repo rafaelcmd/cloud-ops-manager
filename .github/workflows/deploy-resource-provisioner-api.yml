@@ -33,7 +33,7 @@ jobs:
 
       - name: Copy Deployment Script to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i private_key.pem ../../infrastructure/modules/aws/compute/ec2/deploy.sh ec2-user@18.204.245.80:/home/ec2-user/
+          scp -o StrictHostKeyChecking=no -i private_key.pem https://github.com/rafaelcmd/cloud-ops-manager/infrastructure/modules/aws/compute/ec2/deploy.sh ec2-user@18.204.245.80:/home/ec2-user/
 
       - name: Set Permissions for the Script on EC2
         run: |
