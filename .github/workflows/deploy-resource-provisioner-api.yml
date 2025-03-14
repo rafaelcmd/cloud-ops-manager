@@ -33,7 +33,7 @@ jobs:
 
       - name: Download Deployment Script from GitHub
         run: |
-          curl -o deploy.sh -L https://github.com/rafaelcmd/cloud-ops-manager/infrastructure/modules/aws/compute/ec2/deploy.sh
+          curl -o deploy.sh -L https://raw.githubusercontent.com/rafaelcmd/cloud-ops-manager/main/infrastructure/modules/aws/compute/ec2/deploy.sh
           chmod +x deploy.sh
 
       - name: Copy Deployment Script to EC2
