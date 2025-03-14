@@ -1,0 +1,47 @@
+name: CI/CD - Deploy Resource Provisioner API to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '/resource-provisioner-api/**'
+  pull_request:
+    paths:
+      - '/resource-provisioner-api/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Retrieve EC2 Private Key from AWS Secrets Manager
+        run: |
+          aws secretsmanager get-secret-value --secret-id resource-provisioner-api-private-key --query SecretString --output text > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: Copy Deployment Script to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i private_key.pem deploy.sh ec2-user@18.204.245.80:/home/ec2-user/
+
+      - name: Set Permissions for the Script on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@18.204.245.80 "chmod +x /home/ec2-user/deploy.sh"
+
+      - name: Execute Deployment Script on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@18.204.245.80 "bash /home/ec2-user/deploy.sh"
+
+      - name: Cleanup Private Key
+        run: rm -f private_key.pem
