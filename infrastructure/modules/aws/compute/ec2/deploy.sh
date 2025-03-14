@@ -1,12 +1,14 @@
 #!/bin/bash
 
-set -e
+set -e  # Exit on error
+
+SERVICE_NAME="resource-provisioner-api"  # Define the service name
+SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"  # Define the service file path
+APP_DIR="/home/ec2-user/resource-provisioner-api"
 
 echo "Updating the system and installing dependencies"
 sudo dnf update -y
 sudo dnf install -y git
-
-APP_DIR="/home/ec2-user/resource-provisioner-api"
 
 # Check if Go is installed
 if ! command -v go &> /dev/null; then
@@ -47,11 +49,11 @@ go mod tidy
 
 # Build the application
 echo "Building the application"
-go build -buildvcs=false -o resource-provisioner-api .
+go build -buildvcs=false -o "$SERVICE_NAME"
 
 # Move binary to /usr/local/bin for easy execution
 echo "Moving binary to /usr/local/bin/$SERVICE_NAME"
-sudo mv resource-provisioner-api /usr/local/bin/"$SERVICE_NAME"
+sudo mv "$SERVICE_NAME" /usr/local/bin/
 
 # Create systemd service file if it does not exist
 if [ ! -f "$SERVICE_FILE" ]; then
@@ -96,4 +98,3 @@ else
 fi
 
 echo "Deployment completed successfully"
-
