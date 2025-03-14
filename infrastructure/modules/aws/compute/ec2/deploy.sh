@@ -7,18 +7,18 @@ sudo dnf update -y
 sudo dnf install -y git
 
 APP_DIR="/home/ec2-user/resource-provisioner-api"
-GO_VERSION="1.24.1"
-GO_URL="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
 
-# Install Go
+# Check if Go is installed
 if ! command -v go &> /dev/null; then
-  echo "Installing Go ${GO_VERSION}"
-  curl -fsSL -o go.tar.gz $GO_URL
-  sudo rm -rf /usr/local/go
-  sudo tar -C /usr/local -xzf go.tar.gz
-  echo "export PATH=$PATH:/usr/local/go/bin" | sudo tee -a /etc/profile
-  source /etc/profile
+  echo "Go is not installed. Installing Go from Amazon Linux 2023 repositories..."
+  sudo dnf install -y golang
 fi
+
+echo "Go version: $(go version)"
+
+# Ensure GOPATH and PATH are set correctly
+echo "export PATH=$PATH:$(go env GOPATH)/bin" | sudo tee -a /etc/profile
+source /etc/profile
 
 # Clone the repository
 if [ ! -d "$APP_DIR" ]; then
