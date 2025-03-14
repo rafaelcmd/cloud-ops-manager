@@ -33,7 +33,7 @@ fi
 # Build the application
 echo "Building the application"
 cd $APP_DIR/resource-provisioner-api/cmd/server
-/usr/local/go/bin/go build -o resource-provisioner-api
+go build -o resource-provisioner-api
 
 # Move the binary to the bin directory
 sudo mv resource-provisioner-api /usr/local/bin/resource-provisioner-api-app
