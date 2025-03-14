@@ -49,12 +49,33 @@ go mod tidy
 echo "Building the application"
 go build -buildvcs=false -o resource-provisioner-api .
 
-# Move the binary to the bin directory
-sudo mv resource-provisioner-api /usr/local/bin/resource-provisioner-api-app
+# Move binary to /usr/local/bin for easy execution
+sudo mv myapp /usr/local/bin/"$SERVICE_NAME"
 
-# Restart the application using systemd
-sudo systemctl restart resource-provisioner-api-app || sudo systemctl start resource-provisioner-api-app
-sudo systemctl enable resource-provisioner-api-app
+# Create systemd service file if it does not exist
+if [ ! -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+  echo "Creating systemd service file..."
+  sudo bash -c "cat > /etc/systemd/system/$SERVICE_NAME.service <<EOF
+[Unit]
+Description=Resource Provisioner API
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/$SERVICE_NAME
+WorkingDirectory=$APP_DIR/api/cmd/server
+Restart=always
+User=ec2-user
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+fi
+
+# Reload systemd, enable and restart service
+echo "Reloading systemd and starting service..."
+sudo systemctl daemon-reload
+sudo systemctl enable "$SERVICE_NAME"
+sudo systemctl restart "$SERVICE_NAME"
 
 echo "Deployment completed successfully"
 
