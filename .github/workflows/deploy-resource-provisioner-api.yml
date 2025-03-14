@@ -31,13 +31,14 @@ jobs:
           aws secretsmanager get-secret-value --secret-id resource-provisioner-api-private-key --query SecretString --output text > private_key.pem
           chmod 600 private_key.pem
 
+      - name: Download Deployment Script from GitHub
+        run: |
+          curl -o deploy.sh -L https://github.com/rafaelcmd/cloud-ops-manager/infrastructure/modules/aws/compute/ec2/deploy.sh
+          chmod +x deploy.sh
+
       - name: Copy Deployment Script to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -i private_key.pem https://github.com/rafaelcmd/cloud-ops-manager/infrastructure/modules/aws/compute/ec2/deploy.sh ec2-user@18.204.245.80:/home/ec2-user/
-
-      - name: Set Permissions for the Script on EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@18.204.245.80 "chmod +x /home/ec2-user/deploy.sh"
+          scp -o StrictHostKeyChecking=no -i private_key.pem deploy.sh ec2-user@18.204.245.80:/home/ec2-user/deploy.sh
 
       - name: Execute Deployment Script on EC2
         run: |
