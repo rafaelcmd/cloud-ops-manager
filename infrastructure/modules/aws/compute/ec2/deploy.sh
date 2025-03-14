@@ -50,12 +50,15 @@ echo "Building the application"
 go build -buildvcs=false -o resource-provisioner-api .
 
 # Move binary to /usr/local/bin for easy execution
+echo "Moving binary to /usr/local/bin/$SERVICE_NAME"
 sudo mv myapp /usr/local/bin/"$SERVICE_NAME"
 
 # Create systemd service file if it does not exist
-if [ ! -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+if [ ! -f "$SERVICE_FILE" ]; then
   echo "Creating systemd service file..."
-  sudo bash -c "cat > /etc/systemd/system/$SERVICE_NAME.service <<EOF
+  sudo bash -c "cat > $SERVICE_FILE <<EOF
 [Unit]
 Description=Resource Provisioner API
 After=network.target
@@ -65,17 +68,30 @@ ExecStart=/usr/local/bin/$SERVICE_NAME
 WorkingDirectory=$APP_DIR/api/cmd/server
 Restart=always
 User=ec2-user
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF"
+else
+  echo "Systemd service file already exists."
 fi
 
-# Reload systemd, enable and restart service
-echo "Reloading systemd and starting service..."
+# Reload systemd
+echo "Reloading systemd..."
 sudo systemctl daemon-reload
-sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl restart "$SERVICE_NAME"
+
+# Verify service file exists before enabling
+if [ -f "$SERVICE_FILE" ]; then
+  echo "Systemd service file found: $SERVICE_FILE"
+  echo "Enabling and starting the service..."
+  sudo systemctl enable "$SERVICE_NAME"
+  sudo systemctl restart "$SERVICE_NAME"
+else
+  echo "❌ ERROR: Systemd service file is missing!"
+  exit 1
+fi
 
 echo "Deployment completed successfully"
 
