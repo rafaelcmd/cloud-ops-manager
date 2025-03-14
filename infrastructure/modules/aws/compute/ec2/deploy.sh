@@ -8,13 +8,14 @@ sudo dnf install -y git
 
 APP_DIR="/home/ec2-user/resource-provisioner-api"
 GO_VERSION="1.24.1"
+GO_URL="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
 
 # Install Go
 if ! command -v go &> /dev/null; then
   echo "Installing Go ${GO_VERSION}"
-  curl -O https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+  curl -fsSL -o go.tar.gz $GO_URL
   sudo rm -rf /usr/local/go
-  sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+  sudo tar -C /usr/local -xzf go.tar.gz
   echo "export PATH=$PATH:/usr/local/go/bin" | sudo tee -a /etc/profile
   source /etc/profile
 fi
