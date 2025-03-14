@@ -54,8 +54,6 @@ echo "Moving binary to /usr/local/bin/$SERVICE_NAME"
 sudo mv resource-provisioner-api /usr/local/bin/"$SERVICE_NAME"
 
 # Create systemd service file if it does not exist
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
-
 if [ ! -f "$SERVICE_FILE" ]; then
   echo "Creating systemd service file..."
   sudo bash -c "cat > $SERVICE_FILE <<EOF
@@ -78,6 +76,10 @@ else
   echo "Systemd service file already exists."
 fi
 
+# Debugging: Print the service file name
+echo "Checking systemd service file: $SERVICE_FILE"
+ls -lah "$SERVICE_FILE" || echo "Service file not found!"
+
 # Reload systemd
 echo "Reloading systemd..."
 sudo systemctl daemon-reload
@@ -89,7 +91,7 @@ if [ -f "$SERVICE_FILE" ]; then
   sudo systemctl enable "$SERVICE_NAME"
   sudo systemctl restart "$SERVICE_NAME"
 else
-  echo "❌ ERROR: Systemd service file is missing!"
+  echo "ERROR: Systemd service file is missing!"
   exit 1
 fi
 
