@@ -47,7 +47,7 @@ go mod tidy
 
 # Build the application
 echo "Building the application"
-go build -buildvcs=false -o resource-provisioner-api
+go build -buildvcs=false -o resource-provisioner-api .
 
 # Move the binary to the bin directory
 sudo mv resource-provisioner-api /usr/local/bin/resource-provisioner-api-app
