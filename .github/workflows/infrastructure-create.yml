@@ -1,4 +1,4 @@
-name: CloudOps Infrastructure Provisioning & Deployment
+name: Infrastructure - Create
 
 on:
   push:

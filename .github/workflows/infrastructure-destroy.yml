@@ -1,4 +1,4 @@
-name: CloudOps Infrastructure Destroy
+name: Infrastructure - Destroy
 
 on:
   workflow_dispatch:

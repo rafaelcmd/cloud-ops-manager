@@ -1,4 +1,4 @@
-name: Resource Provisioner API Build and Deploy to EC2
+name: Resource Provisioner API - Build and Deploy to EC2
 
 on:
   push:
