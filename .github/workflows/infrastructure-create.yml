@@ -50,6 +50,12 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
+      - name: Wait for EC2 to be ready
+        run: |
+          echo "Waiting for EC2 to be ready..."
+          sleep 60
+          echo "EC2 is ready!"
+
       #Capture Terraform Outputs
       - name: Get Terraform Outputs
         id: tf_outputs

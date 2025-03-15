@@ -5,6 +5,7 @@ module "aws_networking" {
 module "aws_security" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/security?ref=main"
   vpc_id = module.aws_networking.vpc_id
+  private_key = module.aws_ec2.private_key
 }
 
 module "aws_ec2" {
