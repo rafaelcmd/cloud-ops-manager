@@ -32,7 +32,7 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      # Terraform Init (Terraform Cloud Backend)
+      # Terraform Init
       - name: Terraform Init
         run: terraform init
 
@@ -50,12 +50,6 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
-      - name: Wait for EC2 to be ready
-        run: |
-          echo "Waiting for EC2 to be ready..."
-          sleep 60
-          echo "EC2 is ready!"
-
       #Capture Terraform Outputs
       - name: Get Terraform Outputs
         id: tf_outputs
@@ -68,7 +62,7 @@ jobs:
           
           echo "EC2 Host: $RESOURCE_PROVISIONER_API_EC2_HOST"
           echo "EC2 Username: $RESOURCE_PROVISIONER_API_EC2_USERNAME"
-          echo "EC2 Private Key: $RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY"
+          echo "EC2 Private Key: Hidden for security"
           
           if [[ "$RESOURCE_PROVISIONER_API_EC2_HOST" == "MISSING_HOST" || "$RESOURCE_PROVISIONER_API_EC2_USERNAME" == "MISSING_USERNAME" || "$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" == "MISSING_PRIVATE_KEY" ]]; then
             echo "ERROR: Some Terraform outputs are missing!"
@@ -76,20 +70,16 @@ jobs:
             exit 1
           fi
           
-          echo "RESOURCE_PROVISIONER_API_EC2_HOST=$RESOURCE_PROVISIONER_API_EC2_HOST" >> $GITHUB_ENV
-          echo "RESOURCE_PROVISIONER_API_EC2_USERNAME=$RESOURCE_PROVISIONER_API_EC2_USERNAME" >> $GITHUB_ENV
-          echo "RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" >> $GITHUB_ENV
+          # Store outputs in a JSON file
+          echo "{ 
+            \"EC2_HOST\": \"$RESOURCE_PROVISIONER_API_EC2_HOST\", 
+            \"EC2_USERNAME\": \"$RESOURCE_PROVISIONER_API_EC2_USERNAME\", 
+            \"EC2_PRIVATE_KEY\": \"$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY\" 
+          }" > ec2-outputs.json
 
-      #Store Secrets Using GitHub API
-      - name: Store Secrets in GitHub Actions
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-           gh api --method PUT repos/${{ github.repository }}/actions/secrets/RESOURCE_PROVISIONER_API_EC2_HOST \
-             -f encrypted_value="${RESOURCE_PROVISIONER_API_EC2_HOST}"
-           
-           gh api --method PUT repos/${{ github.repository }}/actions/secrets/RESOURCE_PROVISIONER_API_EC2_USERNAME \
-             -f encrypted_value="${RESOURCE_PROVISIONER_API_EC2_USERNAME}"
-           
-           gh api --method PUT repos/${{ github.repository }}/actions/secrets/RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY \
-             -f encrypted_value="${RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY}"
+      - name: Upload EC2 Outputs as an Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ec2-outputs
+          path: ec2-outputs.json
+          retention-days: 7
