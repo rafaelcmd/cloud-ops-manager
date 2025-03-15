@@ -1,0 +1,73 @@
+name: CloudOps Infrastructure Provisioning & Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/environments/dev/**'
+  pull_request:
+    paths:
+      - 'infrastructure/environments/dev/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infrastructure/environments/dev
+        shell: bash
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      # Terraform Init (Terraform Cloud Backend)
+      - name: Terraform Init
+        run: terraform init
+
+      # Terraform Format
+      - name: Terraform Format
+        run: terraform fmt
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      # Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
+
+      #Capture Terraform Outputs
+      - name: Get Terraform Outputs
+        id: tf_outputs
+        run: |
+         echo "RESOURCE_PROVISIONER_API_EC2_HOST=$(terraform output -raw resource_provisioner_api_host)" >> $GITHUB_ENV
+         echo "RESOURCE_PROVISIONER_API_EC2_USERNAME=$(terraform output -raw resource_provisioner_api_username)" >> $GITHUB_ENV
+         echo "RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$(terraform output -raw resource_provisioner_api_private_key | base64)" >> $GITHUB_ENV
+
+      #Store Secrets Using GitHub API
+      - name: Store Secrets in GitHub Actions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+           gh api --method PUT repos/${{ github.repository }}/actions/secrets/RESOURCE_PROVISIONER_API_EC2_HOST \
+             -f encrypted_value="${RESOURCE_PROVISIONER_API_EC2_HOST}"
+           
+           gh api --method PUT repos/${{ github.repository }}/actions/secrets/RESOURCE_PROVISIONER_API_EC2_USERNAME \
+             -f encrypted_value="${RESOURCE_PROVISIONER_API_EC2_USERNAME}"
+           
+           gh api --method PUT repos/${{ github.repository }}/actions/secrets/RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY \
+             -f encrypted_value="${RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY}"

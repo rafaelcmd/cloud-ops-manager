@@ -9,3 +9,15 @@ resource "aws_instance" "resource-provisioner-api" {
     Name = "resource-provisioner-api"
   }
 }
+
+output "resource_provisioner_api_host" {
+  value = aws_instance.resource-provisioner-api.public_ip
+}
+
+output "resource_provisioner_api_username" {
+  value = "ec2-user"
+}
+
+output "resource_provisioner_api_private_key" {
+  value = aws_key_pair.generated_key.key_name
+}

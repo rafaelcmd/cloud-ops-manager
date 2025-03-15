@@ -1,0 +1,116 @@
+name: Resource Provisioner API Build and Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '/resource-provisioner-api/**'
+  pull_request:
+    paths:
+      - '/resource-provisioner-api/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set ip Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24.1
+
+      - name: Build the application
+        run: |
+          cd resource-provisioner-api/cmd/server
+          go mod tidy
+          go build -build-vcs=false -o resource-provisioner-api
+          ls -lah
+
+      - name: Start SSH Agent and Add Private Key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY }}
+
+      - name: Transfer the application to the EC2 instance
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_HOST }}
+          username: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY }}
+          source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
+          target: "/home/ubuntu/resource-provisioner-api"
+
+      - name: Set permissions on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_HOST }}
+          username: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY }}
+          script: |
+            sudo chown ubuntu:ubuntu /home/ubuntu/resource-provisioner-api
+            sudo chmod +x /home/ubuntu/resource-provisioner-api
+            sudo mv /home/ubuntu/resource-provisioner-api /usr/local/bin/resource-provisioner-api
+
+      - name: Restart systemd service on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_HOST }}
+          username: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY }}
+          script: |
+            SERVICE_NAME="resource-provisioner-api"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "Creating systemd service file..."
+              sudo bash -c "cat > $SERVICE_FILE <<EOF
+              [Unit]
+              Description=Resource Provisioner API
+              After=network.target
+              
+              [Service]
+              ExecStart=/usr/local/bin/$SERVICE_NAME
+              Restart=always
+              User=ubuntu
+              StandardOutput=journal
+              StandardError=journal
+              
+              [Install]
+              WantedBy=multi-user.target
+              EOF"
+              fi
+              
+              echo "Reloading systemd and restarting service..."
+              sudo systemctl daemon-reload
+              sudo systemctl enable "$SERVICE_NAME"
+              sudo systemctl restart "$SERVICE_NAME"
+              echo "Deployment completed successfully"
+
+      - name: Check the status of the systemd service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_HOST }}
+          username: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key: ${{ secrets.RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY }}
+          script: |
+            SERVICE_NAME="resource-provisioner-api"
+            echo "Checking the status of $SERVICE_NAME..."
+            STATUS=$(sudo systemctl is-active $SERVICE_NAME)
+
+            if [ "$STATUS" = "active" ]; then
+              echo "SUCCESS: $SERVICE_NAME is running properly!"
+            else
+              echo "ERROR: $SERVICE_NAME is not running! Current status: $STATUS"
+              sudo journalctl -u $SERVICE_NAME --no-pager | tail -n 20
+              exit 1
+            fi
+
+
+
