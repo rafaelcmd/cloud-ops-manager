@@ -55,17 +55,25 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Start SSH Agent and Add Private Key
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: |
-            ${{ env.EC2_PRIVATE_KEY }} | base64 --decode
+        run: |
+          # Decode the Base64-encoded private key
+          echo "$EC2_PRIVATE_KEY" | base64 --decode > /tmp/ec2-private-key.pem
+          
+          # Start the SSH agent
+          eval "$(ssh-agent -s)"
+          
+          # Add the decoded private key to the SSH agent
+          ssh-add /tmp/ec2-private-key.pem
+          
+          # Set permissions for the private key file
+          chmod 600 /tmp/ec2-private-key.pem
 
       - name: Transfer the application to the EC2 instance
         uses: appleboy/scp-action@master
         with:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
-          key: ${{ env.EC2_PRIVATE_KEY }}
+          key: /tmp/ec2-private-key.pem
           source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
           target: "/home/ubuntu/resource-provisioner-api"
 
@@ -74,7 +82,7 @@ jobs:
         with:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
-          key: ${{ env.EC2_PRIVATE_KEY }}
+          key: /tmp/ec2-private-key.pem
           script: |
             sudo chown ubuntu:ubuntu /home/ubuntu/resource-provisioner-api
             sudo chmod +x /home/ubuntu/resource-provisioner-api
@@ -85,7 +93,7 @@ jobs:
         with:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
-          key: ${{ env.EC2_PRIVATE_KEY }}
+          key: /tmp/ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
             SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
@@ -120,7 +128,7 @@ jobs:
         with:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
-          key: ${{ env.EC2_PRIVATE_KEY }}
+          key: /tmp/ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
             echo "Checking the status of $SERVICE_NAME..."
