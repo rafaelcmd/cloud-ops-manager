@@ -56,15 +56,21 @@ jobs:
 
       - name: Start SSH Agent and Add Private Key
         run: |
-          # Decode the Base64-encoded private key
-          echo "$EC2_PRIVATE_KEY" | base64 --decode > /tmp/ec2-private-key.pem
-          
+          # Save the private key to a file
+          echo "$EC2_PRIVATE_KEY" > /tmp/ec2-private-key.pem
+
+          # Ensure the private key is in PEM format
+          if ! grep -q "BEGIN RSA PRIVATE KEY" /tmp/ec2-private-key.pem; then
+            echo "Private key is not in PEM format. Decoding from Base64..."
+            echo "$EC2_PRIVATE_KEY" | base64 --decode > /tmp/ec2-private-key.pem
+          fi
+
           # Set strict permissions for the private key file
           chmod 600 /tmp/ec2-private-key.pem
-          
+
           # Start the SSH agent
           eval "$(ssh-agent -s)"
-          
+
           # Add the decoded private key to the SSH agent
           ssh-add /tmp/ec2-private-key.pem
 
