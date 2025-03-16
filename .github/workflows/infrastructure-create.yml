@@ -53,10 +53,10 @@ jobs:
           # Extract EC2 instance data from Terraform output
           EC2_PUBLIC_IP=$(terraform output -raw resource_provisioner_api_host)
           EC2_USERNAME=$(terraform output -raw resource_provisioner_api_username)
-          EC2_PRIVATE_KEY=$(terraform output -raw resource_provisioner_api_private_key)
+          EC2_PRIVATE_KEY=$(terraform output -raw resource_provisioner_api_private_key | base64 -w 0)
           echo "EC2 Public IP: $EC2_PUBLIC_IP"
           echo "EC2 Username: $EC2_USERNAME"
-          echo "EC2 Private Key: $EC2_PRIVATE_KEY"
+          echo "EC2 Private Key (Base64): $EC2_PRIVATE_KEY"
           
           # Save the output to GitHub Actions environment for later use
           echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
