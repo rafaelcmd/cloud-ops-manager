@@ -30,7 +30,7 @@ jobs:
         run: |
           cd resource-provisioner-api/cmd/server
           go mod tidy
-          go build -build-vcs=false -o resource-provisioner-api
+          go build -o resource-provisioner-api
           ls -lah
 
       - name: Configure AWS Credentials
