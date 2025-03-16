@@ -13,6 +13,7 @@ resource "tfe_variable" "ec2_host" {
   value        = module.aws_ec2.resource_provisioner_api_host
   category     = "env"
   description  = "EC2 public IP address for the application deployment pipeline."
+  depends_on = [tfe_workspace.cloud-ops-manager-workspace]
 }
 
 resource "tfe_variable" "ec2_username" {
@@ -20,6 +21,7 @@ resource "tfe_variable" "ec2_username" {
   key          = "RESOURCE_PROVISIONER_API_EC2_USERNAME"
   value        = module.aws_ec2.resource_provisioner_api_username
   category     = "env"
+  depends_on   = [tfe_workspace.cloud-ops-manager-workspace]
 }
 
 resource "tfe_variable" "ec2_private_key" {
@@ -28,4 +30,5 @@ resource "tfe_variable" "ec2_private_key" {
   value        = module.aws_ec2.resource_provisioner_api_private_key
   category     = "env"
   sensitive    = true
+  depends_on   = [tfe_workspace.cloud-ops-manager-workspace]
 }

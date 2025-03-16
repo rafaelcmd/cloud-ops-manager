@@ -49,12 +49,12 @@ jobs:
 
       - name: Confirm EC2 Variables Are Stored in Terraform Cloud
         env:
-          TFE_TOKEN: ${{ secrets.TF_API_TOKEN }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
         run: |
           echo "Checking if Terraform Cloud workspace variables exist..."
           
           # Fetch stored variables from Terraform Cloud
-          curl -s --header "Authorization: Bearer $TFE_TOKEN" \
+          curl -s --header "Authorization: Bearer TF_TOKEN_app_terraform_io" \
             "https://app.terraform.io/api/v2/workspaces/cloud-ops-manager-workspace/vars" | jq '.data'
           
           echo "Terraform Cloud workspace variables confirmed."
