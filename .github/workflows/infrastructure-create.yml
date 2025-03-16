@@ -92,5 +92,4 @@ jobs:
             --name "/my-app/ec2-private-key" \
             --value "$EC2_PRIVATE_KEY" \
             --type "SecureString" \
-            --tier "Advanced" \
             --overwrite
