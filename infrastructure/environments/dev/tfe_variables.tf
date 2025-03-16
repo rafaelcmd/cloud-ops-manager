@@ -5,6 +5,7 @@ provider "tfe" {
 resource "tfe_workspace" "cloud-ops-manager-workspace" {
   name         = "cloud-ops-manager-workspace"
   organization = "cloudops-manager-org"
+  project_id = "prj-T6jtBCLZgSpB9Pnm"
 }
 
 resource "tfe_variable" "ec2_host" {
