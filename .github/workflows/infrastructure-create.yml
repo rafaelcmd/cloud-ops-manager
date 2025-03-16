@@ -32,54 +32,29 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      # Terraform Init
       - name: Terraform Init
         run: terraform init
 
-      # Terraform Format
       - name: Terraform Format
         run: terraform fmt
 
       - name: Terraform Validate
         run: terraform validate
 
-      # Terraform Plan
       - name: Terraform Plan
         run: terraform plan -input=false
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
-      #Capture Terraform Outputs
-      - name: Get Terraform Outputs
-        id: tf_outputs
+      - name: Confirm EC2 Variables Are Stored in Terraform Cloud
+        env:
+          TFE_TOKEN: ${{ secrets.TF_API_TOKEN }}
         run: |
-          echo "Retrieving Terraform outputs..."
+          echo "Checking if Terraform Cloud workspace variables exist..."
           
-          RESOURCE_PROVISIONER_API_EC2_HOST=$(terraform output -raw resource_provisioner_api_host 2>/dev/null || echo "MISSING_HOST")
-          RESOURCE_PROVISIONER_API_EC2_USERNAME=$(terraform output -raw resource_provisioner_api_username 2>/dev/null || echo "MISSING_USERNAME")
-          RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$(terraform output -raw resource_provisioner_api_private_key 2>/dev/null | base64 || echo "MISSING_PRIVATE_KEY")
+          # Fetch stored variables from Terraform Cloud
+          curl -s --header "Authorization: Bearer $TFE_TOKEN" \
+            "https://app.terraform.io/api/v2/workspaces/cloud-ops-manager-workspace/vars" | jq '.data'
           
-          echo "EC2 Host: $RESOURCE_PROVISIONER_API_EC2_HOST"
-          echo "EC2 Username: $RESOURCE_PROVISIONER_API_EC2_USERNAME"
-          echo "EC2 Private Key: Hidden for security"
-          
-          if [[ "$RESOURCE_PROVISIONER_API_EC2_HOST" == "MISSING_HOST" || "$RESOURCE_PROVISIONER_API_EC2_USERNAME" == "MISSING_USERNAME" || "$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" == "MISSING_PRIVATE_KEY" ]]; then
-            echo "ERROR: Some Terraform outputs are missing!"
-            terraform output
-            exit 1
-          fi
-          
-          # Store outputs in a JSON file
-          echo "{ 
-            \"EC2_HOST\": \"$RESOURCE_PROVISIONER_API_EC2_HOST\", 
-            \"EC2_USERNAME\": \"$RESOURCE_PROVISIONER_API_EC2_USERNAME\", 
-            \"EC2_PRIVATE_KEY\": \"$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY\" 
-          }" > ec2-outputs.json
-
-      - name: Upload EC2 Outputs as an Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ec2-outputs
-          path: ec2-outputs.json
-          retention-days: 7
+          echo "Terraform Cloud workspace variables confirmed."

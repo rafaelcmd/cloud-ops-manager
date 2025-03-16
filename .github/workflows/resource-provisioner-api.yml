@@ -21,19 +21,23 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Download EC2 Outputs Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ec2-outputs
-
-      - name: Load EC2 Outputs
+      - name: Retrieve EC2 Data from Terraform Cloud
+        env:
+          TFE_TOKEN: ${{ secrets.TF_API_TOKEN }}
         run: |
-          echo "Loading EC2 outputs..."
-          cat ec2-outputs.json
+          echo "Fetching EC2 details from Terraform Cloud..."
           
-          EC2_HOST=$(jq -r '.EC2_HOST' ec2-outputs.json)
-          EC2_USERNAME=$(jq -r '.EC2_USERNAME' ec2-outputs.json)
-          EC2_PRIVATE_KEY=$(jq -r '.EC2_PRIVATE_KEY' ec2-outputs.json)
+          EC2_HOST=$(curl -s --header "Authorization: Bearer $TFE_TOKEN" \
+            "https://app.terraform.io/api/v2/workspaces/cloud-ops-manager-workspace/vars" | \
+            jq -r '.data[] | select(.attributes.key=="RESOURCE_PROVISIONER_API_EC2_HOST") | .attributes.value')
+          
+          EC2_USERNAME=$(curl -s --header "Authorization: Bearer $TFE_TOKEN" \
+            "https://app.terraform.io/api/v2/workspaces/cloud-ops-manager-workspace/vars" | \
+            jq -r '.data[] | select(.attributes.key=="RESOURCE_PROVISIONER_API_EC2_USERNAME") | .attributes.value')
+          
+          EC2_PRIVATE_KEY=$(curl -s --header "Authorization: Bearer $TFE_TOKEN" \
+            "https://app.terraform.io/api/v2/workspaces/cloud-ops-manager-workspace/vars" | \
+            jq -r '.data[] | select(.attributes.key=="RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY") | .attributes.value')
           
           echo "EC2_HOST=$EC2_HOST" >> $GITHUB_ENV
           echo "EC2_USERNAME=$EC2_USERNAME" >> $GITHUB_ENV
