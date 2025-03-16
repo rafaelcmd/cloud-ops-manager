@@ -54,7 +54,7 @@ jobs:
           echo "Checking if Terraform Cloud workspace variables exist..."
           
           # Fetch stored variables from Terraform Cloud
-          curl -s --header "Authorization: Bearer TF_TOKEN_app_terraform_io" \
+          curl -s --header "Authorization: Bearer $TF_TOKEN_app_terraform_io" \
             "https://app.terraform.io/api/v2/workspaces/cloud-ops-manager-workspace/vars" | jq '.data'
           
           echo "Terraform Cloud workspace variables confirmed."
