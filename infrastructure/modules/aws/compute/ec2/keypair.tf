@@ -4,7 +4,7 @@ resource "tls_private_key" "ssh_key" {
 }
 
 resource "aws_secretsmanager_secret" "resource-provisioner-api-private-key" {
-  name = "resource-provisioner-api-private-key"
+  name = "resource-provisioner-api-private-key-${random_string.secret_suffix.result}"
   description = "Private key for resource-provisioner-api"
 }
 
@@ -16,4 +16,10 @@ resource "aws_secretsmanager_secret_version" "resource-provisioner-api-private-k
 resource "aws_key_pair" "generated_key" {
   key_name   = "resource-provisioner-api-key"
   public_key = tls_private_key.ssh_key.public_key_openssh
+}
+
+resource "random_string" "secret_suffix" {
+  length  = 12
+  special = false
+  upper = false
 }
