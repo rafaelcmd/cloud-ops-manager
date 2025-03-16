@@ -75,7 +75,7 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: /tmp/ec2-private-key.pem
           source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
-          target: "/home/ubuntu/resource-provisioner-api"
+          target: "/home/ec2-user/resource-provisioner-api"
 
       - name: Set permissions on EC2
         uses: appleboy/ssh-action@master
@@ -84,9 +84,9 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: /tmp/ec2-private-key.pem
           script: |
-            sudo chown ubuntu:ubuntu /home/ubuntu/resource-provisioner-api
-            sudo chmod +x /home/ubuntu/resource-provisioner-api
-            sudo mv /home/ubuntu/resource-provisioner-api /usr/local/bin/resource-provisioner-api
+            sudo chown ec2-user:ec2-user /home/ec2-user/resource-provisioner-api
+            sudo chmod +x /home/ec2-user/resource-provisioner-api
+            sudo mv /home/ec2-user/resource-provisioner-api /usr/local/bin/resource-provisioner-api
 
       - name: Restart systemd service on EC2
         uses: appleboy/ssh-action@master
