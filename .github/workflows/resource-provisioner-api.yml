@@ -53,7 +53,7 @@ jobs:
       - name: Retrieve EC2 Private Key from AWS Secrets Manager
         id: secrets_manager
         run: |
-          EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "/my-app/ec2-private-key" --query "SecretString" --output text)
+          EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-yjgk230v07y4" --query "SecretString" --output text)
           echo "EC2_PRIVATE_KEY=$EC2_PRIVATE_KEY" >> $GITHUB_ENV
 
       - name: Start SSH Agent and Add Private Key
