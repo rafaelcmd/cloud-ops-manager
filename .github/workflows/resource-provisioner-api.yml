@@ -45,14 +45,16 @@ jobs:
         run: |
           EC2_HOST=$(aws ssm get-parameter --name "/my-app/ec2-public-ip" --query "Parameter.Value" --output text)
           EC2_USERNAME=$(aws ssm get-parameter --name "/my-app/ec2-username" --query "Parameter.Value" --output text)
-          EC2_PRIVATE_KEY=$(aws ssm get-parameter --name "/my-app/ec2-private-key" --with-decryption --query "Parameter.Value" --output text)
 
           # Save the values as environment variables
           echo "EC2_HOST=$EC2_HOST" >> $GITHUB_ENV
           echo "EC2_USERNAME=$EC2_USERNAME" >> $GITHUB_ENV
-          echo "EC2_PRIVATE_KEY<<EOF" >> $GITHUB_ENV
-          echo "$EC2_PRIVATE_KEY" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+
+      - name: Retrieve EC2 Private Key from AWS Secrets Manager
+        id: secrets_manager
+        run: |
+          EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "/my-app/ec2-private-key" --query "SecretString" --output text)
+          echo "EC2_PRIVATE_KEY=$EC2_PRIVATE_KEY" >> $GITHUB_ENV
 
       - name: Start SSH Agent and Add Private Key
         run: |
@@ -71,7 +73,7 @@ jobs:
           # Start the SSH agent
           eval "$(ssh-agent -s)"
 
-          # Add the decoded private key to the SSH agent
+          # Add the private key to the SSH agent
           ssh-add /tmp/ec2-private-key.pem
 
       - name: Transfer the application to the EC2 instance
@@ -114,7 +116,7 @@ jobs:
               [Service]
               ExecStart=/usr/local/bin/$SERVICE_NAME
               Restart=always
-              User=ubuntu
+              User=ec2-user
               StandardOutput=journal
               StandardError=journal
             

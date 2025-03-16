@@ -86,11 +86,9 @@ jobs:
             --type "String" \
             --overwrite
 
-      - name: Save EC2 Private Key to AWS SSM Parameter Store
+      - name: Save EC2 Private Key to AWS Secrets Manager
         run: |
-          aws ssm put-parameter \
-            --name "/my-app/ec2-private-key" \
-            --value "$EC2_PRIVATE_KEY" \
-            --type "SecureString" \
-            -- tier "Advanced" \
-            --overwrite
+          aws secretsmanager create-secret \
+            --name "resource-provisioner-api-ec2-private-key" \
+            --secret-string "$EC2_PRIVATE_KEY" \
+            --region ${{ secrets.AWS_REGION }}
