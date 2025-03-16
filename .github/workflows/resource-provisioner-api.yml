@@ -43,7 +43,7 @@ jobs:
       - name: Retrieve EC2 Data from SSM Parameter Store
         id: ssm_parameters
         run: |
-          EC2_HOST=$(aws ssm get-parameter --name "/my-app/ec2-host" --query "Parameter.Value" --output text)
+          EC2_HOST=$(aws ssm get-parameter --name "/my-app/ec2-public-ip" --query "Parameter.Value" --output text)
           EC2_USERNAME=$(aws ssm get-parameter --name "/my-app/ec2-username" --query "Parameter.Value" --output text)
           EC2_PRIVATE_KEY=$(aws ssm get-parameter --name "/my-app/ec2-private-key" --with-decryption --query "Parameter.Value" --output text)
 
