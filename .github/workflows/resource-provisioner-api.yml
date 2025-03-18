@@ -53,25 +53,28 @@ jobs:
       - name: Retrieve EC2 Private Key from AWS Secrets Manager
         id: secrets_manager
         run: |
-          RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-vyt09489zljh" --query "SecretString" --output text | base64 -w 0)
-          echo "RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" >> $GITHUB_ENV
-
-      - name: Start SSH Agent and Add Private Key
-        run: |
-          # Decode the private key from Base64
-          echo "$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" | base64 --decode > /tmp/ec2-private-key.pem
+          aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-vyt09489zljh" --query "SecretString" --output text > /tmp/ec2-private-key.pem
           
           # Ensure the private key is in PEM format
           if ! grep -q "BEGIN RSA PRIVATE KEY" /tmp/ec2-private-key.pem; then
-          echo "Private key is not in PEM format. Please check the key."
-          exit 1
+            echo "Private key is not in PEM format. Please check the key."
+            exit 1
           fi
-          
+
           # Set strict permissions for the private key file
           chmod 600 /tmp/ec2-private-key.pem
 
+          # Debug: Print the first few lines of the private key
+          echo "Private Key (first few lines):"
+          head -n 5 /tmp/ec2-private-key.pem
+
+      - name: Start SSH Agent and Add Private Key
+        run: |
           # Start the SSH agent
           eval "$(ssh-agent -s)"
+          
+          # Add the private key to the SSH agent
+          ssh-add /tmp/ec2-private-key.pem
 
           # Add the private key to the SSH agent
           ssh-add /tmp/ec2-private-key.pem
@@ -84,6 +87,9 @@ jobs:
           key: /tmp/ec2-private-key.pem
           source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
           target: "/home/ec2-user/resource-provisioner-api"
+          port: 22
+          timeout: 30s
+          command_timeout: 10m
 
       - name: Set permissions on EC2
         uses: appleboy/ssh-action@master
