@@ -47,15 +47,6 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
-  configure-aws-ssm-parameters:
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: infrastructure/environments/dev
-        shell: bash
-
-    steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
