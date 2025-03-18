@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'infrastructure/environments/dev/**'
+      - 'infrastructure/**'
   pull_request:
     paths:
-      - 'infrastructure/environments/dev/**'
+      - 'infrastructure/**'
   workflow_dispatch:
 
 permissions:
@@ -47,19 +47,6 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
-      - name: Extract EC2 Module Output
-        id: ec2_output
-        run: |
-          # Extract EC2 instance data from Terraform output
-          EC2_PUBLIC_IP=$(terraform output -raw resource_provisioner_api_host)
-          EC2_USERNAME=$(terraform output -raw resource_provisioner_api_username)
-          echo "EC2 Public IP: $EC2_PUBLIC_IP"
-          echo "EC2 Username: $EC2_USERNAME"
-          
-          # Save the output to GitHub Actions environment for later use
-          echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
-          echo "EC2_USERNAME=$EC2_USERNAME" >> $GITHUB_ENV
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -70,15 +57,15 @@ jobs:
       - name: Save EC2 Public IP to AWS SSM Parameter Store
         run: |
           aws ssm put-parameter \
-            --name "/my-app/ec2-public-ip" \
-            --value "$EC2_PUBLIC_IP" \
+            --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" \
+            --value "terraform output -raw resource_provisioner_api_host" \
             --type "String" \
             --overwrite
 
       - name: Save EC2 Username to AWS SSM Parameter Store
         run: |
           aws ssm put-parameter \
-            --name "/my-app/ec2-username" \
-            --value "$EC2_USERNAME" \
+            --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" \
+            --value "terraform output -raw resource_provisioner_api_username" \
             --type "String" \
             --overwrite
