@@ -43,23 +43,23 @@ jobs:
       - name: Retrieve EC2 Data from SSM Parameter Store
         id: ssm_parameters
         run: |
-          EC2_HOST=$(aws ssm get-parameter --name "/my-app/ec2-public-ip" --query "Parameter.Value" --output text)
-          EC2_USERNAME=$(aws ssm get-parameter --name "/my-app/ec2-username" --query "Parameter.Value" --output text)
+          RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" --query "Parameter.Value" --output text)
+          RESOURCE_PROVISIONER_API_EC2_USERNAME=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" --query "Parameter.Value" --output text)
 
           # Save the values as environment variables
-          echo "EC2_HOST=$EC2_HOST" >> $GITHUB_ENV
-          echo "EC2_USERNAME=$EC2_USERNAME" >> $GITHUB_ENV
+          echo "RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP=$RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP" >> $GITHUB_ENV
+          echo "RESOURCE_PROVISIONER_API_EC2_USERNAME=$RESOURCE_PROVISIONER_API_EC2_USERNAME" >> $GITHUB_ENV
 
       - name: Retrieve EC2 Private Key from AWS Secrets Manager
         id: secrets_manager
         run: |
-          EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-yjgk230v07y4" --query "SecretString" --output text)
-          echo "EC2_PRIVATE_KEY=$EC2_PRIVATE_KEY" >> $GITHUB_ENV
+          RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-vyt09489zljh" --query "SecretString" --output text)
+          echo "RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" >> $GITHUB_ENV
 
       - name: Start SSH Agent and Add Private Key
         run: |
           # Save the private key to a file
-          echo "$EC2_PRIVATE_KEY" > /tmp/ec2-private-key.pem
+          echo "RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" > /tmp/ec2-private-key.pem
 
           # Ensure the private key is in PEM format
           if ! grep -q "BEGIN RSA PRIVATE KEY" /tmp/ec2-private-key.pem; then
@@ -79,8 +79,8 @@ jobs:
       - name: Transfer the application to the EC2 instance
         uses: appleboy/scp-action@master
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USERNAME }}
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
           key: /tmp/ec2-private-key.pem
           source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
           target: "/home/ec2-user/resource-provisioner-api"
@@ -88,8 +88,8 @@ jobs:
       - name: Set permissions on EC2
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USERNAME }}
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
           key: /tmp/ec2-private-key.pem
           script: |
             sudo chown ec2-user:ec2-user /home/ec2-user/resource-provisioner-api
@@ -99,8 +99,8 @@ jobs:
       - name: Restart systemd service on EC2
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USERNAME }}
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
           key: /tmp/ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
@@ -134,8 +134,8 @@ jobs:
       - name: Check the status of the systemd service
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USERNAME }}
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
           key: /tmp/ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
