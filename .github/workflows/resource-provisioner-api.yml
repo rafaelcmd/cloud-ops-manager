@@ -53,20 +53,20 @@ jobs:
       - name: Retrieve EC2 Private Key from AWS Secrets Manager
         id: secrets_manager
         run: |
-          RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-vyt09489zljh" --query "SecretString" --output text)
+          RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$(aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-vyt09489zljh" --query "SecretString" --output text | base64 -w 0)
           echo "RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY=$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" >> $GITHUB_ENV
 
       - name: Start SSH Agent and Add Private Key
         run: |
-          # Save the private key to a file
-          echo "RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" > /tmp/ec2-private-key.pem
-
+          # Decode the private key from Base64
+          echo "$RESOURCE_PROVISIONER_API_EC2_PRIVATE_KEY" | base64 --decode > /tmp/ec2-private-key.pem
+          
           # Ensure the private key is in PEM format
           if ! grep -q "BEGIN RSA PRIVATE KEY" /tmp/ec2-private-key.pem; then
-            echo "Private key is not in PEM format. Decoding from Base64..."
-            echo "$EC2_PRIVATE_KEY" | base64 --decode > /tmp/ec2-private-key.pem
+          echo "Private key is not in PEM format. Please check the key."
+          exit 1
           fi
-
+          
           # Set strict permissions for the private key file
           chmod 600 /tmp/ec2-private-key.pem
 
