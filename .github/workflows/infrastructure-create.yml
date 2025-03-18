@@ -56,16 +56,20 @@ jobs:
 
       - name: Save EC2 Public IP to AWS SSM Parameter Store
         run: |
+          RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP=$(terraform output -raw resource_provisioner_api_host)
+          echo "RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP: $RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP"
           aws ssm put-parameter \
             --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" \
-            --value "terraform output -raw resource_provisioner_api_host" \
+            --value "$RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP" \
             --type "String" \
             --overwrite
 
       - name: Save EC2 Username to AWS SSM Parameter Store
         run: |
+          RESOURCE_PROVISIONER_API_EC2_USERNAME=$(terraform output -raw resource_provisioner_api_username)
+          echo "RESOURCE_PROVISIONER_API_EC2_USERNAME: $RESOURCE_PROVISIONER_API_EC2_USERNAME"
           aws ssm put-parameter \
             --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" \
-            --value "terraform output -raw resource_provisioner_api_username" \
+            --value "$RESOURCE_PROVISIONER_API_EC2_USERNAME" \
             --type "String" \
             --overwrite
