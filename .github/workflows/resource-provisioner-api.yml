@@ -53,7 +53,7 @@ jobs:
       - name: Retrieve EC2 Private Key from AWS Secrets Manager
         id: secrets_manager
         run: |
-          aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-7go48v86yqdh" --query "SecretString" --output text > /tmp/ec2-private-key.pem
+          aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-wd4y5e4r5erb" --query "SecretString" --output text > /tmp/ec2-private-key.pem
           
           # Ensure the private key is in PEM format
           if ! grep -q "BEGIN RSA PRIVATE KEY" /tmp/ec2-private-key.pem; then
@@ -68,22 +68,6 @@ jobs:
           echo "EC2 Private Key:"
           head -n 10 /tmp/ec2-private-key.pem
 
-      - name: Add EC2 Instance's Host Key to known_hosts
-        run: |
-          # Create the .ssh directory if it doesn't exist
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          # Fetch the EC2 instance's host key and add it to known_hosts
-          ssh-keyscan -t rsa $RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP >> ~/.ssh/known_hosts
-
-          # Set strict permissions for the known_hosts file
-          chmod 600 ~/.ssh/known_hosts
-
-          # Debug: Print the known_hosts file
-          echo "Known Hosts:"
-          cat ~/.ssh/known_hosts
-
       - name: Start SSH Agent and Add Private Key
         run: |
           # Start the SSH agent
@@ -97,7 +81,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key: /tmp/ec2-private-key.pem
+          key_path: /tmp/ec2-private-key.pem
           source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
           target: "/home/ec2-user/resource-provisioner-api"
           port: 22
@@ -109,7 +93,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key: /tmp/ec2-private-key.pem
+          key_path: /tmp/ec2-private-key.pem
           script: |
             sudo chown ec2-user:ec2-user /home/ec2-user/resource-provisioner-api
             sudo chmod +x /home/ec2-user/resource-provisioner-api
@@ -120,7 +104,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key: /tmp/ec2-private-key.pem
+          key_path: /tmp/ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
             SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
@@ -155,7 +139,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key: /tmp/ec2-private-key.pem
+          key_path: /tmp/ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
             echo "Checking the status of $SERVICE_NAME..."
