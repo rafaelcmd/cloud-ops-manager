@@ -76,8 +76,11 @@ jobs:
           # Add the private key to the SSH agent
           ssh-add /tmp/ec2-private-key.pem
 
-          # Add the private key to the SSH agent
+          # Add the private key to the SSH agent (Debugging)
           ssh-add /tmp/ec2-private-key.pem
+          
+          # Verify that the private key has been added
+          ssh-keygen -y -f /tmp/ec2-private-key.pem
 
       - name: Transfer the application to the EC2 instance
         uses: appleboy/scp-action@master
