@@ -70,9 +70,16 @@ jobs:
 
       - name: Add EC2 Instance's Host Key to known_hosts
         run: |
+          # Create the .ssh directory if it doesn't exist
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
           # Fetch the EC2 instance's host key and add it to known_hosts
           ssh-keyscan -t rsa $RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP >> ~/.ssh/known_hosts
-      
+
+          # Set strict permissions for the known_hosts file
+          chmod 600 ~/.ssh/known_hosts
+
           # Debug: Print the known_hosts file
           echo "Known Hosts:"
           cat ~/.ssh/known_hosts
