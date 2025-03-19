@@ -63,7 +63,7 @@ jobs:
           fi
           
           # Set the file ownership to the runner user
-          chown runner:docker ec2-private-key.pem
+          sudo chown runner:docker ec2-private-key.pem
 
           # Set strict permissions for the private key file
           chmod 600 ec2-private-key.pem
