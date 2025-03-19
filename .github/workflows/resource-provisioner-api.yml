@@ -61,10 +61,6 @@ jobs:
             echo "Private key is not in PEM format. Please check the key."
             exit 1
           fi
-          
-          # Set the file ownership to the runner user
-          sudo chown runner:docker ec2-private-key.pem
-          ls -l ec2-private-key.pem
 
           # Set strict permissions for the private key file
           chmod 600 ec2-private-key.pem
@@ -72,23 +68,6 @@ jobs:
           # Debug: Print the private key (first 10 lines)
           echo "EC2 Private Key:"
           head -n 10 ec2-private-key.pem
-
-      - name: Set File Ownership for Docker Container
-        run: |
-          sudo chown root:root ec2-private-key.pem
-          echo "File permissions and ownership after chown:"
-          ls -l ec2-private-key.pem
-
-      - name: Debug File Accessibility in Docker
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Listing files:"
-          ls -l
-          echo "File permissions for ec2-private-key.pem:"
-          ls -l ec2-private-key.pem
-          echo "Attempting to read the file:"
-          cat ec2-private-key.pem
 
       - name: Start SSH Agent and Add Private Key
         run: |
@@ -103,7 +82,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key_path: /home/runner/work/cloud-ops-manager/cloud-ops-manager/ec2-private-key.pem
+          key_path: ec2-private-key.pem
           source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
           target: "/home/ec2-user/resource-provisioner-api"
           port: 22
@@ -115,7 +94,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key_path: /home/runner/work/cloud-ops-manager/cloud-ops-manager/ec2-private-key.pem
+          key_path: ec2-private-key.pem
           script: |
             sudo chown ec2-user:ec2-user /home/ec2-user/resource-provisioner-api
             sudo chmod +x /home/ec2-user/resource-provisioner-api
@@ -126,7 +105,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key_path: /home/runner/work/cloud-ops-manager/cloud-ops-manager/ec2-private-key.pem
+          key_path: ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
             SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
@@ -161,7 +140,7 @@ jobs:
         with:
           host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
           username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key_path: /home/runner/work/cloud-ops-manager/cloud-ops-manager/ec2-private-key.pem
+          key_path: ec2-private-key.pem
           script: |
             SERVICE_NAME="resource-provisioner-api"
             echo "Checking the status of $SERVICE_NAME..."
