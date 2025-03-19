@@ -53,7 +53,7 @@ jobs:
       - name: Retrieve EC2 Private Key from AWS Secrets Manager
         id: secrets_manager
         run: |
-          aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-vyt09489zljh" --query "SecretString" --output text > /tmp/ec2-private-key.pem
+          aws secretsmanager get-secret-value --secret-id "resource-provisioner-api-private-key-7go48v86yqdh" --query "SecretString" --output text > /tmp/ec2-private-key.pem
           
           # Ensure the private key is in PEM format
           if ! grep -q "BEGIN RSA PRIVATE KEY" /tmp/ec2-private-key.pem; then
