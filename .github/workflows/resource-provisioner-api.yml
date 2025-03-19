@@ -63,8 +63,31 @@ jobs:
 
           # Set strict permissions for the private key file
           chmod 600 /tmp/ec2-private-key.pem
+          
+          # Debug: Print the private key (first 10 lines)
+          echo "EC2 Private Key:"
+          head -n 10 /tmp/ec2-private-key.pem
 
-          # Connect to the EC2 instance
+      - name: Add EC2 Instance's Host Key to known_hosts
+        run: |
+          # Fetch the EC2 instance's host key and add it to known_hosts
+          ssh-keyscan -t rsa $RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP >> ~/.ssh/known_hosts
+      
+          # Debug: Print the known_hosts file
+          echo "Known Hosts:"
+          cat ~/.ssh/known_hosts
+
+      - name: Start SSH Agent and Add Private Key
+        run: |
+          # Start the SSH agent
+          eval "$(ssh-agent -s)"
+          
+          # Add the private key to the SSH agent
+          ssh-add /tmp/ec2-private-key.pem
+
+      - name: Connect to the EC2 instance
+        run: |
+          # Test SSH connection
           ssh -i /tmp/ec2-private-key.pem $RESOURCE_PROVISIONER_API_EC2_USERNAME@$RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP "echo 'Connected to EC2 instance'"
 
       - name: Transfer the application to the EC2 instance
