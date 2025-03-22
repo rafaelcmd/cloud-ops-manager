@@ -1,0 +1,63 @@
+name: Infrastructure - Resource Provisioner API
+
+on:
+  push:
+    branches: [main]
+    paths: ['infrastructure/**']
+  pull_request:
+    paths: ['infrastructure/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  create-infrastructure:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infrastructure/environments/dev
+        shell: bash
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Save EC2 Metadata to AWS SSM Parameter Store
+        run: |
+          EC2_PUBLIC_IP=$(terraform output -raw resource_provisioner_api_host)
+          EC2_USERNAME=$(terraform output -raw resource_provisioner_api_username)
+          EC2_INSTANCE_ID=$(terraform output -raw resource_provisioner_api_instance_id)
+
+          echo "Saving EC2 Public IP, Username, and Instance ID to SSM..."
+          aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" --value "$EC2_PUBLIC_IP" --type "String" --overwrite
+          aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" --value "$EC2_USERNAME" --type "String" --overwrite
+          aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_INSTANCE_ID" --value "$EC2_INSTANCE_ID" --type "String" --overwrite

@@ -1,0 +1,135 @@
+name: Deploy - Resource Provisioner API
+
+on:
+  push:
+    branches: [main]
+    paths: ['/resource-provisioner-api/**']
+  pull_request:
+    paths: ['/resource-provisioner-api/**']
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24.1
+
+      - name: Build the application
+        run: |
+          cd resource-provisioner-api/cmd/server
+          go mod tidy
+          go build -o resource-provisioner-api
+          ls -lah
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Retrieve EC2 data from SSM
+        id: ssm
+        run: |
+          echo "Fetching EC2 connection info..."
+          echo "RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+          echo "RESOURCE_PROVISIONER_API_EC2_USERNAME=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+          echo "RESOURCE_PROVISIONER_API_EC2_INSTANCE_ID=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_INSTANCE_ID" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+
+      - name: Generate ephemeral SSH key pair
+        run: |
+          ssh-keygen -t rsa -b 2048 -f ec2-temp-key -q -N ""
+          echo "Generated SSH key pair."
+
+      - name: Send public key via EC2 Instance Connect
+        run: |
+          echo "Sending public key to EC2 instance..."
+          aws ec2-instance-connect send-ssh-public-key \
+            --instance-id "$RESOURCE_PROVISIONER_API_EC2_INSTANCE_ID" \
+            --instance-os-user "$RESOURCE_PROVISIONER_API_EC2_USERNAME" \
+            --ssh-public-key file://ec2-temp-key.pub \
+            --availability-zone $(aws ec2 describe-instances --instance-ids "$RESOURCE_PROVISIONER_API_EC2_INSTANCE_ID" --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text)
+
+      - name: Transfer binary to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key_path: ec2-temp-key
+          source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
+          target: "/home/${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}/resource-provisioner-api"
+          port: 22
+          timeout: 30s
+          command_timeout: 10m
+
+      - name: Set permissions and move binary
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key_path: ec2-temp-key
+          script: |
+            sudo chown $USER:$USER ~/resource-provisioner-api
+            sudo chmod +x ~/resource-provisioner-api
+            sudo mv ~/resource-provisioner-api /usr/local/bin/resource-provisioner-api
+
+      - name: Create or restart systemd service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key_path: ec2-temp-key
+          script: |
+            SERVICE_NAME="resource-provisioner-api"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+            
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "Creating systemd service..."
+              sudo bash -c "cat > $SERVICE_FILE <<EOF
+              [Unit]
+              Description=Resource Provisioner API
+              After=network.target
+            
+              [Service]
+              ExecStart=/usr/local/bin/$SERVICE_NAME
+              Restart=always
+              User=${USER}
+              StandardOutput=journal
+              StandardError=journal
+            
+              [Install]
+              WantedBy=multi-user.target
+              EOF"
+            fi
+            
+            sudo systemctl daemon-reload
+            sudo systemctl enable "$SERVICE_NAME"
+            sudo systemctl restart "$SERVICE_NAME"
+            echo "Deployment complete."
+
+      - name: Check service status
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          key_path: ec2-temp-key
+          script: |
+            SERVICE_NAME="resource-provisioner-api"
+            STATUS=$(sudo systemctl is-active $SERVICE_NAME)
+
+            if [ "$STATUS" = "active" ]; then
+              echo "✅ $SERVICE_NAME is running."
+            else
+              echo "❌ $SERVICE_NAME is not running. Status: $STATUS"
+              sudo journalctl -u $SERVICE_NAME --no-pager | tail -n 20
+              exit 1
+            fi
