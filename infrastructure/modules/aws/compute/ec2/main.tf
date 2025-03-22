@@ -5,8 +5,8 @@ resource "aws_iam_role" "ec2_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action    = "sts:AssumeRole"
-        Effect    = "Allow"
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
         Principal = {
           Service = "ec2.amazonaws.com"
         }
@@ -45,7 +45,7 @@ resource "aws_instance" "resource-provisioner-api" {
   vpc_security_group_ids      = [var.security_group_id]
   associate_public_ip_address = true
 
-  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "resource-provisioner-api"
