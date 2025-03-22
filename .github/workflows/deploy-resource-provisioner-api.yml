@@ -50,6 +50,12 @@ jobs:
           ssh-keygen -t rsa -b 2048 -f ec2-temp-key -q -N ""
           echo "Generated SSH key pair."
 
+      - name: Adjust permissions and move ephemeral key
+        run: |
+          chmod 600 ec2-temp-key
+          chmod 644 ec2-temp-key.pub
+          ls -lah ec2-temp-key*
+
       - name: Send public key via EC2 Instance Connect
         run: |
           echo "Sending public key to EC2 instance..."
@@ -59,28 +65,18 @@ jobs:
             --ssh-public-key file://ec2-temp-key.pub \
             --availability-zone $(aws ec2 describe-instances --instance-ids "$RESOURCE_PROVISIONER_API_EC2_INSTANCE_ID" --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text)
 
-      - name: Transfer binary to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
-          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key_path: ec2-temp-key
-          source: "resource-provisioner-api/cmd/server/resource-provisioner-api"
-          target: "/home/${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}/resource-provisioner-api"
-          port: 22
-          timeout: 30s
-          command_timeout: 10m
+      - name: SCP binary to EC2
+        run: |
+          scp -i ec2-temp-key -o StrictHostKeyChecking=no \
+            resource-provisioner-api/cmd/server/resource-provisioner-api \
+            ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}@${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}:/home/${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}/resource-provisioner-api
+      
 
-      - name: Set permissions and move binary
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
-          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
-          key_path: ec2-temp-key
-          script: |
-            sudo chown $USER:$USER ~/resource-provisioner-api
-            sudo chmod +x ~/resource-provisioner-api
-            sudo mv ~/resource-provisioner-api /usr/local/bin/resource-provisioner-api
+      - name: SSH to set permissions and move binary
+        run: |
+          ssh -i ec2-temp-key -o StrictHostKeyChecking=no \
+            ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}@${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }} \
+            'sudo chown ec2-user:ec2-user ~/resource-provisioner-api && sudo chmod +x ~/resource-provisioner-api && sudo mv ~/resource-provisioner-api /usr/local/bin/resource-provisioner-api'
 
       - name: Create or restart systemd service
         uses: appleboy/ssh-action@master
