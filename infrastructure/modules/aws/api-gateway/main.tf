@@ -58,6 +58,13 @@ resource "aws_api_gateway_deployment" "resource_provisioner_api" {
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [
+    aws_api_gateway_method.resource_provisioner_api_root_post,
+    aws_api_gateway_integration.resource_provisioner_api_root_post_ec2,
+    aws_api_gateway_method_response.resource_provisioner_api_root_post_200,
+    aws_api_gateway_integration_response.resource_provisioner_api_root_post_200
+  ]
 }
 
 resource "aws_api_gateway_stage" "resource_provisioner_api" {
