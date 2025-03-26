@@ -27,7 +27,7 @@ func main() {
 
 	//router := httpdelivery.SetupRoutes(useCase)
 
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
 	if err != nil {
 		log.Fatalf("unable to load AWS config, %v", err)
 	}
