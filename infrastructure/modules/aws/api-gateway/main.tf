@@ -50,6 +50,14 @@ resource "aws_api_gateway_integration_response" "resource_provisioner_api_root_p
 
 resource "aws_api_gateway_deployment" "resource_provisioner_api" {
   rest_api_id = aws_api_gateway_rest_api.resource_provisioner_api.id
+
+  triggers = {
+    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.resource_provisioner_api.body))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_api_gateway_stage" "resource_provisioner_api" {
