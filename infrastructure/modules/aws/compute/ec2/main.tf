@@ -54,7 +54,7 @@ resource "aws_iam_role_policy" "sqs_access" {
           "sqs:GetQueueAttributes",
           "sqs:GetQueueUrl"
           ]
-          Resource = "*"
+          Resource = "arn:aws:sqs:us-east-1:471112701237:resource_provisioner_queue"
       }
       ]
   })
