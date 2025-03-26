@@ -46,6 +46,10 @@ resource "aws_api_gateway_integration_response" "resource_provisioner_api_root_p
   response_templates = {
     "application/json" = ""
   }
+
+  depends_on = [
+    aws_api_gateway_integration.resource_provisioner_api_root_post_ec2
+  ]
 }
 
 resource "aws_api_gateway_deployment" "resource_provisioner_api" {
