@@ -23,7 +23,7 @@ resource "aws_api_gateway_integration" "resource_provisioner_api_root_post_ec2" 
 
   integration_http_method = "POST"
   type                    = "HTTP"
-  uri                     = "http://${var.resource_provisioner_api_host}/resource-provisioner"
+  uri                     = "http://${var.resource_provisioner_api_host}:5000/resource-provisioner"
 }
 
 resource "aws_api_gateway_method_response" "resource_provisioner_api_root_post_200" {
