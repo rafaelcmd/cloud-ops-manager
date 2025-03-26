@@ -38,6 +38,28 @@ resource "aws_iam_role_policy" "ec2_instance_connect" {
   })
 }
 
+resource "aws_iam_role_policy" "sqs_access" {
+  name = "AllowSQSSendMessage"
+  role = aws_iam_role.ec2_role.name
+
+  policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+      {
+          Effect = "Allow"
+          Action = [
+          "sqs:SendMessage",
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+          ]
+          Resource = "*"
+      }
+      ]
+  })
+}
+
 resource "aws_instance" "resource-provisioner-api" {
   ami                         = "ami-08b5b3a93ed654d19"
   instance_type               = "t2.micro"
