@@ -17,7 +17,7 @@ func main() {
 	//router := httpdelivery.SetupRoutes(useCase)
 	log.Printf("Server running on port 5000")
 	http.ListenAndServe(":5000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
+		if r.URL.Path == "/resource-provisioner" {
 			w.Write([]byte("Hello World"))
 		} else {
 			http.NotFound(w, r)
