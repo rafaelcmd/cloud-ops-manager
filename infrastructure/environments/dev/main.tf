@@ -13,7 +13,7 @@ module "aws_ec2" {
 
   public_subnet_id  = module.aws_networking.public_subnet_id
   security_group_id = module.aws_security.security_group_id
-  //sqs_queue_arn     = module.aws_sqs_queue.sqs_queue_arn
+  sqs_queue_arn     = module.aws_sqs_queue.sqs_queue_arn
 }
 
 module "aws_api_gateway" {
@@ -38,9 +38,4 @@ output "resource_provisioner_api_username" {
 
 output "resource_provisioner_api_instance_id" {
   value = module.aws_ec2.resource_provisioner_api_instance_id
-}
-
-output "resource_provisioner_api_url" {
-  description = "Public Invoke URL of the Resource Provisioner API Gateway"
-  value       = module.aws_api_gateway.api_invoke_url
 }

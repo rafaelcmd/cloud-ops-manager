@@ -62,8 +62,3 @@ jobs:
           aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" --value "$EC2_PUBLIC_IP" --type "String" --overwrite
           aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" --value "$EC2_USERNAME" --type "String" --overwrite
           aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_INSTANCE_ID" --value "$EC2_INSTANCE_ID" --type "String" --overwrite
-
-      - name: Get and print API Gateway URL
-        run: |
-          API_GATEWAY_URL=$(terraform output -raw resource_provisioner_api_url)
-          echo "API Gateway URL: $API_GATEWAY_URL"
