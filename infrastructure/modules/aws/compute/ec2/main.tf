@@ -49,12 +49,8 @@ resource "aws_iam_role_policy" "sqs_access" {
           Effect = "Allow"
           Action = [
           "sqs:SendMessage",
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes",
-          "sqs:GetQueueUrl"
           ]
-          Resource = "arn:aws:sqs:us-east-1:471112701237:resource_provisioner_queue"
+          Resource = var.sqs_queue_arn
       }
       ]
   })

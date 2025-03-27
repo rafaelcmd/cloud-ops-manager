@@ -13,6 +13,7 @@ module "aws_ec2" {
 
   public_subnet_id  = module.aws_networking.public_subnet_id
   security_group_id = module.aws_security.security_group_id
+  //sqs_queue_arn     = module.aws_sqs_queue.sqs_queue_arn
 }
 
 module "aws_api_gateway" {

@@ -7,3 +7,8 @@ variable "security_group_id" {
   type        = string
   description = "Security Group ID"
 }
+
+variable "sqs_queue_arn" {
+  type        = string
+  description = "SQS Queue ARN"
+}
