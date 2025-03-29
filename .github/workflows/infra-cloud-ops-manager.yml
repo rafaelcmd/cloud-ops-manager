@@ -1,12 +1,6 @@
-name: Infrastructure - Resource Provisioner API
+name: Infra - CloudOps Manager
 
 on:
-  push:
-    branches: [main]
-    paths: ['infrastructure/**']
-  pull_request:
-    branches: [main]
-    paths: ['infrastructure/**']
   workflow_dispatch:
 
 permissions:
@@ -54,11 +48,11 @@ jobs:
 
       - name: Save EC2 Metadata to AWS SSM Parameter Store
         run: |
-          EC2_PUBLIC_IP=$(terraform output -raw resource_provisioner_api_host)
-          EC2_USERNAME=$(terraform output -raw resource_provisioner_api_username)
-          EC2_INSTANCE_ID=$(terraform output -raw resource_provisioner_api_instance_id)
+          EC2_PUBLIC_IP=$(terraform output -raw cloud-ops-manager-api_host)
+          EC2_USERNAME=$(terraform output -raw cloud-ops-manager-api_username)
+          EC2_INSTANCE_ID=$(terraform output -raw cloud-ops-manager-api_instance_id)
 
           echo "Saving EC2 Public IP, Username, and Instance ID to SSM..."
-          aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" --value "$EC2_PUBLIC_IP" --type "String" --overwrite
-          aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" --value "$EC2_USERNAME" --type "String" --overwrite
-          aws ssm put-parameter --name "/RESOURCE_PROVISIONER_API/EC2_INSTANCE_ID" --value "$EC2_INSTANCE_ID" --type "String" --overwrite
+          aws ssm put-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_PUBLIC_IP" --value "$EC2_PUBLIC_IP" --type "String" --overwrite
+          aws ssm put-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_USERNAME" --value "$EC2_USERNAME" --type "String" --overwrite
+          aws ssm put-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_INSTANCE_ID" --value "$EC2_INSTANCE_ID" --type "String" --overwrite

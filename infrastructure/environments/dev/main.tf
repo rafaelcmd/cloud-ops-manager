@@ -28,6 +28,7 @@ module "aws_sqs_queue" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/sqs?ref=main"
 }
 
+// Criar pasta para outputs
 output "resource_provisioner_api_host" {
   value = module.aws_ec2.resource_provisioner_api_host
 }

@@ -1,6 +1,6 @@
 services:
-  resource-provisioner-api:
-    container_name: resource-provisioner-api
+  cloud-ops-manager-api:
+    container_name: cloud-ops-manager-api
     build:
       args:
         - GO_VERSION=${GO_VERSION:-1.24}

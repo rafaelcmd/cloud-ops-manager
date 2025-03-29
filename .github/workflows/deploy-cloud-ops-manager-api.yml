@@ -1,12 +1,6 @@
-name: Deploy - Resource Provisioner API
+name: Deploy - CloudOps Manager API
 
 on:
-  push:
-    branches: [main]
-    paths: ['/resource-provisioner-api/**']
-  pull_request:
-    branches: [main]
-    paths: ['/resource-provisioner-api/**']
   workflow_dispatch:
 
 jobs:
@@ -26,9 +20,9 @@ jobs:
 
       - name: Build the application
         run: |
-          cd resource-provisioner-api/cmd/server
+          cd cloud-ops-manager-api/cmd/server
           go mod tidy
-          go build -o resource-provisioner-api
+          go build -o cloud-ops-manager-api
           ls -lah
 
       - name: Configure AWS Credentials
@@ -42,9 +36,9 @@ jobs:
         id: ssm
         run: |
           echo "Fetching EC2 connection info..."
-          echo "RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_PUBLIC_IP" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
-          echo "RESOURCE_PROVISIONER_API_EC2_USERNAME=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_USERNAME" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
-          echo "RESOURCE_PROVISIONER_API_EC2_INSTANCE_ID=$(aws ssm get-parameter --name "/RESOURCE_PROVISIONER_API/EC2_INSTANCE_ID" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+          echo "CLOUD_OPS_MANAGER_API_EC2_PUBLIC_IP=$(aws ssm get-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_PUBLIC_IP" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+          echo "CLOUD_OPS_MANAGER_API_EC2_USERNAME=$(aws ssm get-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_USERNAME" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+          echo "CLOUD_OPS_MANAGER_API_EC2_INSTANCE_ID=$(aws ssm get-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_INSTANCE_ID" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
 
       - name: Generate ephemeral SSH key pair
         run: |
@@ -61,39 +55,39 @@ jobs:
         run: |
           echo "Sending public key to EC2 instance..."
           aws ec2-instance-connect send-ssh-public-key \
-            --instance-id "$RESOURCE_PROVISIONER_API_EC2_INSTANCE_ID" \
-            --instance-os-user "$RESOURCE_PROVISIONER_API_EC2_USERNAME" \
+            --instance-id "$CLOUD_OPS_MANAGER_API_EC2_INSTANCE_ID" \
+            --instance-os-user "$CLOUD_OPS_MANAGER_API_EC2_USERNAME" \
             --ssh-public-key file://ec2-temp-key.pub \
-            --availability-zone $(aws ec2 describe-instances --instance-ids "$RESOURCE_PROVISIONER_API_EC2_INSTANCE_ID" --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text)
+            --availability-zone $(aws ec2 describe-instances --instance-ids "$CLOUD_OPS_MANAGER_API_EC2_INSTANCE_ID" --query "Reservations[0].Instances[0].Placement.AvailabilityZone" --output text)
 
       - name: SCP binary to EC2
         run: |
           scp -i ec2-temp-key -o StrictHostKeyChecking=no \
-            resource-provisioner-api/cmd/server/resource-provisioner-api \
-            ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}@${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}:/home/${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}/resource-provisioner-api
+            cloud-ops-manager-api/cmd/server/cloud-ops-manager-api \
+            ${{ env.CLOUD_OPS_MANAGER_API_EC2_USERNAME }}@${{ env.CLOUD_OPS_MANAGER_API_EC2_PUBLIC_IP }}:/home/${{ env.CLOUD_OPS_MANAGER_API_EC2_USERNAME }}/cloud-ops-manager-api
       
 
       - name: SSH to set permissions and move binary
         run: |
           ssh -i ec2-temp-key -o StrictHostKeyChecking=no \
-            ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}@${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }} \
-            'sudo chown ec2-user:ec2-user ~/resource-provisioner-api && sudo chmod +x ~/resource-provisioner-api && sudo mv ~/resource-provisioner-api /usr/local/bin/resource-provisioner-api'
+            ${{ env.CLOUD_OPS_MANAGER_API_EC2_USERNAME }}@${{ env.CLOUD_OPS_MANAGER_API_EC2_PUBLIC_IP }} \
+            'sudo chown ec2-user:ec2-user ~/cloud-ops-manager-api && sudo chmod +x ~/cloud-ops-manager-api && sudo mv ~/cloud-ops-manager-api /usr/local/bin/cloud-ops-manager-api'
 
       - name: Create or restart systemd service
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
-          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          host: ${{ env.CLOUD_OPS_MANAGER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.CLOUD_OPS_MANAGER_API_EC2_USERNAME }}
           key_path: ec2-temp-key
           script: |
-            SERVICE_NAME="resource-provisioner-api"
+            SERVICE_NAME="cloud-ops-manager-api"
             SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
             
             if [ ! -f "$SERVICE_FILE" ]; then
               echo "Creating systemd service..."
               sudo bash -c "cat > $SERVICE_FILE <<EOF
               [Unit]
-              Description=Resource Provisioner API
+              Description=CloudOps Manager API
               After=network.target
             
               [Service]
@@ -116,11 +110,11 @@ jobs:
       - name: Check service status
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.RESOURCE_PROVISIONER_API_EC2_PUBLIC_IP }}
-          username: ${{ env.RESOURCE_PROVISIONER_API_EC2_USERNAME }}
+          host: ${{ env.CLOUD_OPS_MANAGER_API_EC2_PUBLIC_IP }}
+          username: ${{ env.CLOUD_OPS_MANAGER_API_EC2_USERNAME }}
           key_path: ec2-temp-key
           script: |
-            SERVICE_NAME="resource-provisioner-api"
+            SERVICE_NAME="cloud-ops-manager-api"
             STATUS=$(sudo systemctl is-active $SERVICE_NAME)
 
             if [ "$STATUS" = "active" ]; then

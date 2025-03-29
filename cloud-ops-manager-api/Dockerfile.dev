@@ -12,6 +12,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /usr/src/app/bin/resource-provisioner-api ./cmd/server
+RUN go build -o /usr/src/app/bin/cloud-ops-manager-api ./cmd/server
 
-CMD ["/usr/src/app/bin/resource-provisioner-api"]
+CMD ["/usr/src/app/bin/cloud-ops-manager-api"]

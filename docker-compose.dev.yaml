@@ -1,5 +1,5 @@
 include:
-  - ./resource-provisioner-api/docker-compose.dev.yaml
+  - cloud-ops-manager-api/docker-compose.dev.yaml
   - ./resource-provisioner-consumer/docker-compose.dev.yaml
 
 services:

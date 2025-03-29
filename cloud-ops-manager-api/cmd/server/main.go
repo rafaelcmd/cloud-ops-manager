@@ -17,19 +17,9 @@ var (
 )
 
 func main() {
-	//brokers := []string{"kafka:9092"}
-	//topic := "resource-provisioner"
-
-	//repo := repository.NewKafkaResourceRepository(brokers, topic)
-	//defer repo.Close()
-
-	//useCase := usecase.NewResourceUseCase(repo)
-
-	//router := httpdelivery.SetupRoutes(useCase)
-
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
 	if err != nil {
-		log.Fatalf("unable to load AWS config, %v", err)
+		log.Fatalf("Unable to load AWS config, %v", err)
 	}
 
 	sqsClient = sqs.NewFromConfig(cfg)
@@ -37,13 +27,16 @@ func main() {
 	queueUrl = "https://sqs.us-east-1.amazonaws.com/471112701237/resource_provisioner_queue"
 
 	log.Printf("Server running on port 5000")
-	http.ListenAndServe(":5000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	err = http.ListenAndServe(":5000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/resource-provisioner" {
 			handleProvisionRequest(w, r)
 		} else {
 			http.NotFound(w, r)
 		}
 	}))
+	if err != nil {
+		log.Fatalf("Failed to start server, %v", err)
+	}
 }
 
 func handleProvisionRequest(w http.ResponseWriter, r *http.Request) {
@@ -63,12 +56,14 @@ func handleProvisionRequest(w http.ResponseWriter, r *http.Request) {
 		QueueUrl:    aws.String(queueUrl),
 		MessageBody: aws.String(string(body)),
 	})
-
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to send message: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Message sent to SQS"))
+	_, err = w.Write([]byte("Message sent to SQS"))
+	if err != nil {
+		log.Printf("Failed to write response, %v", err)
+	}
 }
