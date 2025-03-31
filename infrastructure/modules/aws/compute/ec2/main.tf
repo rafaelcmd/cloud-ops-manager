@@ -66,7 +66,7 @@ resource "aws_iam_role_policy" "ssm_access" {
         {
             Effect = "Allow"
             Action = [
-            "ssm:GetParameters"
+            "ssm:GetParameter"
             ]
             Resource = "*"
         }
