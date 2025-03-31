@@ -56,6 +56,24 @@ resource "aws_iam_role_policy" "sqs_access" {
   })
 }
 
+resource "aws_iam_role_policy" "ssm_access" {
+  name = "AllowSSMGetParameters"
+  role = aws_iam_role.ec2_role.name
+
+    policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+        {
+            Effect = "Allow"
+            Action = [
+            "ssm:GetParameters"
+            ]
+            Resource = "*"
+        }
+        ]
+    })
+}
+
 resource "aws_instance" "resource-provisioner-api" {
   ami                         = "ami-08b5b3a93ed654d19"
   instance_type               = "t2.micro"
