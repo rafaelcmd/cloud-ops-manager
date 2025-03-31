@@ -7,12 +7,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"log"
 	"net/http"
 )
 
 var (
 	sqsClient *sqs.Client
+	ssmClient *ssm.Client
 	queueUrl  string
 )
 
@@ -23,8 +25,16 @@ func main() {
 	}
 
 	sqsClient = sqs.NewFromConfig(cfg)
+	ssmClient = ssm.NewFromConfig(cfg)
 
-	queueUrl = "https://sqs.us-east-1.amazonaws.com/471112701237/resource_provisioner_queue"
+	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput{
+		Name: aws.String("/RESOURCE_PROVISIONER_API/SQS_QUEUE_URL"),
+	})
+	if err != nil {
+		log.Fatalf("Unable to get SQS queue URL from Parameter Store, %v", err)
+	}
+
+	queueUrl = *param.Parameter.Value
 
 	log.Printf("Server running on port 5000")
 	err = http.ListenAndServe(":5000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

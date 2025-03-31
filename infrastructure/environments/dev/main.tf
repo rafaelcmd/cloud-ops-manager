@@ -27,16 +27,3 @@ module "aws_api_gateway" {
 module "aws_sqs_queue" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/sqs?ref=main"
 }
-
-// Criar pasta para outputs
-output "cloud_ops_manager_api_host" {
-  value = module.aws_ec2.resource_provisioner_api_host
-}
-
-output "cloud_ops_manager_api_username" {
-  value = module.aws_ec2.resource_provisioner_api_username
-}
-
-output "cloud_ops_manager_api_instance_id" {
-  value = module.aws_ec2.resource_provisioner_api_instance_id
-}

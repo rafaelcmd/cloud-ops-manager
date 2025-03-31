@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: cloud-ops-manager-api
+  name: cloud-ops-manager-api
+spec:
+  containers:
+  - name: cloud-ops-manager-api
+    image: rafaelcmd/cloud-ops-manager-api:v1
+    volumeMounts:
+      - mountPath: "/.aws"
+        name: aws-credentials
+        readOnly: true
+    env:
+      - name: AWS_SHARED_CREDENTIALS_FILE
+        value: "/.aws/credentials"
+    ports:
+      - containerPort: 5000
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+
+  volumes:
+    - name: aws-credentials
+      secret:
+        secretName: aws-credentials
