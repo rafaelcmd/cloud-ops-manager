@@ -28,7 +28,7 @@ func main() {
 	ssmClient = ssm.NewFromConfig(cfg)
 
 	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput{
-		Name: aws.String("/RESOURCE_PROVISIONER_API/SQS_QUEUE_URL"),
+		Name: aws.String("/CLOUD_OPS_MANAGER/SQS_QUEUE_URL"),
 	})
 	if err != nil {
 		log.Fatalf("Unable to get SQS queue URL from Parameter Store, %v", err)
