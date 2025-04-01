@@ -9,7 +9,3 @@ output "cloud_ops_manager_api_username" {
 output "cloud_ops_manager_api_instance_id" {
   value = module.aws_ec2.resource_provisioner_api_instance_id
 }
-
-output "cloud_ops_manager_sqs_queue_url" {
-  value = module.aws_sqs_queue.sqs_queue_url
-}
