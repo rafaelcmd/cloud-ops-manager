@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: cloud-ops-manager-api
 spec:
+  type: NodePort
   selector:
     app: cloud-ops-manager-api
   ports:

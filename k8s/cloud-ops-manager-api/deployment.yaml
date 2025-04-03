@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-ops-manager-api-deployment
+  labels:
+    app: cloud-ops-manager-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cloud-ops-manager-api
+  strategy: {}
+  template:
+    metadata:
+      name: cloud-ops-manager-api-deployment
+      labels:
+        app: cloud-ops-manager-api
+    spec:
+      containers:
+        - name: cloud-ops-manager-api
+          image: rafaelcmd/cloud-ops-manager-api:v2
+          volumeMounts:
+            - mountPath: "/.aws"
+              name: aws-credentials
+              readOnly: true
+          env:
+            - name: AWS_SHARED_CREDENTIALS_FILE
+              value: "/.aws/credentials"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 250m
+              memory: 128Mi
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              protocol: TCP
+      restartPolicy: Always
+
+      volumes:
+        - name: aws-credentials
+          secret:
+            secretName: aws-credentials
