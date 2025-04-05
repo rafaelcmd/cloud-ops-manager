@@ -91,6 +91,7 @@ resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
   }
 
   depends_on = [
-    aws_api_gateway_stage.cloud_ops_manager_api_dev_stage
+    aws_api_gateway_stage.cloud_ops_manager_api_dev_stage,
+    aws_api_gateway_deployment.cloud_ops_manager_api
   ]
 }
