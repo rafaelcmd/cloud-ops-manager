@@ -76,3 +76,18 @@ resource "aws_api_gateway_stage" "cloud_ops_manager_api" {
   rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   deployment_id = aws_api_gateway_deployment.cloud_ops_manager_api.id
 }
+
+resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
+  name        = "Cloud_Ops_Manager_API_Usage_Plan"
+  description = "Usage plan for Cloud Ops Manager API"
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+    stage  = aws_api_gateway_stage.cloud_ops_manager_api.stage_name
+  }
+
+  throttle_settings {
+    burst_limit = 50
+    rate_limit  = 10
+  }
+}
