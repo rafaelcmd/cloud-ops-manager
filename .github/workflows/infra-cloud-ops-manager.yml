@@ -45,14 +45,3 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Save EC2 Metadata to AWS SSM Parameter Store
-        run: |
-          EC2_PUBLIC_IP=$(terraform output -raw cloud_ops_manager_api_host)
-          EC2_USERNAME=$(terraform output -raw cloud_ops_manager_api_username)
-          EC2_INSTANCE_ID=$(terraform output -raw cloud_ops_manager_api_instance_id)
-
-          echo "Saving EC2 Public IP, Username, and Instance ID to SSM..."
-          aws ssm put-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_PUBLIC_IP" --value "$EC2_PUBLIC_IP" --type "String" --overwrite
-          aws ssm put-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_USERNAME" --value "$EC2_USERNAME" --type "String" --overwrite
-          aws ssm put-parameter --name "/CLOUD_OPS_MANAGER_API/EC2_INSTANCE_ID" --value "$EC2_INSTANCE_ID" --type "String" --overwrite
