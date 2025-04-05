@@ -1,17 +1,17 @@
 resource "aws_ssm_parameter" "cloud_ops_manager_api_ec2_host" {
-  name  = "/CLOUD-OPS_MANAGER_API/EC2_PUBLIC_IP"
+  name  = "/CLOUD_OPS_MANAGER_API/EC2_PUBLIC_IP"
   type  = "String"
   value = aws_instance.cloud_ops_manager_api_ec2.public_ip
 }
 
 resource "aws_ssm_parameter" "cloud_ops_manager_api_ec2_username" {
-  name  = "/CLOUD-OPS_MANAGER_API/EC2_USERNAME"
+  name  = "/CLOUD_OPS_MANAGER_API/EC2_USERNAME"
   type  = "String"
   value = "ec2-user"
 }
 
 resource "aws_ssm_parameter" "cloud_ops_manager_api_ec2_instance_id" {
-  name  = "/CLOUD-OPS_MANAGER_API/EC2_INSTANCE_ID"
+  name  = "/CLOUD_OPS_MANAGER_API/EC2_INSTANCE_ID"
   type  = "String"
   value = aws_instance.cloud_ops_manager_api_ec2.id
 }
