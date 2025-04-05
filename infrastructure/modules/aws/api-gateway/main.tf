@@ -83,7 +83,7 @@ resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
 
   api_stages {
     api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-    stage  = aws_api_gateway_stage.cloud_ops_manager_api.stage_name
+    stage  = "dev"
   }
 
   throttle_settings {
