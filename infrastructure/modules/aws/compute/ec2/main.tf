@@ -82,7 +82,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
             Action = [
               "ssm:GetParameter"
             ]
-            Resource = aws_instance.cloud_ops_manager_api_ec2.arn
+            Resource = var.sqs_queue_parameter_arn
         }
       ]
   })
