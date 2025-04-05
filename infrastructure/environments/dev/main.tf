@@ -20,7 +20,7 @@ module "aws_ec2" {
 module "aws_api_gateway" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/api-gateway?ref=main"
 
-  cloud_ops_manager_api_ec2_host = module.aws_ec2.cloud_ops_manager_api_ec2_host
+  resource_provisioner_api_host = module.aws_ec2.cloud_ops_manager_api_ec2_host
   aws_region                    = "us-east-1"
   stage_name                    = "dev"
 }
