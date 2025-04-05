@@ -72,7 +72,7 @@ func handleProvisionRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	_, err = w.Write([]byte("Message sent to SQS"))
+	_, err = w.Write([]byte("Message successfully enqueued for processing."))
 	if err != nil {
 		log.Printf("Failed to write response, %v", err)
 	}
