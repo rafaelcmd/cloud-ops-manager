@@ -124,26 +124,7 @@ resource "aws_api_gateway_stage" "cloud_ops_manager_api_dev_stage" {
   stage_name    = "dev"
   rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   deployment_id = aws_api_gateway_deployment.cloud_ops_manager_api.id
-
-  # cache_cluster_enabled = true
-  # cache_cluster_size    = "0.5"
 }
-
-# resource "aws_api_gateway_method_settings" "cloud_ops_manager_api_method_settings" {
-#   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-#   stage_name  = aws_api_gateway_stage.cloud_ops_manager_api_dev_stage.stage_name
-#
-#   method_path = "${aws_api_gateway_resource.cloud_ops_manager_api_root.path_part}/${aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method}"
-#
-#   settings {
-#     caching_enabled      = true
-#     cache_ttl_in_seconds = 300
-#   }
-#
-#   depends_on = [
-#     aws_api_gateway_stage.cloud_ops_manager_api_dev_stage
-#   ]
-# }
 
 resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
   name        = "CloudOps Manager API Usage Plan"
