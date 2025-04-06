@@ -1,13 +1,13 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import check from 'k6';
 
 export let options = {
-    vus: 100,           // 100 virtual users
-    duration: '1m',     // Run for 1 minute
+    vus: 110,
+    duration: '1s',
 };
 
 export default function () {
-    const url = 'http://cloud-ops-manager-api:5000/resource-provisioner';
+    const url = 'https://dhcuur0kf0.execute-api.us-east-1.amazonaws.com/dev/resource-provisioner';
 
     const payload = JSON.stringify({
         "id": "resource-123",
@@ -18,6 +18,7 @@ export default function () {
     const params = {
         headers: {
             'Content-Type': 'application/json',
+            'x-api-key': 'N1ygeXVmta9YTkt2H3kYY9fONU9TSWEP2eWWecDR'
         },
     };
 
@@ -25,8 +26,7 @@ export default function () {
 
     check(res, {
         'status is 202': (r) => r.status === 202,
+        'status is 429': (r) => r.status === 429,
         'response time is less than 200ms': (r) => r.timings.duration < 200,
     });
-
-    sleep(1);
 }
