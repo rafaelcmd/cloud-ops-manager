@@ -57,16 +57,16 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_sqs_access" {
   role = aws_iam_role.cloud_ops_manager_api_ec2_role.name
 
   policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
+    Version = "2012-10-17"
+    Statement = [
       {
-          Effect = "Allow"
-          Action = [
-            "sqs:SendMessage",
-          ]
-          Resource = var.sqs_queue_arn
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+        ]
+        Resource = var.sqs_queue_arn
       }
-      ]
+    ]
   })
 }
 
@@ -75,15 +75,15 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
   role = aws_iam_role.cloud_ops_manager_api_ec2_role.name
 
   policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-            Effect = "Allow"
-            Action = [
-              "ssm:GetParameter"
-            ]
-            Resource = var.sqs_queue_parameter_arn
-        }
-      ]
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter"
+        ]
+        Resource = var.sqs_queue_parameter_arn
+      }
+    ]
   })
 }

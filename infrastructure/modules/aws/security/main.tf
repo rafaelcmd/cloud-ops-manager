@@ -1,7 +1,7 @@
 resource "aws_security_group" "cloud_ops_manager_api_sg" {
   name        = "cloud-ops-manager-api-sg"
   description = "Security group for CloudOps Manager API"
-  vpc_id = var.vpc_id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "Allow HTTP access from API Gateway"
@@ -25,11 +25,11 @@ resource "aws_security_group" "cloud_ops_manager_api_sg" {
 }
 
 resource "aws_security_group_rule" "allow_ssh" {
-  type              = "ingress"
-  from_port         = 22
-  to_port           = 22
-  protocol          = "tcp"
-  security_group_id = aws_security_group.cloud_ops_manager_api_sg.id
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cloud_ops_manager_api_sg.id
   source_security_group_id = aws_security_group.cloud_ops_manager_api_sg.id
-  description       = "Allow SSH access from the same security group"
+  description              = "Allow SSH access from the same security group"
 }
