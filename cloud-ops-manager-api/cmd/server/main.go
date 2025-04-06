@@ -38,8 +38,10 @@ func main() {
 
 	log.Printf("Server running on port 5000")
 	err = http.ListenAndServe(":5000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/resource-provisioner" {
-			handleProvisionRequest(w, r)
+		if r.URL.Path == "/resource-provisioner" && r.Method == http.MethodPost {
+			handleProvisionPOSTRequest(w, r)
+		} else if r.URL.Path == "/resource-provisioner" && r.Method == http.MethodGet {
+			handleProvisionGETRequest(w, r)
 		} else {
 			http.NotFound(w, r)
 		}
@@ -49,7 +51,7 @@ func main() {
 	}
 }
 
-func handleProvisionRequest(w http.ResponseWriter, r *http.Request) {
+func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
 	payload := map[string]interface{}{
 		"action":   "provision",
 		"resource": "ec2",
@@ -73,6 +75,14 @@ func handleProvisionRequest(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 	_, err = w.Write([]byte("Message successfully enqueued for processing."))
+	if err != nil {
+		log.Printf("Failed to write response, %v", err)
+	}
+}
+
+func handleProvisionGETRequest(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte("GET request received."))
 	if err != nil {
 		log.Printf("Failed to write response, %v", err)
 	}

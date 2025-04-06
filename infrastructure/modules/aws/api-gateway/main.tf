@@ -17,6 +17,50 @@ resource "aws_api_gateway_method" "cloud_ops_manager_api_root_post" {
   api_key_required = true
 }
 
+resource "aws_api_gateway_method" "cloud_ops_manager_api_root_get" {
+  rest_api_id      = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id      = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
+}
+
+resource "aws_api_gateway_integration" "cloud_ops_manager_api_root_get_ec2" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method = aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method
+
+  integration_http_method = "GET"
+  type                    = "HTTP"
+  uri                     = "http://${var.cloud_ops_manager_api_host}:5000/resource-provisioner"
+}
+
+resource "aws_api_gateway_method_response" "cloud_ops_manager_api_root_get_200" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method = aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method
+  status_code = "200"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_root_get_200" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method = aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method
+  status_code = aws_api_gateway_method_response.cloud_ops_manager_api_root_get_200.status_code
+
+  response_templates = {
+    "application/json" = ""
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.cloud_ops_manager_api_root_get_ec2
+  ]
+}
+
 resource "aws_api_gateway_api_key" "cloud_ops_manager_api_key" {
   name        = "Cloud_Ops_Manager_API_Key"
   description = "API Key for Cloud Ops Manager API"
@@ -95,10 +139,10 @@ resource "aws_api_gateway_method_settings" "cloud_ops_manager_api_method_setting
   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   stage_name  = aws_api_gateway_stage.cloud_ops_manager_api_dev_stage.stage_name
 
-  method_path = "${aws_api_gateway_resource.cloud_ops_manager_api_root.path_part}/${aws_api_gateway_method.cloud_ops_manager_api_root_post.http_method}"
+  method_path = "${aws_api_gateway_resource.cloud_ops_manager_api_root.path_part}/${aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method}"
 
   settings {
-    caching_enabled = true
+    caching_enabled      = true
     cache_ttl_in_seconds = 300
   }
 
