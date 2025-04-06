@@ -6,6 +6,7 @@ module "aws_security" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/security?ref=main"
 
   vpc_id = module.aws_networking.vpc_id
+  public_subnet_ip_cidr = module.aws_networking.public_subnet_ip_cidr
 }
 
 module "aws_ec2" {
