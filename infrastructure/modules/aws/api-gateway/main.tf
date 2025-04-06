@@ -98,9 +98,8 @@ resource "aws_api_gateway_method_settings" "cloud_ops_manager_api_method_setting
   method_path = "${aws_api_gateway_resource.cloud_ops_manager_api_root.path_part}/${aws_api_gateway_method.cloud_ops_manager_api_root_post.http_method}"
 
   settings {
-    metrics_enabled    = true
-    logging_level      = "INFO"
-    data_trace_enabled = true
+    caching_enabled = true
+    cache_ttl_in_seconds = 300
   }
 
   depends_on = [
