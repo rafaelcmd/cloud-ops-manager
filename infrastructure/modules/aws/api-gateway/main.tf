@@ -161,3 +161,13 @@ resource "aws_api_gateway_usage_plan_key" "cloud_ops_manager_api_usage_plan_key"
   key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.cloud_ops_manager_api_usage_plan.id
 }
+
+resource "aws_api_gateway_authorizer" "cloud_ops_manager_api_cognito_auth" {
+  name        = "cloud-ops-manager-api-cognito-auth"
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  type        = "COGNITO_USER_POOLS"
+  provider_arns = [
+    var.cloud_ops_manager_api_user_pool_arn
+  ]
+  identity_source = "method.request.header.Authorization"
+}
