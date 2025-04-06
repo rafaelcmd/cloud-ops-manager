@@ -1,5 +1,5 @@
 resource "aws_api_gateway_rest_api" "cloud_ops_manager_api" {
-  name        = "Cloud_Ops_Manager_API"
+  name        = "CloudOps Manager API"
   description = "API Gateway for Cloud Ops Manager API"
 }
 
@@ -146,7 +146,7 @@ resource "aws_api_gateway_method_settings" "cloud_ops_manager_api_method_setting
 }
 
 resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
-  name        = "Cloud_Ops_Manager_API_Usage_Plan"
+  name        = "CloudOps Manager API Usage Plan"
   description = "Usage plan for Cloud Ops Manager API"
 
   api_stages {
@@ -166,12 +166,12 @@ resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
 }
 
 resource "aws_api_gateway_api_key" "cloud_ops_manager_api_key" {
-  name        = "Cloud_Ops_Manager_API_Key"
+  name        = "CloudOps Manager API Key"
   description = "API Key for Cloud Ops Manager API"
   enabled     = true
 
   tags = {
-    Name = "Cloud_Ops_Manager_API_Key"
+    Name = "CloudOps Manager API Key"
   }
 }
 
