@@ -9,14 +9,6 @@ resource "aws_api_gateway_resource" "cloud_ops_manager_api_root" {
   path_part   = "resource-provisioner"
 }
 
-resource "aws_api_gateway_method" "cloud_ops_manager_api_root_post" {
-  rest_api_id      = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  resource_id      = aws_api_gateway_resource.cloud_ops_manager_api_root.id
-  http_method      = "POST"
-  authorization    = "NONE"
-  api_key_required = true
-}
-
 resource "aws_api_gateway_method" "cloud_ops_manager_api_root_get" {
   rest_api_id      = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   resource_id      = aws_api_gateway_resource.cloud_ops_manager_api_root.id
@@ -61,14 +53,12 @@ resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_root_get_
   ]
 }
 
-resource "aws_api_gateway_api_key" "cloud_ops_manager_api_key" {
-  name        = "Cloud_Ops_Manager_API_Key"
-  description = "API Key for Cloud Ops Manager API"
-  enabled     = true
-
-  tags = {
-    Name = "Cloud_Ops_Manager_API_Key"
-  }
+resource "aws_api_gateway_method" "cloud_ops_manager_api_root_post" {
+  rest_api_id      = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id      = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "cloud_ops_manager_api_root_post_ec2" {
@@ -122,7 +112,11 @@ resource "aws_api_gateway_deployment" "cloud_ops_manager_api" {
     aws_api_gateway_method.cloud_ops_manager_api_root_post,
     aws_api_gateway_integration.cloud_ops_manager_api_root_post_ec2,
     aws_api_gateway_method_response.cloud_ops_manager_api_root_post_202,
-    aws_api_gateway_integration_response.cloud_ops_manager_api_root_post_202
+    aws_api_gateway_integration_response.cloud_ops_manager_api_root_post_202,
+    aws_api_gateway_method.cloud_ops_manager_api_root_get,
+    aws_api_gateway_integration.cloud_ops_manager_api_root_get_ec2,
+    aws_api_gateway_method_response.cloud_ops_manager_api_root_get_200,
+    aws_api_gateway_integration_response.cloud_ops_manager_api_root_get_200
   ]
 }
 
@@ -169,6 +163,16 @@ resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
     aws_api_gateway_stage.cloud_ops_manager_api_dev_stage,
     aws_api_gateway_deployment.cloud_ops_manager_api
   ]
+}
+
+resource "aws_api_gateway_api_key" "cloud_ops_manager_api_key" {
+  name        = "Cloud_Ops_Manager_API_Key"
+  description = "API Key for Cloud Ops Manager API"
+  enabled     = true
+
+  tags = {
+    Name = "Cloud_Ops_Manager_API_Key"
+  }
 }
 
 resource "aws_api_gateway_usage_plan_key" "cloud_ops_manager_api_usage_plan_key" {
