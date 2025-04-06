@@ -10,10 +10,10 @@ resource "aws_api_gateway_resource" "cloud_ops_manager_api_root" {
 }
 
 resource "aws_api_gateway_method" "cloud_ops_manager_api_root_post" {
-  rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  resource_id   = aws_api_gateway_resource.cloud_ops_manager_api_root.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id      = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method      = "POST"
+  authorization    = "NONE"
   api_key_required = true
 }
 
@@ -23,7 +23,7 @@ resource "aws_api_gateway_api_key" "cloud_ops_manager_api_key" {
   enabled     = true
 
   tags = {
-      Name = "Cloud_Ops_Manager_API_Key"
+    Name = "Cloud_Ops_Manager_API_Key"
   }
 }
 
@@ -86,6 +86,26 @@ resource "aws_api_gateway_stage" "cloud_ops_manager_api_dev_stage" {
   stage_name    = "dev"
   rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   deployment_id = aws_api_gateway_deployment.cloud_ops_manager_api.id
+
+  cache_cluster_enabled = true
+  cache_cluster_size    = "0.5"
+}
+
+resource "aws_api_gateway_method_settings" "cloud_ops_manager_api_method_settings" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  stage_name  = aws_api_gateway_stage.cloud_ops_manager_api_dev_stage.stage_name
+
+  method_path = "${aws_api_gateway_resource.cloud_ops_manager_api_root.path_part}/${aws_api_gateway_method.cloud_ops_manager_api_root_post.http_method}"
+
+  settings {
+    metrics_enabled    = true
+    logging_level      = "INFO"
+    data_trace_enabled = true
+  }
+
+  depends_on = [
+    aws_api_gateway_stage.cloud_ops_manager_api_dev_stage
+  ]
 }
 
 resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
@@ -109,7 +129,7 @@ resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
 }
 
 resource "aws_api_gateway_usage_plan_key" "cloud_ops_manager_api_usage_plan_key" {
-  key_id = aws_api_gateway_api_key.cloud_ops_manager_api_key.id
-  key_type = "API_KEY"
+  key_id        = aws_api_gateway_api_key.cloud_ops_manager_api_key.id
+  key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.cloud_ops_manager_api_usage_plan.id
 }
