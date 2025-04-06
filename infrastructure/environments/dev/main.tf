@@ -21,9 +21,13 @@ module "aws_api_gateway" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/api-gateway?ref=main"
 
   cloud_ops_manager_api_host          = module.aws_ec2.cloud_ops_manager_api_ec2_host
-  cloud_ops_manager_api_user_pool_arn = module.aws_api_gateway.cloud_ops_manager_api_user_pool_arn
+  cloud_ops_manager_api_user_pool_arn = module.aws_cognito.cloud_ops_manager_api_user_pool_arn
 }
 
 module "aws_sqs_queue" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/sqs?ref=main"
+}
+
+module "aws_cognito" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/cognito?ref=main"
 }
