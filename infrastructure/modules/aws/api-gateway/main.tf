@@ -98,7 +98,8 @@ resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
   }
 
   throttle_settings {
-    rate_limit  = 1
+    rate_limit  = 100
+    burst_limit = 50
   }
 
   depends_on = [
