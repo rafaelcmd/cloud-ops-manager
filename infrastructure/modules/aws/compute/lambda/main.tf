@@ -1,10 +1,10 @@
 resource "aws_lambda_function" "auth_lambda" {
-  filename = "${path.module}/lambda/auth.zip"
+  filename = "${path.module}/auth.zip"
   function_name = "auth_lambda"
   role = aws_iam_role.lambda_exec.arn
   handler = "auth.handler"
   runtime = "nodejs18.x"
-  source_code_hash = filebase64sha256("${path.module}/lambda/auth.zip")
+  source_code_hash = filebase64sha256("${path.module}/auth.zip")
 
   environment {
     variables = {

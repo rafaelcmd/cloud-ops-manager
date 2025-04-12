@@ -31,3 +31,10 @@ module "aws_sqs_queue" {
 module "aws_cognito" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/cognito?ref=main"
 }
+
+module "aws_lambda" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/compute/lambda?ref=main"
+
+  user_pool_id = module.aws_cognito.cloud_ops_manager_api_user_pool_id
+  user_pool_client_id = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
+}
