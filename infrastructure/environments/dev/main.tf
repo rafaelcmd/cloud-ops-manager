@@ -38,5 +38,5 @@ module "aws_lambda" {
 
   user_pool_id        = module.aws_cognito.cloud_ops_manager_api_user_pool_id
   user_pool_client_id = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
-  api_execution_arn   = module.aws_api_gateway.execution_arn
+  api_execution_arn   = "${module.aws_api_gateway.execution_arn}/*/*"
 }
