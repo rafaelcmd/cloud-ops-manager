@@ -7,7 +7,7 @@ exports.handler = async (event) => {
 
         const params = {
             AuthFlow: 'USER_PASSWORD_AUTH',
-            ClientId: process.env.COGNITO_CLIENT_ID,
+            ClientId: await new AWS.SSM().getParameter({ Name: '/CLOUD_OPS_MANAGER_COGNITO/CLIENT_ID' }).promise().then(data => data.Parameter.Value),
             AuthParameters: {
                 USERNAME: body.username,
                 PASSWORD: body.password
