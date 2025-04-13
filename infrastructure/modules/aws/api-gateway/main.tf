@@ -175,7 +175,7 @@ resource "aws_api_gateway_method" "cloud_ops_manager_api_post_auth" {
   authorization = "NONE"
 }
 
-resource "aws_api_gateway_integration" "cloud_ops_manager_api_post_auth_ec2" {
+resource "aws_api_gateway_integration" "cloud_ops_manager_api_post_auth_lambda" {
   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   resource_id = aws_api_gateway_resource.cloud_ops_manager_api_auth.id
   http_method = aws_api_gateway_method.cloud_ops_manager_api_post_auth.http_method

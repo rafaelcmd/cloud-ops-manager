@@ -42,5 +42,5 @@ resource "aws_lambda_permission" "api_gateway_invoke_auth" {
   function_name = aws_lambda_function.auth_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  source_arn = var.api_execution_arn
+  source_arn    = "${var.api_execution_arn}/*/*"
 }
