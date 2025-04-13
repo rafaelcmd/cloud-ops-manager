@@ -162,12 +162,25 @@ resource "aws_api_gateway_usage_plan_key" "cloud_ops_manager_api_usage_plan_key"
   usage_plan_id = aws_api_gateway_usage_plan.cloud_ops_manager_api_usage_plan.id
 }
 
-resource "aws_api_gateway_authorizer" "cloud_ops_manager_api_cognito_auth" {
-  name        = "cloud-ops-manager-api-cognito-auth"
+resource "aws_api_gateway_resource" "cloud_ops_manager_api_auth" {
   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  type        = "COGNITO_USER_POOLS"
-  provider_arns = [
-    var.cloud_ops_manager_api_user_pool_arn
-  ]
-  identity_source = "method.request.header.Authorization"
+  parent_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.root_resource_id
+  path_part   = "auth"
+}
+
+resource "aws_api_gateway_method" "cloud_ops_manager_api_post_auth" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_auth.id
+  http_method = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "cloud_ops_manager_api_post_auth_ec2" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_auth.id
+  http_method = aws_api_gateway_method.cloud_ops_manager_api_post_auth.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.auth_lambda_invoke_arn
 }

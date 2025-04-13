@@ -7,3 +7,8 @@ variable "cloud_ops_manager_api_user_pool_arn" {
   description = "ARN of the Cognito User Pool for the Cloud Ops Manager API"
   type        = string
 }
+
+variable "auth_lambda_invoke_arn" {
+  description = "Invoke ARN of the Lambda function for authentication"
+  type        = string
+}
