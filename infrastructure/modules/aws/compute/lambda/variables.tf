@@ -7,3 +7,8 @@ variable "user_pool_client_id" {
   description = "The ID of the Cognito User Pool Client"
   type        = string
 }
+
+variable "api_execution_arn" {
+  description = "The ARN of the API Gateway execution role"
+  type        = string
+}
