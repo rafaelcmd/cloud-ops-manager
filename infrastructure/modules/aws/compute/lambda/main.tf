@@ -42,5 +42,28 @@ resource "aws_lambda_permission" "api_gateway_invoke_auth" {
   function_name = aws_lambda_function.auth_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  source_arn    = "${var.api_execution_arn}/*/*"
+  source_arn    = "${var.api_execution_arn}/*/*/*"
+}
+
+resource "aws_iam_policy" "lambda_cognito_policy" {
+  name        = "lambda_cognito_policy"
+  description = "Policy for Lambda to access Cognito"
+
+  policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+      {
+          Effect = "Allow"
+          Action = [
+          "cognito-idp:InitiateAuth",
+          ]
+          Resource = "*"
+      }
+      ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_cognito_policy_attachment" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_cognito_policy.arn
 }
