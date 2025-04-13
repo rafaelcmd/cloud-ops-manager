@@ -38,10 +38,14 @@ exports.handler = async (event) => {
             }
         };
     } catch (error) {
+        console.error('Error during authentication:', error);
+
         return {
             statusCode: 401,
             body: JSON.stringify({
                 message: 'Authentication failed',
+                code: error.name,
+                message: error.message
             }),
             headers: {
                 'Content-Type': 'application/json',
