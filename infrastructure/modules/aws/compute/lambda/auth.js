@@ -9,7 +9,7 @@ exports.handler = async (event) => {
         const body = JSON.parse(event.body);
 
         const parameterResponse = await ssmClient.send(new GetParameterCommand({
-            Name: '/cognito/userPoolId',
+            Name: '/CLOUD_OPS_MANAGER_COGNITO/CLIENT_ID',
             WithDecryption: true
         }));
 
