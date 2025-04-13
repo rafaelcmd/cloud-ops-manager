@@ -22,6 +22,7 @@ module "aws_api_gateway" {
 
   cloud_ops_manager_api_host          = module.aws_ec2.cloud_ops_manager_api_ec2_host
   cloud_ops_manager_api_user_pool_arn = module.aws_cognito.cloud_ops_manager_api_user_pool_arn
+  auth_lambda_invoke_arn              = module.aws_lambda.invoke_arn
 }
 
 module "aws_sqs_queue" {
