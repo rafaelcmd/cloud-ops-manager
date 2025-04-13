@@ -1,10 +1,10 @@
-import { CognitoIdentityProviderClient, InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
-import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+const { CognitoIdentityProviderClient, InitiateAuthCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { SSMClient, GetParameterCommand } = require('@aws-sdk/client-ssm');
 
 const cognitoClient = new CognitoIdentityProviderClient();
 const ssmClient = new SSMClient();
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
     try {
         const body = JSON.parse(event.body);
 
