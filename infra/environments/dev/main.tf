@@ -11,7 +11,7 @@ module "aws_security" {
 module "aws_ec2" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/ec2?ref=main"
 
-  cloud_ops_manager_public_subnet_id           = module.aws_networking.cloud_ops_manager_public_subnet_id
+  cloud_ops_manager_public_subnet_id           = module.aws_networking.cloud_ops_manager_public_subnet_id_a
   cloud_ops_manager_security_group_id          = module.aws_security.cloud_ops_manager_security_group_id
   provisioner_consumer_sqs_queue_arn           = module.aws_sqs_queue.provisioner_consumer_sqs_queue_arn
   provisioner_consumer_sqs_queue_parameter_arn = module.aws_sqs_queue.provisioner_consumer_sqs_queue_parameter_arn
