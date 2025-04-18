@@ -11,8 +11,8 @@ module "aws_security" {
 module "aws_ec2" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/ec2?ref=main"
 
-  cloud_ops_manager_public_subnet_id        = module.aws_networking.cloud_ops_manager_public_subnet_id
-  cloud_ops_manager_security_group_id       = module.aws_security.cloud_ops_manager_security_group_id
+  cloud_ops_manager_public_subnet_id           = module.aws_networking.cloud_ops_manager_public_subnet_id
+  cloud_ops_manager_security_group_id          = module.aws_security.cloud_ops_manager_security_group_id
   provisioner_consumer_sqs_queue_arn           = module.aws_sqs_queue.provisioner_consumer_sqs_queue_arn
   provisioner_consumer_sqs_queue_parameter_arn = module.aws_sqs_queue.provisioner_consumer_sqs_queue_parameter_arn
 }
@@ -20,8 +20,8 @@ module "aws_ec2" {
 module "aws_api_gateway" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/api-gateway?ref=main"
 
-  cloud_ops_manager_api_host          = module.aws_ec2.cloud_ops_manager_api_ec2_host
-  auth_lambda_invoke_arn              = module.aws_lambda.cloud_ops_manager_api_auth_lambda_invoke_arn
+  cloud_ops_manager_api_host = module.aws_ec2.cloud_ops_manager_api_ec2_host
+  auth_lambda_invoke_arn     = module.aws_lambda.cloud_ops_manager_api_auth_lambda_invoke_arn
 }
 
 module "aws_sqs_queue" {
@@ -35,7 +35,7 @@ module "aws_cognito" {
 module "aws_lambda" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/lambda?ref=main"
 
-  cloud_ops_manager_api_user_pool_id        = module.aws_cognito.cloud_ops_manager_api_user_pool_id
-  cloud_ops_manager_api_user_pool_client_id = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
-  cloud_ops_manager_api_deployment_execution_arn   = module.aws_api_gateway.cloud_ops_manager_api_deployment_execution_arn
+  cloud_ops_manager_api_user_pool_id             = module.aws_cognito.cloud_ops_manager_api_user_pool_id
+  cloud_ops_manager_api_user_pool_client_id      = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
+  cloud_ops_manager_api_deployment_execution_arn = module.aws_api_gateway.cloud_ops_manager_api_deployment_execution_arn
 }
