@@ -5,7 +5,7 @@ module "aws_networking" {
 module "aws_security" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/security?ref=main"
 
-  vpc_id = module.aws_networking.vpc_id
+  cloud_ops_manager_vpc_id = module.aws_networking.cloud_ops_manager_vpc_id
 }
 
 module "aws_ec2" {
@@ -21,7 +21,6 @@ module "aws_api_gateway" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/api-gateway?ref=main"
 
   cloud_ops_manager_api_host          = module.aws_ec2.cloud_ops_manager_api_ec2_host
-  cloud_ops_manager_api_user_pool_arn = module.aws_cognito.cloud_ops_manager_api_user_pool_arn
   auth_lambda_invoke_arn              = module.aws_lambda.cloud_ops_manager_api_auth_lambda_invoke_arn
 }
 
@@ -38,5 +37,5 @@ module "aws_lambda" {
 
   cloud_ops_manager_api_user_pool_id        = module.aws_cognito.cloud_ops_manager_api_user_pool_id
   cloud_ops_manager_api_user_pool_client_id = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
-  cloud_ops_manager_api_deployment_execution_arn   = module.aws_api_gateway.execution_arn
+  cloud_ops_manager_api_deployment_execution_arn   = module.aws_api_gateway.cloud_ops_manager_api_deployment_execution_arn
 }
