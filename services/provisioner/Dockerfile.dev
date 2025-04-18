@@ -12,6 +12,6 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /usr/src/app/bin/resource-provisioner-consumer ./cmd
+RUN go build -o /usr/src/app/bin/resource-provisioner-consumer ./cmd/consumer/main.go
 
 CMD ["/usr/src/app/bin/resource-provisioner-consumer"]
