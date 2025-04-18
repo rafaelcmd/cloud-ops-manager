@@ -1,4 +1,4 @@
-name: Deploy - CloudOps Manager API
+name: Deploy - API to AWS EC2
 
 on:
   workflow_dispatch:

@@ -7,7 +7,7 @@ export let options = {
 };
 
 export default function () {
-    const url = 'https://dhcuur0kf0.execute-api.us-east-1.amazonaws.com/dev/resource-provisioner';
+    const url = 'your_api_endpoint_here';
 
     const payload = JSON.stringify({
         "id": "resource-123",
@@ -18,7 +18,7 @@ export default function () {
     const params = {
         headers: {
             'Content-Type': 'application/json',
-            'x-api-key': 'N1ygeXVmta9YTkt2H3kYY9fONU9TSWEP2eWWecDR'
+            'x-api-key': 'your_api_key_here',
         },
     };
 
