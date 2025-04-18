@@ -39,3 +39,9 @@ module "aws_lambda" {
   cloud_ops_manager_api_user_pool_client_id      = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
   cloud_ops_manager_api_deployment_execution_arn = module.aws_api_gateway.cloud_ops_manager_api_deployment_execution_arn
 }
+
+module "rds" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/database/rds?ref=main"
+
+  rds_subnet_group = module.aws_networking.rds_subnet_group
+}

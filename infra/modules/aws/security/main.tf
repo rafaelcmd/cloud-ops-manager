@@ -31,3 +31,23 @@ resource "aws_security_group" "cloud_ops_manager_api_sg" {
     Name = "cloud-ops-manager-api-sg"
   }
 }
+
+resource "aws_security_group" "rds_sg" {
+  name        = "rds-sg"
+  description = "Allow PostgreSQL access from Provisioner Cosumer"
+  vpc_id      = var.cloud_ops_manager_vpc_id
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
