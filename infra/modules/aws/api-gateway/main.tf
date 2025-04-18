@@ -17,16 +17,6 @@ resource "aws_api_gateway_method" "cloud_ops_manager_api_root_get" {
   api_key_required = true
 }
 
-resource "aws_api_gateway_integration" "cloud_ops_manager_api_root_get_ec2" {
-  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
-  http_method = aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method
-
-  integration_http_method = "GET"
-  type                    = "HTTP"
-  uri                     = "http://${var.cloud_ops_manager_api_host}:5000/resource-provisioner"
-}
-
 resource "aws_api_gateway_method_response" "cloud_ops_manager_api_root_get_200" {
   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
@@ -38,7 +28,17 @@ resource "aws_api_gateway_method_response" "cloud_ops_manager_api_root_get_200" 
   }
 }
 
-resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_root_get_200" {
+resource "aws_api_gateway_integration" "cloud_ops_manager_api_root_get_ec2_integration" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method = aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method
+
+  integration_http_method = "GET"
+  type                    = "HTTP"
+  uri                     = "http://${var.cloud_ops_manager_api_host}:5000/resource-provisioner"
+}
+
+resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_ec2_integration_response_get_200" {
   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
   http_method = aws_api_gateway_method.cloud_ops_manager_api_root_get.http_method
@@ -49,7 +49,7 @@ resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_root_get_
   }
 
   depends_on = [
-    aws_api_gateway_integration.cloud_ops_manager_api_root_get_ec2
+    aws_api_gateway_integration.cloud_ops_manager_api_root_get_ec2_integration
   ]
 }
 
@@ -59,16 +59,6 @@ resource "aws_api_gateway_method" "cloud_ops_manager_api_root_post" {
   http_method      = "POST"
   authorization    = "NONE"
   api_key_required = true
-}
-
-resource "aws_api_gateway_integration" "cloud_ops_manager_api_root_post_ec2" {
-  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
-  http_method = aws_api_gateway_method.cloud_ops_manager_api_root_post.http_method
-
-  integration_http_method = "POST"
-  type                    = "HTTP"
-  uri                     = "http://${var.cloud_ops_manager_api_host}:5000/resource-provisioner"
 }
 
 resource "aws_api_gateway_method_response" "cloud_ops_manager_api_root_post_202" {
@@ -82,7 +72,17 @@ resource "aws_api_gateway_method_response" "cloud_ops_manager_api_root_post_202"
   }
 }
 
-resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_root_post_202" {
+resource "aws_api_gateway_integration" "cloud_ops_manager_api_root_post_ec2_integration" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
+  http_method = aws_api_gateway_method.cloud_ops_manager_api_root_post.http_method
+
+  integration_http_method = "POST"
+  type                    = "HTTP"
+  uri                     = "http://${var.cloud_ops_manager_api_host}:5000/resource-provisioner"
+}
+
+resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_ec2_integration_response_post_202" {
   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   resource_id = aws_api_gateway_resource.cloud_ops_manager_api_root.id
   http_method = aws_api_gateway_method.cloud_ops_manager_api_root_post.http_method
@@ -93,11 +93,34 @@ resource "aws_api_gateway_integration_response" "cloud_ops_manager_api_root_post
   }
 
   depends_on = [
-    aws_api_gateway_integration.cloud_ops_manager_api_root_post_ec2
+    aws_api_gateway_integration.cloud_ops_manager_api_root_post_ec2_integration
   ]
 }
 
-resource "aws_api_gateway_deployment" "cloud_ops_manager_api" {
+resource "aws_api_gateway_resource" "cloud_ops_manager_api_auth" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  parent_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.root_resource_id
+  path_part   = "auth"
+}
+
+resource "aws_api_gateway_method" "cloud_ops_manager_api_auth_post" {
+  rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id   = aws_api_gateway_resource.cloud_ops_manager_api_auth.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "cloud_ops_manager_api_auth_post_lambda_integration" {
+  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
+  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_auth.id
+  http_method = aws_api_gateway_method.cloud_ops_manager_api_auth_post.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.auth_lambda_invoke_arn
+}
+
+resource "aws_api_gateway_deployment" "cloud_ops_manager_api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
 
   triggers = {
@@ -110,20 +133,20 @@ resource "aws_api_gateway_deployment" "cloud_ops_manager_api" {
 
   depends_on = [
     aws_api_gateway_method.cloud_ops_manager_api_root_post,
-    aws_api_gateway_integration.cloud_ops_manager_api_root_post_ec2,
+    aws_api_gateway_integration.cloud_ops_manager_api_root_post_ec2_integration,
     aws_api_gateway_method_response.cloud_ops_manager_api_root_post_202,
-    aws_api_gateway_integration_response.cloud_ops_manager_api_root_post_202,
+    aws_api_gateway_integration_response.cloud_ops_manager_api_ec2_integration_response_post_202,
     aws_api_gateway_method.cloud_ops_manager_api_root_get,
-    aws_api_gateway_integration.cloud_ops_manager_api_root_get_ec2,
+    aws_api_gateway_integration.cloud_ops_manager_api_root_get_ec2_integration,
     aws_api_gateway_method_response.cloud_ops_manager_api_root_get_200,
-    aws_api_gateway_integration_response.cloud_ops_manager_api_root_get_200
+    aws_api_gateway_integration_response.cloud_ops_manager_api_ec2_integration_response_get_200
   ]
 }
 
 resource "aws_api_gateway_stage" "cloud_ops_manager_api_dev_stage" {
   stage_name    = "dev"
   rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  deployment_id = aws_api_gateway_deployment.cloud_ops_manager_api.id
+  deployment_id = aws_api_gateway_deployment.cloud_ops_manager_api_deployment.id
 }
 
 resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
@@ -142,7 +165,7 @@ resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
 
   depends_on = [
     aws_api_gateway_stage.cloud_ops_manager_api_dev_stage,
-    aws_api_gateway_deployment.cloud_ops_manager_api
+    aws_api_gateway_deployment.cloud_ops_manager_api_deployment
   ]
 }
 
@@ -162,25 +185,3 @@ resource "aws_api_gateway_usage_plan_key" "cloud_ops_manager_api_usage_plan_key"
   usage_plan_id = aws_api_gateway_usage_plan.cloud_ops_manager_api_usage_plan.id
 }
 
-resource "aws_api_gateway_resource" "cloud_ops_manager_api_auth" {
-  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  parent_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.root_resource_id
-  path_part   = "auth"
-}
-
-resource "aws_api_gateway_method" "cloud_ops_manager_api_post_auth" {
-  rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  resource_id   = aws_api_gateway_resource.cloud_ops_manager_api_auth.id
-  http_method   = "POST"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "cloud_ops_manager_api_post_auth_lambda" {
-  rest_api_id = aws_api_gateway_rest_api.cloud_ops_manager_api.id
-  resource_id = aws_api_gateway_resource.cloud_ops_manager_api_auth.id
-  http_method = aws_api_gateway_method.cloud_ops_manager_api_post_auth.http_method
-
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = var.auth_lambda_invoke_arn
-}

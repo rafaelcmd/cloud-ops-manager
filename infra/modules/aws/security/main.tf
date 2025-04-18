@@ -1,7 +1,7 @@
 resource "aws_security_group" "cloud_ops_manager_api_sg" {
   name        = "cloud-ops-manager-api-sg"
   description = "Security group for CloudOps Manager API"
-  vpc_id      = var.vpc_id
+  vpc_id      = var.cloud_ops_manager_vpc_id
 
   ingress {
     description = "Allow HTTP access from API Gateway"

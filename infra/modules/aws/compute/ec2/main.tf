@@ -1,8 +1,8 @@
 resource "aws_instance" "cloud_ops_manager_api_ec2" {
   ami                         = "ami-08b5b3a93ed654d19"
   instance_type               = "t2.micro"
-  subnet_id                   = var.public_subnet_id
-  vpc_security_group_ids      = [var.security_group_id]
+  subnet_id                   = var.cloud_ops_manager_public_subnet_id
+  vpc_security_group_ids      = [var.cloud_ops_manager_security_group_id]
   associate_public_ip_address = true
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
@@ -64,7 +64,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_sqs_access" {
         Action = [
           "sqs:SendMessage",
         ]
-        Resource = var.sqs_queue_arn
+        Resource = var.provisioner_consumer_sqs_queue_arn
       }
     ]
   })
@@ -82,7 +82,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
         Action = [
           "ssm:GetParameter"
         ]
-        Resource = var.sqs_queue_parameter_arn
+        Resource = var.provisioner_consumer_sqs_queue_parameter_arn
       }
     ]
   })

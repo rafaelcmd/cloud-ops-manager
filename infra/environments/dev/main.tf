@@ -11,10 +11,10 @@ module "aws_security" {
 module "aws_ec2" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/compute/ec2?ref=main"
 
-  public_subnet_id        = module.aws_networking.public_subnet_id
-  security_group_id       = module.aws_security.security_group_id
-  sqs_queue_arn           = module.aws_sqs_queue.sqs_queue_arn
-  sqs_queue_parameter_arn = module.aws_sqs_queue.sqs_queue_parameter_arn
+  cloud_ops_manager_public_subnet_id        = module.aws_networking.cloud_ops_manager_public_subnet_id
+  cloud_ops_manager_security_group_id       = module.aws_security.cloud_ops_manager_security_group_id
+  provisioner_consumer_sqs_queue_arn           = module.aws_sqs_queue.provisioner_consumer_sqs_queue_arn
+  provisioner_consumer_sqs_queue_parameter_arn = module.aws_sqs_queue.provisioner_consumer_sqs_queue_parameter_arn
 }
 
 module "aws_api_gateway" {
@@ -22,7 +22,7 @@ module "aws_api_gateway" {
 
   cloud_ops_manager_api_host          = module.aws_ec2.cloud_ops_manager_api_ec2_host
   cloud_ops_manager_api_user_pool_arn = module.aws_cognito.cloud_ops_manager_api_user_pool_arn
-  auth_lambda_invoke_arn              = module.aws_lambda.invoke_arn
+  auth_lambda_invoke_arn              = module.aws_lambda.cloud_ops_manager_api_auth_lambda_invoke_arn
 }
 
 module "aws_sqs_queue" {
@@ -36,7 +36,7 @@ module "aws_cognito" {
 module "aws_lambda" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infrastructure/modules/aws/compute/lambda?ref=main"
 
-  user_pool_id        = module.aws_cognito.cloud_ops_manager_api_user_pool_id
-  user_pool_client_id = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
-  api_execution_arn   = module.aws_api_gateway.execution_arn
+  cloud_ops_manager_api_user_pool_id        = module.aws_cognito.cloud_ops_manager_api_user_pool_id
+  cloud_ops_manager_api_user_pool_client_id = module.aws_cognito.cloud_ops_manager_api_user_pool_client_id
+  cloud_ops_manager_api_deployment_execution_arn   = module.aws_api_gateway.execution_arn
 }

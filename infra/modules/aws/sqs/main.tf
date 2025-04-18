@@ -1,4 +1,4 @@
-resource "aws_sqs_queue" "resource_provisioner_queue" {
+resource "aws_sqs_queue" "resource_provisioner_sqs_queue" {
   name                      = "resource_provisioner_queue"
   delay_seconds             = 0
   max_message_size          = 262144

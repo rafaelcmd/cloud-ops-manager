@@ -21,7 +21,7 @@ resource "aws_route_table" "cloud_ops_manager_public_route_table" {
   }
 }
 
-resource "aws_route_table_association" "public_association" {
+resource "aws_route_table_association" "cloud_ops_manager_public_association" {
   subnet_id      = aws_subnet.cloud_ops_manager_public_subnet.id
   route_table_id = aws_route_table.cloud_ops_manager_public_route_table.id
 }
