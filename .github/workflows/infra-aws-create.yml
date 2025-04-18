@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: infrastructure/environments/dev
+        working-directory: infra/environments/dev
         shell: bash
 
     steps:

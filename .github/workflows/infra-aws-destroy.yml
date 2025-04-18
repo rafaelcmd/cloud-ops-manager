@@ -9,7 +9,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: infrastructure/environments/dev/
+        working-directory: infra/environments/dev/
 
     steps:
       - uses: actions/checkout@v4
