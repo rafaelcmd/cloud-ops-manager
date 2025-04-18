@@ -20,7 +20,7 @@ jobs:
 
       - name: Build the application
         run: |
-          cd cloud-ops-manager-api/cmd/server
+          cd api/cmd/server
           go mod tidy
           go build -o cloud-ops-manager-api
           ls -lah
@@ -63,7 +63,7 @@ jobs:
       - name: SCP binary to EC2
         run: |
           scp -i ec2-temp-key -o StrictHostKeyChecking=no \
-            cloud-ops-manager-api/cmd/server/cloud-ops-manager-api \
+            api/cmd/server/cloud-ops-manager-api \
             ${{ env.CLOUD_OPS_MANAGER_API_EC2_USERNAME }}@${{ env.CLOUD_OPS_MANAGER_API_EC2_PUBLIC_IP }}:/home/${{ env.CLOUD_OPS_MANAGER_API_EC2_USERNAME }}/cloud-ops-manager-api
       
 
