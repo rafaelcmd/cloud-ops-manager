@@ -61,15 +61,13 @@ resource "aws_eip" "cloud_ops_manager_nat" {
 }
 
 resource "aws_nat_gateway" "cloud_ops_manager_nat_gateway_a" {
-  connectivity_type = "private"
   allocation_id     = aws_eip.cloud_ops_manager_nat.id
-  subnet_id         = aws_subnet.cloud_ops_manager_private_subnet_a.id
+  subnet_id         = aws_subnet.cloud_ops_manager_public_subnet_a.id
 }
 
 resource "aws_nat_gateway" "cloud_ops_manager_nat_gateway_b" {
-  connectivity_type = "private"
   allocation_id     = aws_eip.cloud_ops_manager_nat.id
-  subnet_id         = aws_subnet.cloud_ops_manager_private_subnet_b.id
+  subnet_id         = aws_subnet.cloud_ops_manager_public_subnet_b.id
 }
 
 resource "aws_route_table" "cloud_ops_manager_public_route_table" {
