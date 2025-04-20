@@ -166,3 +166,21 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "cloud_ops_manager_consumer_s3_access" {
+    name = "AllowS3ListBucket"
+    role = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
+
+    policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+        {
+            Effect = "Allow"
+            Action = [
+              "s3:GetObject"
+            ]
+            Resource = var.cloud_ops_manager_consumer_deploy_bucket_arn
+        }
+        ]
+    })
+}

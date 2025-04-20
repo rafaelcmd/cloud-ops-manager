@@ -17,6 +17,7 @@ module "aws_ec2" {
   cloud_ops_manager_consumer_security_group_id = module.aws_security.cloud_ops_manager_consumer_security_group_id
   provisioner_consumer_sqs_queue_arn           = module.aws_sqs_queue.provisioner_consumer_sqs_queue_arn
   provisioner_consumer_sqs_queue_parameter_arn = module.aws_sqs_queue.provisioner_consumer_sqs_queue_parameter_arn
+  cloud_ops_manager_consumer_deploy_bucket_arn = module.s3.cloud_ops_manager_consumer_deploy_bucket_arn
 }
 
 module "aws_api_gateway" {
@@ -49,4 +50,8 @@ module "rds" {
   rds_security_group_ids = module.aws_security.rds_security_group_ids
   db_username            = "teste"
   db_password            = "teste12345"
+}
+
+module "s3" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/s3?ref=main"
 }

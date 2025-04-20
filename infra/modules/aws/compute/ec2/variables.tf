@@ -27,3 +27,8 @@ variable "cloud_ops_manager_consumer_security_group_id" {
   type        = string
   description = "Security Group ID"
 }
+
+variable "cloud_ops_manager_consumer_deploy_bucket_arn" {
+  type        = string
+  description = "S3 Bucket ARN"
+}
