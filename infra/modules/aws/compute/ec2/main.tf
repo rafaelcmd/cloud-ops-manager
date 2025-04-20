@@ -184,3 +184,8 @@ resource "aws_iam_role_policy" "cloud_ops_manager_consumer_s3_access" {
     ]
   })
 }
+
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_ssm" {
+  role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
