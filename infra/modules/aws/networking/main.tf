@@ -83,7 +83,7 @@ resource "aws_route_table" "cloud_ops_manager_private_route_table_a" {
   vpc_id = aws_vpc.cloud_ops_manager_vpc.id
 
   route {
-    cidr_block     = "10.0.0.0/16"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.cloud_ops_manager_nat_gateway_a.id
   }
 }
@@ -92,7 +92,7 @@ resource "aws_route_table" "cloud_ops_manager_private_route_table_b" {
   vpc_id = aws_vpc.cloud_ops_manager_vpc.id
 
   route {
-    cidr_block     = "10.0.0.0/16"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.cloud_ops_manager_nat_gateway_b.id
   }
 }
@@ -105,6 +105,16 @@ resource "aws_route_table_association" "cloud_ops_manager_public_association_a" 
 resource "aws_route_table_association" "cloud_ops_manager_public_association_b" {
   subnet_id      = aws_subnet.cloud_ops_manager_public_subnet_b.id
   route_table_id = aws_route_table.cloud_ops_manager_public_route_table.id
+}
+
+resource "aws_route_table_association" "cloud_ops_manager_private_association_a" {
+  subnet_id      = aws_subnet.cloud_ops_manager_private_subnet_a.id
+  route_table_id = aws_route_table.cloud_ops_manager_private_route_table_a.id
+}
+
+resource "aws_route_table_association" "cloud_ops_manager_private_association_b" {
+  subnet_id      = aws_subnet.cloud_ops_manager_private_subnet_b.id
+  route_table_id = aws_route_table.cloud_ops_manager_private_route_table_b.id
 }
 
 resource "aws_db_subnet_group" "rds_subnet_group" {
