@@ -54,19 +54,25 @@ resource "aws_internet_gateway" "cloud_ops_manager_igw" {
   vpc_id = aws_vpc.cloud_ops_manager_vpc.id
 }
 
-resource "aws_eip" "cloud_ops_manager_nat" {
+resource "aws_eip" "cloud_ops_manager_nat_a" {
   tags = {
-    Name = "cloud_ops_manager_nat"
+    Name = "cloud_ops_manager_nat_a"
+  }
+}
+
+resource "aws_eip" "cloud_ops_manager_nat_b" {
+  tags = {
+    Name = "cloud_ops_manager_nat_b"
   }
 }
 
 resource "aws_nat_gateway" "cloud_ops_manager_nat_gateway_a" {
-  allocation_id     = aws_eip.cloud_ops_manager_nat.id
+  allocation_id     = aws_eip.cloud_ops_manager_nat_a.id
   subnet_id         = aws_subnet.cloud_ops_manager_public_subnet_a.id
 }
 
 resource "aws_nat_gateway" "cloud_ops_manager_nat_gateway_b" {
-  allocation_id     = aws_eip.cloud_ops_manager_nat.id
+  allocation_id     = aws_eip.cloud_ops_manager_nat_b.id
   subnet_id         = aws_subnet.cloud_ops_manager_public_subnet_b.id
 }
 

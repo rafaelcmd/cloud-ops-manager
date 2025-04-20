@@ -48,5 +48,5 @@ module "rds" {
   rds_subnet_group       = module.aws_networking.rds_subnet_group
   rds_security_group_ids = module.aws_security.rds_security_group_ids
   db_username            = "teste"
-  db_password            = "teste"
+  db_password            = "teste12345"
 }
