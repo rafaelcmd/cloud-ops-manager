@@ -22,3 +22,8 @@ variable "cloud_ops_manager_private_subnet_id" {
   type        = string
   description = "Private Subnet ID"
 }
+
+variable "cloud_ops_manager_consumer_security_group_id" {
+  type        = string
+  description = "Security Group ID"
+}

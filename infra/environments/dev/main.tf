@@ -14,7 +14,7 @@ module "aws_ec2" {
   cloud_ops_manager_public_subnet_id           = module.aws_networking.cloud_ops_manager_public_subnet_id_a
   cloud_ops_manager_private_subnet_id          = module.aws_networking.cloud_ops_manager_private_subnet_id_a
   cloud_ops_manager_api_security_group_id      = module.aws_security.cloud_ops_manager_api_security_group_id
-    cloud_ops_manager_consumer_security_group_id = module.aws_security.cloud_ops_manager_consumer_security_group_id
+  cloud_ops_manager_consumer_security_group_id = module.aws_security.cloud_ops_manager_consumer_security_group_id
   provisioner_consumer_sqs_queue_arn           = module.aws_sqs_queue.provisioner_consumer_sqs_queue_arn
   provisioner_consumer_sqs_queue_parameter_arn = module.aws_sqs_queue.provisioner_consumer_sqs_queue_parameter_arn
 }
