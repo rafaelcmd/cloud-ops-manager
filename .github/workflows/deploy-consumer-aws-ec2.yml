@@ -1,0 +1,54 @@
+name: Deploy - Consumer to AWS EC2 (Private Subnet)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy-consumer:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24.1
+
+      - name: Build consumer binary
+        run: |
+          cd consumer/cmd/worker
+          go mod tidy
+          go build -o cloud-ops-manager-consumer
+          mv cloud-ops-manager-consumer ../../../cloud-ops-manager-consumer
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Retrieve deployment values from Parameter Store
+        id: ssm
+        run: |
+          echo "Fetching SSM parameters..."
+          echo "CONSUMER_INSTANCE_ID=$(aws ssm get-parameter --name "/CLOUD_OPS_MANAGER_CONSUMER/EC2_INSTANCE_ID" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+          echo "DEPLOY_BUCKET=$(aws ssm get-parameter --name "/CLOUD_OPS_MANAGER_CONSUMER/DEPLOY_BUCKET_NAME" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+
+      - name: Upload consumer binary to S3
+        run: |
+          aws s3 cp cloud-ops-manager-consumer s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer
+          echo "✅ Uploaded consumer binary to s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer"
+
+      - name: Deploy to EC2 using SSM
+        run: |
+          echo "📦 Running remote command to deploy binary..."
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids "$CONSUMER_INSTANCE_ID" \
+            --comment "Deploy consumer app from S3" \
+            --parameters commands="aws s3 cp s3://$
