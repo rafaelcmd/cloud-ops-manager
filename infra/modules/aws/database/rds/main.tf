@@ -2,7 +2,7 @@ resource "aws_db_instance" "provisioner_rds_instance" {
   identifier              = "provisioner-rds-instance"
   allocated_storage       = 20
   engine                  = "postgres"
-  engine_version          = "15.3"
+  engine_version          = "17.4"
   instance_class          = "db.t3.micro"
   username                = var.db_username
   password                = var.db_password
