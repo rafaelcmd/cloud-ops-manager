@@ -33,14 +33,14 @@ resource "aws_security_group" "cloud_ops_manager_api_sg" {
 }
 
 resource "aws_security_group" "cloud_ops_manager_consumer_sg" {
-  name = "cloud-ops-manager-consumer-sg"
+  name        = "cloud-ops-manager-consumer-sg"
   description = "Security group for CloudOps Manager Consumer"
-  vpc_id = var.cloud_ops_manager_vpc_id
+  vpc_id      = var.cloud_ops_manager_vpc_id
 
   egress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
