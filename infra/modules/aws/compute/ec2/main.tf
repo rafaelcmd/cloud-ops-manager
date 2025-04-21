@@ -20,6 +20,16 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
 
+  user_data = <<-EOF
+    #!/bin/bash
+    set -e
+
+    echo "✅ Installing and starting SSM Agent..."
+    yum install -y amazon-ssm-agent
+    systemctl enable amazon-ssm-agent
+    systemctl start amazon-ssm-agent
+  EOF
+
   tags = {
     Name = "cloud-ops-manager-consumer"
   }
