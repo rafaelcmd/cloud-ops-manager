@@ -49,32 +49,36 @@ jobs:
         run: |
           echo "Creating systemd service and deploying binary..."
           aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --instance-ids "$CONSUMER_INSTANCE_ID" \
-            --comment "Create service unit and deploy binary" \
-            --parameters commands="set -e;
-              aws s3 cp s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer;
-              chmod +x /usr/local/bin/cloud-ops-manager-consumer;
-              if [ ! -f /etc/systemd/system/cloud-ops-manager-consumer.service ]; then
-                cat <<'EOF' | sudo tee /etc/systemd/system/cloud-ops-manager-consumer.service > /dev/null
-          [ Unit ]
-          Description=CloudOps Manager Consumer
-          After=network.target
-    
-          [ Service ]
-          ExecStart=/usr/local/bin/cloud-ops-manager-consumer
-          Restart=always
-          User=ubuntu
-          StandardOutput=journal
-          StandardError=journal
-    
-          [ Install ]
-          WantedBy=multi-user.target
-          EOF
-          sudo chmod 644 /etc/systemd/system/cloud-ops-manager-consumer.service
-          sudo systemctl daemon-reload
-          sudo systemctl enable cloud-ops-manager-consumer
-          fi"
+          --document-name "AWS-RunShellScript" \
+          --instance-ids "$CONSUMER_INSTANCE_ID" \
+          --comment "Create systemd service and deploy binary" \
+          --parameters '{
+          "commands": [
+            "set -e",
+            "aws s3 cp s3://cloud-ops-manager-consumer-deploy-bucket/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer",
+            "chmod +x /usr/local/bin/cloud-ops-manager-consumer",
+            "if [ ! -f /etc/systemd/system/cloud-ops-manager-consumer.service ]; then",
+            "sudo tee /etc/systemd/system/cloud-ops-manager-consumer.service > /dev/null <<EOL",
+            "[Unit]",
+            "Description=CloudOps Manager Consumer",
+            "After=network.target",
+            "",
+            "[Service]",
+            "ExecStart=/usr/local/bin/cloud-ops-manager-consumer",
+            "Restart=always",
+            "User=ubuntu",
+            "StandardOutput=journal",
+            "StandardError=journal",
+            "",
+            "[Install]",
+            "WantedBy=multi-user.target",
+            "EOL",
+            "sudo chmod 644 /etc/systemd/system/cloud-ops-manager-consumer.service",
+            "sudo systemctl daemon-reload",
+            "sudo systemctl enable cloud-ops-manager-consumer",
+            "fi"
+          ]
+          }'
 
       - name: Restart service
         run: |
