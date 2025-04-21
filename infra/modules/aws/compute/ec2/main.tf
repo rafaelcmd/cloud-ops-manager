@@ -90,27 +90,6 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ec2_instance_connect" {
   })
 }
 
-resource "aws_iam_role_policy" "cloud_ops_manager_consumer_ec2_instance_connect" {
-  name = "AllowEC2InstanceConnect"
-  role = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2-instance-connect:SendSSHPublicKey"
-        ]
-        Resource = [
-          aws_instance.cloud_ops_manager_api_ec2.arn,
-          aws_instance.cloud_ops_manager_consumer_ec2.arn
-        ]
-      }
-    ]
-  })
-}
-
 resource "aws_iam_role_policy" "cloud_ops_manager_api_sqs_access" {
   name = "AllowSQSSendMessage"
   role = aws_iam_role.cloud_ops_manager_api_ec2_role.name
@@ -179,7 +158,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_consumer_s3_access" {
         Action = [
           "s3:GetObject"
         ]
-        Resource = var.cloud_ops_manager_consumer_deploy_bucket_arn
+        Resource = "${var.cloud_ops_manager_consumer_deploy_bucket_arn}/*"
       }
     ]
   })
