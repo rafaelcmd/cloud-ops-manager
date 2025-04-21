@@ -18,7 +18,7 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   subnet_id              = var.cloud_ops_manager_private_subnet_id
   vpc_security_group_ids = [var.cloud_ops_manager_consumer_security_group_id]
 
-  iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
+  iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
 
   tags = {
     Name = "cloud-ops-manager-consumer"
