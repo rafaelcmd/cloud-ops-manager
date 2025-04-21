@@ -45,22 +45,18 @@ jobs:
           aws s3 cp cloud-ops-manager-consumer s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer
           echo "✅ Uploaded consumer binary to s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer"
 
-      - name: Deploy binary and create systemd service
+      - name: Create and deploy systemd service (if not exists)
         run: |
-          echo "Running remote command to deploy binary and create service..."
+          echo "Creating systemd service and deploying binary..."
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --instance-ids "$CONSUMER_INSTANCE_ID" \
-            --comment "Deploy consumer and create systemd service" \
+            --comment "Create service unit and deploy binary" \
             --parameters commands="set -e;
-              echo '✅ Downloading binary...';
               aws s3 cp s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer;
               chmod +x /usr/local/bin/cloud-ops-manager-consumer;
-          
-              SERVICE_FILE=/etc/systemd/system/cloud-ops-manager-consumer.service;
-              if [ ! -f \$SERVICE_FILE ]; then
-                echo 'Creating systemd service...';
-                sudo bash -c 'cat > \$SERVICE_FILE <<EOF
+              if [ ! -f /etc/systemd/system/cloud-ops-manager-consumer.service ]; then
+                cat <<'EOF' | sudo tee /etc/systemd/system/cloud-ops-manager-consumer.service > /dev/null
           [ Unit ]
           Description=CloudOps Manager Consumer
           After=network.target
@@ -74,34 +70,25 @@ jobs:
     
           [ Install ]
           WantedBy=multi-user.target
-          EOF';
-          sudo chmod 644 \$SERVICE_FILE;
-          sudo systemctl daemon-reload;
-          sudo systemctl enable cloud-ops-manager-consumer;
-          fi;
-          
-          echo 'Restarting service...';
-          sudo systemctl restart cloud-ops-manager-consumer"
+          EOF
+          sudo chmod 644 /etc/systemd/system/cloud-ops-manager-consumer.service
+          sudo systemctl daemon-reload
+          sudo systemctl enable cloud-ops-manager-consumer
+          fi"
 
-      - name: Wait for SSM command to complete
+      - name: Restart service
         run: |
-          COMMAND_ID=$(aws ssm list-commands --instance-id "$CONSUMER_INSTANCE_ID" --query "Commands[0].CommandId" --output text)
-          
-          echo "Waiting for command $COMMAND_ID to complete..."
-          aws ssm wait command-executed \
-            --command-id "$COMMAND_ID" \
-            --instance-id "$CONSUMER_INSTANCE_ID"
-          
-          echo "Fetching command output..."
-          aws ssm get-command-invocation \
-            --command-id "$COMMAND_ID" \
-            --instance-id "$CONSUMER_INSTANCE_ID"
+          echo "Restarting service..."
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids "$CONSUMER_INSTANCE_ID" \
+            --comment "Restart consumer service" \
+            --parameters commands="sudo systemctl restart cloud-ops-manager-consumer"
 
-      - name: Check systemd service status
+      - name: Check systemd status
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --instance-ids "$CONSUMER_INSTANCE_ID" \
             --comment "Check service status" \
-            --parameters commands="systemctl status cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20" \
-            --output text
+            --parameters commands="systemctl status cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20"
