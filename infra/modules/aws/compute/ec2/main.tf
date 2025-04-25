@@ -7,6 +7,37 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
+  user_data = <<-EOF
+    #!/bin/bash
+    set -e
+    echo "✅ Updating system packages..."
+    yum update -y
+
+    echo "✅ Installing CloudWatch Agent..."
+    yum install -y amazon-cloudwatch-agent
+
+    echo "✅ Configuring CloudWatch Agent..."
+    cat > /etc/cwagentconfig.json << EOF
+    {
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/var/log/cloud-ops-manager-api.log",
+                "log_group_name": "${aws_cloudwatch_log_group.cloud_ops_manager_api_logs.name}",
+                "log_stream_name": "{instance_id}"
+              }
+            ]
+          }
+        }
+      }
+    }
+
+    echo "✅ Starting CloudWatch Agent..."
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -s -c file:/etc/cwagentconfig.json
+    EOF
+
   tags = {
     Name = "cloud-ops-manager-api"
   }
@@ -23,6 +54,32 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   user_data = <<-EOF
     #!/bin/bash
     set -e
+    echo "✅ Updating system packages..."
+    yum update -y
+
+    echo "✅ Installing CloudWatch Agent..."
+    yum install -y amazon-cloudwatch-agent
+
+    echo "✅ Configuring CloudWatch Agent..."
+    cat > /etc/cwagentconfig.json << EOF
+    {
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/var/log/cloud-ops-manager-api.log",
+                "log_group_name": "${aws_cloudwatch_log_group.cloud_ops_manager_consumer_logs.name}",
+                "log_stream_name": "{instance_id}"
+              }
+            ]
+          }
+        }
+      }
+    }
+
+    echo "✅ Starting CloudWatch Agent..."
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -s -c file:/etc/cwagentconfig.json
 
     echo "✅ Installing and starting SSM Agent..."
     yum install -y amazon-ssm-agent
@@ -174,7 +231,45 @@ resource "aws_iam_role_policy" "cloud_ops_manager_consumer_s3_access" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_ssm" {
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_ssm_attach" {
   role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_cw_agent_attach" {
+  role       = aws_iam_role.cloud_ops_manager_api_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_cw_agent_attach" {
+  role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_cloudwatch_log_group" "cloud_ops_manager_api_logs" {
+  name              = "/aws/ec2/cloud-ops-manager-api"
+  retention_in_days = 7
+
+  tags = {
+    Name = "cloud-ops-manager-api-logs"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "cloud_ops_manager_consumer_logs" {
+  name              = "/aws/ec2/cloud-ops-manager-consumer"
+  retention_in_days = 7
+
+  tags = {
+    Name = "cloud-ops-manager-consumer-logs"
+  }
+}
+
+resource "aws_cloudwatch_log_stream" "cloud_ops_manager_api_log_stream" {
+  name           = "cloud-ops-manager-api-log-stream"
+  log_group_name = aws_cloudwatch_log_group.cloud_ops_manager_api_logs.name
+}
+
+resource "aws_cloudwatch_log_stream" "cloud_ops_manager_consumer_log_stream" {
+  name           = "cloud-ops-manager-consumer-log-stream"
+  log_group_name = aws_cloudwatch_log_group.cloud_ops_manager_consumer_logs.name
 }
