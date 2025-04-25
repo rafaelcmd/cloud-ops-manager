@@ -39,7 +39,7 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
               {
                 "file_path": "/var/log/cloud-ops-manager-api.log",
                 "log_group_name": "${aws_cloudwatch_log_group.cloud_ops_manager_api_logs.name}",
-                "log_stream_name": "{instance_id}"
+                "log_stream_name": "cloud-ops-manager-api-{instance_id}"
               }
             ]
           }
@@ -54,8 +54,9 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
       -c file:/etc/cwagentconfig.json \
       -s
 
-    echo "✅ Enabling agent on boot..."
+    echo "✅ Enabling and starting CloudWatch Agent..."
     systemctl enable amazon-cloudwatch-agent
+    systemctl start amazon-cloudwatch-agent
   EOF
 
   tags = {
@@ -196,7 +197,7 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
               {
                 "file_path": "/var/log/cloud-ops-manager-api.log",
                 "log_group_name": "${aws_cloudwatch_log_group.cloud_ops_manager_consumer_logs.name}",
-                "log_stream_name": "{instance_id}"
+                "log_stream_name": "cloud-ops-manager-consumer-{instance_id}"
               }
             ]
           }
@@ -211,8 +212,9 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
       -c file:/etc/cwagentconfig.json \
       -s
 
-    echo "✅ Enabling agent on boot..."
+    echo "✅ Enabling and starting CloudWatch Agent..."
     systemctl enable amazon-cloudwatch-agent
+    systemctl start amazon-cloudwatch-agent
 
     echo "✅ Installing and starting SSM Agent..."
     yum install -y amazon-ssm-agent
