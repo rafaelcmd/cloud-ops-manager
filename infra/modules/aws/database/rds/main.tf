@@ -1,4 +1,5 @@
 resource "aws_db_instance" "provisioner_rds_instance" {
+  count                   = 0 # Set to 0 to disable RDS instance creation
   identifier              = "provisioner-rds-instance"
   allocated_storage       = 20
   engine                  = "postgres"
