@@ -56,9 +56,6 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
-
-    /usr/local/bin/cloud-ops-manager-api \
-      >> /var/log/cloud-ops-manager-api.log 2>&1 &
   EOF
 
   tags = {
@@ -216,9 +213,6 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
-
-    /usr/local/bin/cloud-ops-manager-consumer \
-          >> /var/log/cloud-ops-manager-consumer.log 2>&1 &
 
     yum install -y amazon-ssm-agent
     systemctl enable amazon-ssm-agent
