@@ -48,16 +48,17 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     }
     CWAGENT
 
-    echo "✅ Fetching & starting the agent..."
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
       -a fetch-config \
       -m ec2 \
       -c file:/etc/cwagentconfig.json \
       -s
 
-    echo "✅ Enabling and starting CloudWatch Agent..."
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
+
+    /home/ec2-user/cloud-ops-manager/api/cmd/server/cloud-ops-manager-api \
+      >> /var/log/cloud-ops-manager-api.log 2>&1 &
   EOF
 
   tags = {
@@ -181,8 +182,8 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
 
     # Ensure your application log file exists
     mkdir -p /var/log
-    touch /var/log/cloud-ops-manager-api.log
-    chown ec2-user:ec2-user /var/log/cloud-ops-manager-api.log
+    touch /var/log/cloud-ops-manager-consumer.log
+    chown ec2-user:ec2-user /var/log/cloud-ops-manager-consumer.log
 
     echo "✅ Writing CloudWatch Agent config..."
     cat > /etc/cwagentconfig.json << 'CWAGENT'
@@ -196,7 +197,7 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
           "files": {
             "collect_list": [
               {
-                "file_path": "/var/log/cloud-ops-manager-api.log",
+                "file_path": "/var/log/cloud-ops-manager-consumer.log",
                 "log_group_name": "${aws_cloudwatch_log_group.cloud_ops_manager_consumer_logs.name}",
                 "log_stream_name": "cloud-ops-manager-consumer-{instance_id}"
               }
@@ -207,18 +208,18 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     }
     CWAGENT
 
-    echo "✅ Fetching & starting the agent..."
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
       -a fetch-config \
       -m ec2 \
       -c file:/etc/cwagentconfig.json \
       -s
 
-    echo "✅ Enabling and starting CloudWatch Agent..."
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
 
-    echo "✅ Installing and starting SSM Agent..."
+    /home/ec2-user/cloud-ops-manager/services/provisioner/cmd/consumer/cloud-ops-manager-consumer \
+          >> /var/log/cloud-ops-manager-consumer.log 2>&1 &
+
     yum install -y amazon-ssm-agent
     systemctl enable amazon-ssm-agent
     systemctl start amazon-ssm-agent
