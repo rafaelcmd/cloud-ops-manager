@@ -67,7 +67,7 @@ jobs:
             "ExecStart=/usr/local/bin/cloud-ops-manager-consumer",
             "Restart=always",
             "User=ec2-user",
-            "StandardOutput=append:/var/log/cloud-ops-manager-api.log",
+            "StandardOutput=append:/var/log/cloud-ops-manager-consumer.log",
             "StandardError=inherit",
             "",
             "[Install]",
