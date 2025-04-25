@@ -48,8 +48,12 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     }
     CWAGENT
 
-    sudo mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
-    sudo cp /etc/cwagentconfig.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    echo "✅ Fetching & starting the agent..."
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+      -a fetch-config \
+      -m ec2 \
+      -c file:/etc/cwagentconfig.json \
+      -s
 
     echo "✅ Enabling and starting CloudWatch Agent..."
     systemctl enable amazon-cloudwatch-agent
@@ -203,8 +207,12 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     }
     CWAGENT
 
-    sudo mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
-    sudo cp /etc/cwagentconfig.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    echo "✅ Fetching & starting the agent..."
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+      -a fetch-config \
+      -m ec2 \
+      -c file:/etc/cwagentconfig.json \
+      -s
 
     echo "✅ Enabling and starting CloudWatch Agent..."
     systemctl enable amazon-cloudwatch-agent
