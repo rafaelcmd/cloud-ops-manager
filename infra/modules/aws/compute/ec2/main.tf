@@ -23,6 +23,7 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     # Ensure the application log file exists
     mkdir -p /var/log
     touch /var/log/cloud-ops-manager-api.log
+    chown ec2-user:ec2-user /var/log/cloud-ops-manager-api.log
 
     echo "✅ Writing CloudWatch Agent config..."
     cat > /etc/cwagentconfig.json << 'CWAGENT'
@@ -179,6 +180,7 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     # Ensure your application log file exists
     mkdir -p /var/log
     touch /var/log/cloud-ops-manager-api.log
+    chown ec2-user:ec2-user /var/log/cloud-ops-manager-api.log
 
     echo "✅ Writing CloudWatch Agent config..."
     cat > /etc/cwagentconfig.json << 'CWAGENT'
