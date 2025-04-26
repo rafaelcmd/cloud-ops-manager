@@ -52,6 +52,8 @@ func main() {
 }
 
 func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received POST request to /resource-provisioner")
+
 	payload := map[string]interface{}{
 		"action":   "provision",
 		"resource": "ec2",
@@ -64,6 +66,8 @@ func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Sending message to SQS queue: %s", queueUrl)
+
 	_, err = sqsClient.SendMessage(context.TODO(), &sqs.SendMessageInput{
 		QueueUrl:    aws.String(queueUrl),
 		MessageBody: aws.String(string(body)),
@@ -75,14 +79,23 @@ func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 	_, err = w.Write([]byte("Message successfully enqueued for processing."))
+
+	log.Printf("Response sent to client: %s", "Message successfully enqueued for processing.")
+
 	if err != nil {
 		log.Printf("Failed to write response, %v", err)
 	}
 }
 
 func handleProvisionGETRequest(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received GET request to /resource-provisioner")
+
 	w.WriteHeader(http.StatusOK)
+
 	_, err := w.Write([]byte("GET request received."))
+
+	log.Printf("Response sent to client: %s", "GET request received.")
+
 	if err != nil {
 		log.Printf("Failed to write response, %v", err)
 	}
