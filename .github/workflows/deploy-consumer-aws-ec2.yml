@@ -52,8 +52,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --instance-ids "$CONSUMER_INSTANCE_ID" \
             --comment "Deploy consumer binary & service" \
-            --parameters '{
-              "commands": [
+            --parameters '{"commands": [
                 "set -e",
                 "aws s3 cp s3://'"$DEPLOY_BUCKET"'/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer",
                 "chmod +x /usr/local/bin/cloud-ops-manager-consumer",
@@ -78,8 +77,7 @@ jobs:
                 "  systemctl enable cloud-ops-manager-consumer",
                 "fi",
                 "systemctl restart cloud-ops-manager-consumer"
-              ]
-            }'
+              ]}'
 
       - name: Check consumer service status via SSM
         run: |
@@ -88,4 +86,4 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --instance-ids "$CONSUMER_INSTANCE_ID" \
             --comment "Check consumer service status" \
-            --parameters commands="systemctl is-active cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20"
+            --parameters '{"commands":["systemctl is-active cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20"]}'

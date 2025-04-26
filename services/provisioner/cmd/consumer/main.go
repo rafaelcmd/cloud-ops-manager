@@ -44,11 +44,6 @@ func main() {
 			continue
 		}
 
-		if len(output.Messages) == 0 {
-			log.Println("No messages received")
-			continue
-		}
-
 		for _, message := range output.Messages {
 			log.Printf("Received message: %s", aws.ToString(message.Body))
 
