@@ -57,8 +57,7 @@ func main() {
 func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received POST request to /resource-provisioner")
 
-	ctx, seg := xray.BeginSegment(r.Context(), "resource-provisioner")
-	defer seg.Close(nil)
+	ctx := r.Context()
 
 	payload := map[string]interface{}{
 		"action":   "provision",

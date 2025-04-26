@@ -21,7 +21,7 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     yum install -y amazon-cloudwatch-agent
 
     echo "✅ Installing AWS X-Ray Daemon..."
-    yum install -y xray
+    yum install -y aws-xray-daemon
 
     # Ensure the application log file exists
     mkdir -p /var/log
@@ -189,7 +189,7 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     yum install -y amazon-cloudwatch-agent
 
     echo "✅ Installing AWS X-Ray Daemon..."
-    yum install -y xray
+    yum install -y aws-xray-daemon
 
     # Ensure your application log file exists
     mkdir -p /var/log
