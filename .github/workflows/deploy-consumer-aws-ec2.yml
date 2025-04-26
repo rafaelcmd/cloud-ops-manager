@@ -45,54 +45,47 @@ jobs:
           aws s3 cp cloud-ops-manager-consumer s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer
           echo "✅ Uploaded consumer binary to s3://$DEPLOY_BUCKET/cloud-ops-manager-consumer"
 
-      - name: Create and deploy systemd service (if not exists)
+      - name: Deploy and restart consumer service via SSM
         run: |
-          echo "Creating systemd service and deploying binary..."
-          aws ssm send-command \
-          --document-name "AWS-RunShellScript" \
-          --instance-ids "$CONSUMER_INSTANCE_ID" \
-          --comment "Create systemd service and deploy binary" \
-          --parameters '{
-          "commands": [
-            "set -e",
-            "aws s3 cp s3://cloud-ops-manager-consumer-deploy-bucket/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer",
-            "chmod +x /usr/local/bin/cloud-ops-manager-consumer",
-            "if [ ! -f /etc/systemd/system/cloud-ops-manager-consumer.service ]; then",
-            "sudo tee /etc/systemd/system/cloud-ops-manager-consumer.service > /dev/null <<EOL",
-            "[Unit]",
-            "Description=CloudOps Manager Consumer",
-            "After=network.target",
-            "",
-            "[Service]",
-            "ExecStart=/usr/local/bin/cloud-ops-manager-consumer",
-            "Restart=always",
-            "User=ec2-user",
-            "StandardOutput=append:/var/log/cloud-ops-manager-consumer.log",
-            "StandardError=inherit",
-            "",
-            "[Install]",
-            "WantedBy=multi-user.target",
-            "EOL",
-            "sudo chmod 644 /etc/systemd/system/cloud-ops-manager-consumer.service",
-            "sudo systemctl daemon-reload",
-            "sudo systemctl enable cloud-ops-manager-consumer",
-            "fi"
-          ]
-          }'
-
-      - name: Restart service
-        run: |
-          echo "Restarting service..."
+          echo "Deploying consumer binary and service on EC2..."
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --instance-ids "$CONSUMER_INSTANCE_ID" \
-            --comment "Restart consumer service" \
-            --parameters commands="sudo systemctl restart cloud-ops-manager-consumer"
+            --comment "Deploy consumer binary & service" \
+            --parameters '{
+              "commands": [
+                "set -e",
+                "aws s3 cp s3://'"$DEPLOY_BUCKET"'/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer",
+                "chmod +x /usr/local/bin/cloud-ops-manager-consumer",
+                "if [ ! -f /etc/systemd/system/cloud-ops-manager-consumer.service ]; then",
+                "  cat > /etc/systemd/system/cloud-ops-manager-consumer.service <<EOF",
+                "[Unit]",
+                "Description=CloudOps Manager Consumer",
+                "After=network.target",
+                "",
+                "[Service]",
+                "ExecStart=/usr/local/bin/cloud-ops-manager-consumer",
+                "Restart=always",
+                "User=ec2-user",
+                "StandardOutput=append:/var/log/cloud-ops-manager-consumer.log",
+                "StandardError=inherit",
+                "",
+                "[Install]",
+                "WantedBy=multi-user.target",
+                "EOF",
+                "  chmod 644 /etc/systemd/system/cloud-ops-manager-consumer.service",
+                "  systemctl daemon-reload",
+                "  systemctl enable cloud-ops-manager-consumer",
+                "fi",
+                "systemctl restart cloud-ops-manager-consumer"
+              ]
+            }'
 
-      - name: Check systemd status
-        run: |
-          aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --instance-ids "$CONSUMER_INSTANCE_ID" \
-            --comment "Check service status" \
-            --parameters commands="systemctl status cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20"
+          - name: Check consumer service status via SSM
+              run: |
+                echo "Verifying consumer service status..."
+                aws ssm send-command \
+                  --document-name "AWS-RunShellScript" \
+                  --instance-ids "$CONSUMER_INSTANCE_ID" \
+                  --comment "Check consumer service status" \
+                  --parameters commands="systemctl is-active cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20"
