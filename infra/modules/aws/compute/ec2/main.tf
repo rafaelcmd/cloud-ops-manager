@@ -28,8 +28,10 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     touch /var/log/cloud-ops-manager-api.log
     chown ec2-user:ec2-user /var/log/cloud-ops-manager-api.log
 
-    echo "✅ Writing CloudWatch Agent config..."
-    cat > /etc/cwagentconfig.json << 'CWAGENT'
+    echo "✅ Writing CloudWatch Agent configuration..."
+    mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
+
+    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CWAGENT'
     {
       "agent": {
         "metrics_collection_interval": 60,
@@ -51,17 +53,19 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     }
     CWAGENT
 
+    systemctl daemon-reload
+
+    systemctl enable xray
+    systemctl start xray
+
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
       -a fetch-config \
       -m ec2 \
-      -c file:/etc/cwagentconfig.json \
+      -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
       -s
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
-
-    systemctl enable xray
-    systemctl start xray
   EOF
 
   tags = {
@@ -196,8 +200,11 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     touch /var/log/cloud-ops-manager-consumer.log
     chown ec2-user:ec2-user /var/log/cloud-ops-manager-consumer.log
 
+    echo "✅ Writing CloudWatch Agent configuration..."
+    mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
+
     echo "✅ Writing CloudWatch Agent config..."
-    cat > /etc/cwagentconfig.json << 'CWAGENT'
+    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CWAGENT'
     {
       "agent": {
         "metrics_collection_interval": 60,
@@ -219,17 +226,19 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     }
     CWAGENT
 
+    systemctl daemon-reload
+
+    systemctl enable xray
+    systemctl start xray
+
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
       -a fetch-config \
       -m ec2 \
-      -c file:/etc/cwagentconfig.json \
+      -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
       -s
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
-
-    systemctl enable xray
-    systemctl start xray
 
     yum install -y amazon-ssm-agent
     systemctl enable amazon-ssm-agent
