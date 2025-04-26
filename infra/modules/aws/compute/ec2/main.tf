@@ -20,6 +20,9 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     echo "✅ Installing CloudWatch Agent..."
     yum install -y amazon-cloudwatch-agent
 
+    echo "✅ Installing AWS X-Ray Daemon..."
+    yum install -y xray
+
     # Ensure the application log file exists
     mkdir -p /var/log
     touch /var/log/cloud-ops-manager-api.log
@@ -56,6 +59,9 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
+
+    systemctl enable xray
+    systemctl start xray
   EOF
 
   tags = {
@@ -156,6 +162,11 @@ resource "aws_cloudwatch_log_group" "cloud_ops_manager_api_logs" {
   }
 }
 
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
+  role       = aws_iam_role.cloud_ops_manager_api_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
 # ------------------------------------------------------------------------------
 # Consumer EC2 Instance
 # ------------------------------------------------------------------------------
@@ -176,6 +187,9 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
 
     echo "✅ Installing CloudWatch Agent..."
     yum install -y amazon-cloudwatch-agent
+
+    echo "✅ Installing AWS X-Ray Daemon..."
+    yum install -y xray
 
     # Ensure your application log file exists
     mkdir -p /var/log
@@ -213,6 +227,9 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
+
+    systemctl enable xray
+    systemctl start xray
 
     yum install -y amazon-ssm-agent
     systemctl enable amazon-ssm-agent
@@ -301,4 +318,9 @@ resource "aws_cloudwatch_log_group" "cloud_ops_manager_consumer_logs" {
   tags = {
     Name = "cloud-ops-manager-consumer-logs"
   }
+}
+
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attach" {
+  role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }

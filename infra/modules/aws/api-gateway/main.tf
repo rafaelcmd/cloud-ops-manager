@@ -147,6 +147,10 @@ resource "aws_api_gateway_stage" "cloud_ops_manager_api_dev_stage" {
   stage_name    = "dev"
   rest_api_id   = aws_api_gateway_rest_api.cloud_ops_manager_api.id
   deployment_id = aws_api_gateway_deployment.cloud_ops_manager_api_deployment.id
+
+  tags = {
+    xray_tracing_enabled = "true"
+  }
 }
 
 resource "aws_api_gateway_usage_plan" "cloud_ops_manager_api_usage_plan" {
