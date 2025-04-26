@@ -81,11 +81,11 @@ jobs:
               ]
             }'
 
-          - name: Check consumer service status via SSM
-              run: |
-                echo "Verifying consumer service status..."
-                aws ssm send-command \
-                  --document-name "AWS-RunShellScript" \
-                  --instance-ids "$CONSUMER_INSTANCE_ID" \
-                  --comment "Check consumer service status" \
-                  --parameters commands="systemctl is-active cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20"
+      - name: Check consumer service status via SSM
+        run: |
+          echo "Verifying consumer service status..."
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids "$CONSUMER_INSTANCE_ID" \
+            --comment "Check consumer service status" \
+            --parameters commands="systemctl is-active cloud-ops-manager-consumer || journalctl -u cloud-ops-manager-consumer --no-pager | tail -n 20"
