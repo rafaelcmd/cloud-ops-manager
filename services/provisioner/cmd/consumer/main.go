@@ -6,14 +6,22 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"log"
+	"net/http"
 )
 
 func main() {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	ctx := context.Background()
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
 		log.Fatalf("Unable to load AWS config, %v", err)
 	}
+
+	xrayClient := xray.Client(&http.Client{})
+
+	cfg.HTTPClient = xrayClient
 
 	sqsClient := sqs.NewFromConfig(cfg)
 	ssmClient := ssm.NewFromConfig(cfg)
@@ -47,7 +55,7 @@ func main() {
 		for _, message := range output.Messages {
 			log.Printf("Received message: %s", aws.ToString(message.Body))
 
-			// Save message data in Postgres
+			// Save message data in RDS
 
 			// Delete the message after processing
 			_, err := sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{

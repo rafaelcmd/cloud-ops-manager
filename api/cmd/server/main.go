@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"log"
 	"net/http"
 )
@@ -36,8 +37,7 @@ func main() {
 
 	queueUrl = *param.Parameter.Value
 
-	log.Printf("Server running on port 5000")
-	err = http.ListenAndServe(":5000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	xraySegmentedServer := xray.Handler(xray.NewFixedSegmentNamer("resource-provisioner"), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/resource-provisioner" && r.Method == http.MethodPost {
 			handleProvisionPOSTRequest(w, r)
 		} else if r.URL.Path == "/resource-provisioner" && r.Method == http.MethodGet {
@@ -46,6 +46,9 @@ func main() {
 			http.NotFound(w, r)
 		}
 	}))
+
+	log.Printf("Server running on port 5000")
+	err = http.ListenAndServe(":5000", xraySegmentedServer)
 	if err != nil {
 		log.Fatalf("Failed to start server, %v", err)
 	}
@@ -53,6 +56,9 @@ func main() {
 
 func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received POST request to /resource-provisioner")
+
+	ctx, seg := xray.BeginSegment(r.Context(), "resource-provisioner")
+	defer seg.Close(nil)
 
 	payload := map[string]interface{}{
 		"action":   "provision",
@@ -68,7 +74,7 @@ func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Sending message to SQS queue: %s", queueUrl)
 
-	_, err = sqsClient.SendMessage(context.TODO(), &sqs.SendMessageInput{
+	_, err = sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 		QueueUrl:    aws.String(queueUrl),
 		MessageBody: aws.String(string(body)),
 	})
