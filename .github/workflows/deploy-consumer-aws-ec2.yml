@@ -37,8 +37,8 @@ jobs:
         id: ssm
         run: |
           echo "Fetching SSM parameters..."
-          echo "CONSUMER_INSTANCE_ID=$(aws ssm get-parameter --name "/CLOUD_OPS_MANAGER_CONSUMER/EC2_INSTANCE_ID" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
-          echo "DEPLOY_BUCKET=$(aws ssm get-parameter --name "/CLOUD_OPS_MANAGER_CONSUMER/DEPLOY_BUCKET_NAME" --query "Parameter.Value" --output text)" >> $GITHUB_ENV
+          echo "CONSUMER_INSTANCE_ID=$(aws ssm get-parameter --name '/CLOUD_OPS_MANAGER_CONSUMER/EC2_INSTANCE_ID' --query 'Parameter.Value' --output text)" >> $GITHUB_ENV
+          echo "DEPLOY_BUCKET=$(aws ssm get-parameter --name '/CLOUD_OPS_MANAGER_CONSUMER/DEPLOY_BUCKET_NAME' --query 'Parameter.Value' --output text)" >> $GITHUB_ENV
 
       - name: Upload consumer binary to S3
         run: |
@@ -52,32 +52,32 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --instance-ids "$CONSUMER_INSTANCE_ID" \
             --comment "Deploy consumer binary & service" \
-            --parameters '{"commands": [
-                "set -e",
-                "aws s3 cp s3://'"$DEPLOY_BUCKET"'/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer",
-                "chmod +x /usr/local/bin/cloud-ops-manager-consumer",
-                "if [ ! -f /etc/systemd/system/cloud-ops-manager-consumer.service ]; then",
-                "  cat > /etc/systemd/system/cloud-ops-manager-consumer.service <<EOF",
-                "[Unit]",
-                "Description=CloudOps Manager Consumer",
-                "After=network.target",
-                "",
-                "[Service]",
-                "ExecStart=/usr/local/bin/cloud-ops-manager-consumer",
-                "Restart=always",
-                "User=ec2-user",
-                "StandardOutput=append:/var/log/cloud-ops-manager-consumer.log",
-                "StandardError=inherit",
-                "",
-                "[Install]",
-                "WantedBy=multi-user.target",
-                "EOF",
-                "  chmod 644 /etc/systemd/system/cloud-ops-manager-consumer.service",
-                "  systemctl daemon-reload",
-                "  systemctl enable cloud-ops-manager-consumer",
-                "fi",
-                "systemctl restart cloud-ops-manager-consumer"
-              ]}'
+            --parameters '{"commands":[
+              "set -e",
+              "aws s3 cp s3://'"$DEPLOY_BUCKET"'/cloud-ops-manager-consumer /usr/local/bin/cloud-ops-manager-consumer",
+              "chmod +x /usr/local/bin/cloud-ops-manager-consumer",
+              "if [ ! -f /etc/systemd/system/cloud-ops-manager-consumer.service ]; then",
+              "  cat > /etc/systemd/system/cloud-ops-manager-consumer.service <<EOF",
+              "[Unit]",
+              "Description=CloudOps Manager Consumer",
+              "After=network.target",
+              "",
+              "[Service]",
+              "ExecStart=/usr/local/bin/cloud-ops-manager-consumer",
+              "Restart=always",
+              "User=ec2-user",
+              "StandardOutput=append:/var/log/cloud-ops-manager-consumer.log",
+              "StandardError=inherit",
+              "",
+              "[Install]",
+              "WantedBy=multi-user.target",
+              "EOF",
+              "  chmod 644 /etc/systemd/system/cloud-ops-manager-consumer.service",
+              "  systemctl daemon-reload",
+              "  systemctl enable cloud-ops-manager-consumer",
+              "fi",
+              "systemctl restart cloud-ops-manager-consumer"
+            ]}'
 
       - name: Check consumer service status via SSM
         run: |
