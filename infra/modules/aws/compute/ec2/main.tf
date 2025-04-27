@@ -30,6 +30,7 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
     echo "✅ Writing CloudWatch Agent configuration..."
     mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
+    chown ec2-user:ec2-user /opt/aws/amazon-cloudwatch-agent/etc/
 
     cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWAGENT
     {
@@ -201,6 +202,7 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
 
     echo "✅ Writing CloudWatch Agent configuration..."
     mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
+    chown ec2-user:ec2-user /opt/aws/amazon-cloudwatch-agent/etc/
 
     echo "✅ Writing CloudWatch Agent config..."
     cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWAGENT
