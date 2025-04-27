@@ -161,8 +161,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_api_ec2.id]
+    key    = "tag:Name"
+    values = ["cloud-ops-manager-api"]
   }
 
   parameters = {
@@ -337,8 +337,8 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+    key    = "tag:Name"
+    values = ["cloud-ops-manager-consumer"]
   }
 
   parameters = {
