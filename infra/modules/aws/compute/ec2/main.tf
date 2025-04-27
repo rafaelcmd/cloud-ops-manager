@@ -133,7 +133,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key = "name"
+    key = "tag:Name"
     values = ["cloud-ops-manager-api"]
   }
 
@@ -151,7 +151,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key = "name"
+    key = "tag:Name"
     values = ["cloud-ops-manager-api"]
   }
 
@@ -298,7 +298,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key = "name"
+    key = "tag:Name"
     values = ["cloud-ops-manager-consumer"]
   }
 
@@ -316,7 +316,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key = "name"
+    key = "tag:Name"
     values = ["cloud-ops-manager-consumer"]
   }
 
