@@ -329,8 +329,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
   }
 
   depends_on = [
-    aws_instance.cloud_ops_manager_consumer_ec2,
-    aws_iam_role_policy_attachment.cloud_ops_manager_consumer_ssm_managed_core_attach
+    aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent_package
   ]
 }
 
