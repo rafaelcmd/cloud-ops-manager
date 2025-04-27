@@ -10,6 +10,14 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
+  user_data = <<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y xray
+    systemctl enable xray
+    systemctl start xray
+  EOF
+
   tags = {
     Name = "cloud-ops-manager-api"
   }
@@ -157,25 +165,6 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   ]
 }
 
-resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
-  name = "AWS-ConfigureAWSPackage"
-
-  targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-api"]
-  }
-
-  parameters = {
-    action = "Install"
-    name   = "AmazonXRayDaemon"
-  }
-
-  depends_on = [
-    aws_instance.cloud_ops_manager_api_ec2,
-    aws_iam_role_policy_attachment.cloud_ops_manager_api_ssm_managed_core_attach
-  ]
-}
-
 # ------------------------------------------------------------------------------
 # Consumer EC2 Instance
 # ------------------------------------------------------------------------------
@@ -186,6 +175,14 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   vpc_security_group_ids = [var.cloud_ops_manager_consumer_security_group_id]
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
+
+  user_data = <<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y xray
+    systemctl enable xray
+    systemctl start xray
+  EOF
 
   tags = {
     Name = "cloud-ops-manager-consumer"
@@ -330,24 +327,5 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
 
   depends_on = [
     aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent_package
-  ]
-}
-
-resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
-  name = "AWS-ConfigureAWSPackage"
-
-  targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-consumer"]
-  }
-
-  parameters = {
-    action = "Install"
-    name   = "AmazonXRayDaemon"
-  }
-
-  depends_on = [
-    aws_instance.cloud_ops_manager_consumer_ec2,
-    aws_iam_role_policy_attachment.cloud_ops_manager_consumer_ssm_managed_core_attach
   ]
 }
