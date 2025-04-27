@@ -120,7 +120,7 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
-  name = "AmazonCloudWatch-ManageAgent-API"
+  name = "AmazonCloudWatch-ManageAgent"
 
   targets {
     key    = "tag:Name"
@@ -277,7 +277,7 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attac
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
-  name = "AmazonCloudWatch-ManageAgent-Consumer"
+  name = "AmazonCloudWatch-ManageAgent"
 
   targets {
     key    = "tag:Name"
