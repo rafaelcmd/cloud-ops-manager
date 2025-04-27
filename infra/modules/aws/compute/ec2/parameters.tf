@@ -75,5 +75,13 @@ resource "aws_ssm_parameter" "cloud_ops_manager_consumer_cloudwatch_agent_config
         }
       }
     }
+    metrics = {
+      metrics_collected = {
+        cpu = {
+          measurement = ["cpu_usage_idle", "cpu_usage_user", "cpu_usage_system"]
+          metrics_collection_interval = 60
+        }
+      }
+    }
   })
 }
