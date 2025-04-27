@@ -142,8 +142,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-api"]
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
 
   parameters = {
