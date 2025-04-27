@@ -133,8 +133,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
   name = "AWS-ConfigureAWSPackage"
 
   parameters = {
-    action = ["Install"]
-    name   = ["AmazonCloudWatchAgent"]
+    action = "Install"
+    name   = "AmazonCloudWatchAgent"
   }
 
   depends_on = [
@@ -146,8 +146,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   parameters = {
-    action = ["Install"]
-    name   = ["XRayDaemon"]
+    action = "Install"
+    name   = "XRayDaemon"
   }
 
   depends_on = [
@@ -288,8 +288,8 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
   name = "AWS-ConfigureAWSPackage"
 
   parameters = {
-    action = ["Install"]
-    name   = ["AmazonCloudWatchAgent"]
+    action = "Install"
+    name   = "AmazonCloudWatchAgent"
   }
 
   depends_on = [
@@ -301,8 +301,8 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   parameters = {
-    action = ["Install"]
-    name   = ["XRayDaemon"]
+    action = "Install"
+    name   = "XRayDaemon"
   }
 
   depends_on = [
