@@ -153,8 +153,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   }
 
   depends_on = [
-    aws_ssm_association.cloud_ops_manager_api_install_cw_agent_package,
-    aws_ssm_parameter.cloud_ops_manager_api_cloudwatch_agent_config
+    aws_ssm_association.cloud_ops_manager_api_install_cw_agent_package
   ]
 }
 
