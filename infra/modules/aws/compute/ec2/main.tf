@@ -167,7 +167,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
 
   parameters = {
     action = "Install"
-    name   = "AwsXRayDaemon"
+    name   = "AmazonXRayDaemon"
   }
 
   depends_on = [
@@ -343,7 +343,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
 
   parameters = {
     action = "Install"
-    name   = "AwsXRayDaemon"
+    name   = "AmazonXRayDaemon"
   }
 
   depends_on = [
