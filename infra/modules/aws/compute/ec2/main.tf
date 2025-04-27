@@ -277,6 +277,7 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attac
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_package" {
+  count = 0
   name = "AWS-ConfigureAWSPackage"
 
   targets {
