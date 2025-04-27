@@ -123,8 +123,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent_package" 
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-api"]
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
 
   parameters = {
@@ -161,8 +161,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-api"]
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
 
   parameters = {
@@ -295,12 +295,31 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attac
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
-resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
+resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_package" {
+  name = "AWS-ConfigureAWSPackage"
+
+  targets {
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+  }
+
+  parameters = {
+    action = "Install"
+    name   = "AmazonCloudWatchAgent"
+  }
+
+  depends_on = [
+    aws_instance.cloud_ops_manager_consumer_ec2,
+    aws_iam_role_policy_attachment.cloud_ops_manager_consumer_ssm_managed_core_attach
+  ]
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-consumer"]
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
   }
 
   parameters = {
@@ -319,8 +338,8 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-consumer"]
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
   }
 
   parameters = {
