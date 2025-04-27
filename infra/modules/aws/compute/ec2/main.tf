@@ -280,8 +280,8 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_pack
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+    key    = "tag:Name"
+    values = ["cloud-ops-manager-consumer"]
   }
 
   parameters = {
