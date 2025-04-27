@@ -119,7 +119,26 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
-resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
+resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent_package" {
+  name = "AWS-ConfigureAWSPackage"
+
+  targets {
+    key    = "tag:Name"
+    values = ["cloud-ops-manager-api"]
+  }
+
+  parameters = {
+    action = "Install"
+    name   = "AmazonCloudWatchAgent"
+  }
+
+  depends_on = [
+    aws_instance.cloud_ops_manager_api_ec2,
+    aws_iam_role_policy_attachment.cloud_ops_manager_api_ssm_managed_core_attach
+  ]
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
@@ -128,14 +147,13 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
   }
 
   parameters = {
-    action                            = "configure"
-    mode                              = "ec2"
-    optionalConfigurationLocation     = "/CloudOpsManager/CloudWatchAgentConfig-API"
+    action                        = "configure"
+    mode                          = "ec2"
+    optionalConfigurationLocation = "/CloudOpsManager/CloudWatchAgentConfig-API"
   }
 
   depends_on = [
-    aws_instance.cloud_ops_manager_api_ec2,
-    aws_iam_role_policy_attachment.cloud_ops_manager_api_ssm_managed_core_attach
+    aws_ssm_association.cloud_ops_manager_api_install_cw_agent_package
   ]
 }
 
