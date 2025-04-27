@@ -296,7 +296,6 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_pack
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
-  count = 0
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
