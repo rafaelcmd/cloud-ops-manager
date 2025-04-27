@@ -138,6 +138,20 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent_package" 
   ]
 }
 
+resource "null_resource" "wait_for_api_cw_agent_ready" {
+  provisioner "local-exec" {
+    command = <<EOT
+    while ! aws ssm describe-instance-information --filters "Key=InstanceIds,Values=${aws_instance.cloud_ops_manager_api_ec2.id}" | grep -q "Online"; do
+        sleep 10
+    done
+    EOT
+  }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_api_install_cw_agent_package
+  ]
+}
+
 resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   name = "AmazonCloudWatch-ManageAgent"
 
@@ -153,7 +167,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   }
 
   depends_on = [
-    aws_ssm_association.cloud_ops_manager_api_install_cw_agent_package
+    null_resource.wait_for_api_cw_agent_ready
   ]
 }
 
@@ -295,6 +309,20 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_pack
   ]
 }
 
+resource "null_resource" "wait_for_consumer_cw_agent_ready" {
+  provisioner "local-exec" {
+    command = <<EOT
+    while ! aws ssm describe-instance-information --filters "Key=InstanceIds,Values=${aws_instance.cloud_ops_manager_consumer_ec2.id}" | grep -q "Online"; do
+        sleep 10
+    done
+    EOT
+  }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent_package
+  ]
+}
+
 resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
   name = "AmazonCloudWatch-ManageAgent"
 
@@ -310,6 +338,6 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
   }
 
   depends_on = [
-    aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent_package
+    null_resource.wait_for_consumer_cw_agent_ready
   ]
 }
