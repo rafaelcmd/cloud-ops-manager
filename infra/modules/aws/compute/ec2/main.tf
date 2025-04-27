@@ -10,16 +10,6 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
-  user_data = <<-EOF
-      #!/bin/bash
-
-      /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-        -a fetch-config \
-        -m ec2 \
-        -c ssm:/CloudOpsManager/CloudWatchAgentConfig \
-        -s
-    EOF
-
   tags = {
     Name = "cloud-ops-manager-api"
   }
@@ -106,7 +96,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
 }
 
 resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_ssm_managed_core_attach" {
-  role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
+  role       = aws_iam_role.cloud_ops_manager_api_ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
@@ -130,16 +120,18 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
-  name = "AWS-ConfigureAWSPackage"
+  name = "AmazonCloudWatch-ManageAgent-API"
 
   targets {
-    key = "tag:Name"
+    key    = "tag:Name"
     values = ["cloud-ops-manager-api"]
   }
 
   parameters = {
-    action = "Install"
-    name   = "AmazonCloudWatchAgent"
+    action                            = "configure"
+    mode                              = "ec2"
+    optionalConfigurationLocation     = "/CloudOpsManager/CloudWatchAgentConfig-API"
+    optionalConfigurationLocationType = "ssm"
   }
 
   depends_on = [
@@ -151,7 +143,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key = "tag:Name"
+    key    = "tag:Name"
     values = ["cloud-ops-manager-api"]
   }
 
@@ -175,16 +167,6 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   vpc_security_group_ids = [var.cloud_ops_manager_consumer_security_group_id]
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
-
-  user_data = <<-EOF
-      #!/bin/bash
-
-      /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-        -a fetch-config \
-        -m ec2 \
-        -c ssm:/CloudOpsManager/CloudWatchAgentConfig \
-        -s
-    EOF
 
   tags = {
     Name = "cloud-ops-manager-consumer"
@@ -295,16 +277,18 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attac
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
-  name = "AWS-ConfigureAWSPackage"
+  name = "AmazonCloudWatch-ManageAgent-Consumer"
 
   targets {
-    key = "tag:Name"
+    key    = "tag:Name"
     values = ["cloud-ops-manager-consumer"]
   }
 
   parameters = {
-    action = "Install"
-    name   = "AmazonCloudWatchAgent"
+    action                            = "configure"
+    mode                              = "ec2"
+    optionalConfigurationLocation     = "/CloudOpsManager/CloudWatchAgentConfig-Consumer"
+    optionalConfigurationLocationType = "ssm"
   }
 
   depends_on = [
@@ -316,7 +300,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key = "tag:Name"
+    key    = "tag:Name"
     values = ["cloud-ops-manager-consumer"]
   }
 

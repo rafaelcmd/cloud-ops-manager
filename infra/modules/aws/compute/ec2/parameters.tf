@@ -23,9 +23,9 @@ resource "aws_ssm_parameter" "cloud_ops_manager_consumer_ec2_instance_id" {
 }
 
 resource "aws_ssm_parameter" "cloud_ops_manager_api_cloudwatch_agent_config" {
-  name        = "/CloudOpsManager/CloudWatchAgentConfig"
-  type        = "String"
-  value       = jsonencode({
+  name = "/CloudOpsManager/CloudWatchAgentConfig-API"
+  type = "String"
+  value = jsonencode({
     agent = {
       metrics_collection_interval = 60
       run_as_user                 = "root"
@@ -35,9 +35,9 @@ resource "aws_ssm_parameter" "cloud_ops_manager_api_cloudwatch_agent_config" {
         files = {
           collect_list = [
             {
-              file_path         = "/var/log/cloud-ops-manager-api.log"
-              log_group_name    = aws_cloudwatch_log_group.cloud_ops_manager_api_logs.name
-              log_stream_name   = "cloud-ops-manager-api-{instance_id}"
+              file_path       = "/var/log/cloud-ops-manager-api.log"
+              log_group_name  = aws_cloudwatch_log_group.cloud_ops_manager_api_logs.name
+              log_stream_name = "cloud-ops-manager-api-{instance_id}"
             }
           ]
         }
@@ -47,9 +47,9 @@ resource "aws_ssm_parameter" "cloud_ops_manager_api_cloudwatch_agent_config" {
 }
 
 resource "aws_ssm_parameter" "cloud_ops_manager_consumer_cloudwatch_agent_config" {
-  name        = "/CloudOpsManagerConsumer/CloudWatchAgentConfig"
-  type        = "String"
-  value       = jsonencode({
+  name = "/CloudOpsManager/CloudWatchAgentConfig-Consumer"
+  type = "String"
+  value = jsonencode({
     agent = {
       metrics_collection_interval = 60
       run_as_user                 = "root"
@@ -59,9 +59,9 @@ resource "aws_ssm_parameter" "cloud_ops_manager_consumer_cloudwatch_agent_config
         files = {
           collect_list = [
             {
-              file_path         = "/var/log/cloud-ops-manager-consumer.log"
-              log_group_name    = aws_cloudwatch_log_group.cloud_ops_manager_consumer_logs.name
-              log_stream_name   = "cloud-ops-manager-consumer-{instance_id}"
+              file_path       = "/var/log/cloud-ops-manager-consumer.log"
+              log_group_name  = aws_cloudwatch_log_group.cloud_ops_manager_consumer_logs.name
+              log_stream_name = "cloud-ops-manager-consumer-{instance_id}"
             }
           ]
         }
