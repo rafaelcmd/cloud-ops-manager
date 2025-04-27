@@ -31,7 +31,7 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     echo "✅ Writing CloudWatch Agent configuration..."
     mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
 
-    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CWAGENT'
+    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWAGENT
     {
       "agent": {
         "metrics_collection_interval": 60,
@@ -59,10 +59,9 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
     systemctl start xray
 
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-      -a fetch-config \
-      -m ec2 \
+      -a start \
       -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
-      -s
+      -m ec2
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
@@ -204,7 +203,7 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
 
     echo "✅ Writing CloudWatch Agent config..."
-    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CWAGENT'
+    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWAGENT
     {
       "agent": {
         "metrics_collection_interval": 60,
@@ -232,10 +231,9 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
     systemctl start xray
 
     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-      -a fetch-config \
-      -m ec2 \
+      -a start \
       -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
-      -s
+      -m ec2
 
     systemctl enable amazon-cloudwatch-agent
     systemctl start amazon-cloudwatch-agent
