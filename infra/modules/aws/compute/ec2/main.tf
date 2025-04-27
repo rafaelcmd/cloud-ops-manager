@@ -131,7 +131,6 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
     action                            = "configure"
     mode                              = "ec2"
     optionalConfigurationLocation     = "/CloudOpsManager/CloudWatchAgentConfig-API"
-    optionalConfigurationLocationType = "ssm"
   }
 
   depends_on = [
@@ -288,7 +287,6 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
     action                            = "configure"
     mode                              = "ec2"
     optionalConfigurationLocation     = "/CloudOpsManager/CloudWatchAgentConfig-Consumer"
-    optionalConfigurationLocationType = "ssm"
   }
 
   depends_on = [
