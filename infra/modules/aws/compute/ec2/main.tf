@@ -11,62 +11,14 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
   user_data = <<-EOF
-    #!/bin/bash
-    set -e
+      #!/bin/bash
 
-    echo "✅ Updating system packages..."
-    yum update -y
-
-    echo "✅ Installing CloudWatch Agent..."
-    yum install -y amazon-cloudwatch-agent
-
-    echo "✅ Installing AWS X-Ray Daemon..."
-    yum install -y aws-xray-daemon
-
-    # Ensure the application log file exists
-    mkdir -p /var/log
-    touch /var/log/cloud-ops-manager-api.log
-    chown ec2-user:ec2-user /var/log/cloud-ops-manager-api.log
-
-    echo "✅ Writing CloudWatch Agent configuration..."
-    mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
-    chown ec2-user:ec2-user /opt/aws/amazon-cloudwatch-agent/etc/
-
-    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWAGENT
-    {
-      "agent": {
-        "metrics_collection_interval": 60,
-        "run_as_user": "root"
-      },
-      "logs": {
-        "logs_collected": {
-          "files": {
-            "collect_list": [
-              {
-                "file_path": "/var/log/cloud-ops-manager-api.log",
-                "log_group_name": "${aws_cloudwatch_log_group.cloud_ops_manager_api_logs.name}",
-                "log_stream_name": "cloud-ops-manager-api-{instance_id}"
-              }
-            ]
-          }
-        }
-      }
-    }
-    CWAGENT
-
-    systemctl daemon-reload
-
-    systemctl enable xray
-    systemctl start xray
-
-    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-      -a start \
-      -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
-      -m ec2
-
-    systemctl enable amazon-cloudwatch-agent
-    systemctl start amazon-cloudwatch-agent
-  EOF
+      /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+        -a fetch-config \
+        -m ec2 \
+        -c ssm:/CloudOpsManager/CloudWatchAgentConfig \
+        -s
+    EOF
 
   tags = {
     Name = "cloud-ops-manager-api"
@@ -144,12 +96,18 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
       {
         Effect = "Allow"
         Action = [
-          "ssm:GetParameter"
+          "ssm:GetParameter",
+          "ssm:GetParameters",
         ]
         Resource = var.provisioner_consumer_sqs_queue_parameter_arn
       }
     ]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_ssm_managed_core_attach" {
+  role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_cw_agent_attach" {
@@ -171,6 +129,32 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
+resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
+  name = "AWS-ConfigureAWSPackage"
+
+  parameters = {
+    action = ["Install"]
+    name   = ["AmazonCloudWatchAgent"]
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.cloud_ops_manager_api_ssm_managed_core_attach
+  ]
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
+  name = "AWS-ConfigureAWSPackage"
+
+  parameters = {
+    action = ["Install"]
+    name   = ["XRayDaemon"]
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.cloud_ops_manager_api_ssm_managed_core_attach
+  ]
+}
+
 # ------------------------------------------------------------------------------
 # Consumer EC2 Instance
 # ------------------------------------------------------------------------------
@@ -183,67 +167,14 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
 
   user_data = <<-EOF
-    #!/bin/bash
-    set -e
+      #!/bin/bash
 
-    echo "✅ Updating system packages..."
-    yum update -y
-
-    echo "✅ Installing CloudWatch Agent..."
-    yum install -y amazon-cloudwatch-agent
-
-    echo "✅ Installing AWS X-Ray Daemon..."
-    yum install -y aws-xray-daemon
-
-    # Ensure your application log file exists
-    mkdir -p /var/log
-    touch /var/log/cloud-ops-manager-consumer.log
-    chown ec2-user:ec2-user /var/log/cloud-ops-manager-consumer.log
-
-    echo "✅ Writing CloudWatch Agent configuration..."
-    mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
-    chown ec2-user:ec2-user /opt/aws/amazon-cloudwatch-agent/etc/
-
-    echo "✅ Writing CloudWatch Agent config..."
-    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWAGENT
-    {
-      "agent": {
-        "metrics_collection_interval": 60,
-        "run_as_user": "root"
-      },
-      "logs": {
-        "logs_collected": {
-          "files": {
-            "collect_list": [
-              {
-                "file_path": "/var/log/cloud-ops-manager-consumer.log",
-                "log_group_name": "${aws_cloudwatch_log_group.cloud_ops_manager_consumer_logs.name}",
-                "log_stream_name": "cloud-ops-manager-consumer-{instance_id}"
-              }
-            ]
-          }
-        }
-      }
-    }
-    CWAGENT
-
-    systemctl daemon-reload
-
-    systemctl enable xray
-    systemctl start xray
-
-    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-      -a start \
-      -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
-      -m ec2
-
-    systemctl enable amazon-cloudwatch-agent
-    systemctl start amazon-cloudwatch-agent
-
-    yum install -y amazon-ssm-agent
-    systemctl enable amazon-ssm-agent
-    systemctl start amazon-ssm-agent
-  EOF
+      /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+        -a fetch-config \
+        -m ec2 \
+        -c ssm:/CloudOpsManager/CloudWatchAgentConfig \
+        -s
+    EOF
 
   tags = {
     Name = "cloud-ops-manager-consumer"
@@ -292,6 +223,25 @@ resource "aws_iam_role_policy" "cloud_ops_manager_consumer_sqs_access" {
   })
 }
 
+resource "aws_iam_role_policy" "cloud_ops_manager_consumer_ssm_access" {
+  name = "AllowSSMGetParameters"
+  role = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = var.provisioner_consumer_sqs_queue_parameter_arn
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "cloud_ops_manager_consumer_s3_access" {
   name = "AllowS3ListBucket"
   role = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
@@ -310,7 +260,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_consumer_s3_access" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_ssm_attach" {
+resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_ssm_managed_core_attach" {
   role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
@@ -332,4 +282,30 @@ resource "aws_cloudwatch_log_group" "cloud_ops_manager_consumer_logs" {
 resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attach" {
   role       = aws_iam_role.cloud_ops_manager_consumer_ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
+  name = "AWS-ConfigureAWSPackage"
+
+  parameters = {
+    action = ["Install"]
+    name   = ["AmazonCloudWatchAgent"]
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.cloud_ops_manager_consumer_ssm_managed_core_attach
+  ]
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
+  name = "AWS-ConfigureAWSPackage"
+
+  parameters = {
+    action = ["Install"]
+    name   = ["XRayDaemon"]
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.cloud_ops_manager_consumer_ssm_managed_core_attach
+  ]
 }
