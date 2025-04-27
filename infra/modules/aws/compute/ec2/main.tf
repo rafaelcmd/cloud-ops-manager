@@ -10,16 +10,6 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
-  user_data = <<-EOF
-    #!/bin/bash
-    # Install CloudWatch Agent
-    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-      -a fetch-config \
-      -m ec2 \
-      -c ssm:/CloudOpsManager/CloudWatchAgentConfig-API \
-      -s
-  EOF
-
   tags = {
     Name = "cloud-ops-manager-api"
   }
@@ -133,8 +123,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent_package" 
   name = "AWS-ConfigureAWSPackage"
 
   targets {
-    key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_api_ec2.id]
+    key    = "tag:Name"
+    values = ["cloud-ops-manager-api"]
   }
 
   parameters = {
