@@ -132,6 +132,11 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
 resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
   name = "AWS-ConfigureAWSPackage"
 
+  targets {
+    key = "name"
+    values = ["cloud-ops-manager-api"]
+  }
+
   parameters = {
     action = "Install"
     name   = "AmazonCloudWatchAgent"
@@ -144,6 +149,11 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
 
 resource "aws_ssm_association" "cloud_ops_manager_api_install_xray" {
   name = "AWS-ConfigureAWSPackage"
+
+  targets {
+    key = "name"
+    values = ["cloud-ops-manager-api"]
+  }
 
   parameters = {
     action = "Install"
@@ -287,6 +297,11 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attac
 resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
   name = "AWS-ConfigureAWSPackage"
 
+  targets {
+    key = "name"
+    values = ["cloud-ops-manager-consumer"]
+  }
+
   parameters = {
     action = "Install"
     name   = "AmazonCloudWatchAgent"
@@ -299,6 +314,11 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_install_xray" {
   name = "AWS-ConfigureAWSPackage"
+
+  targets {
+    key = "name"
+    values = ["cloud-ops-manager-consumer"]
+  }
 
   parameters = {
     action = "Install"
