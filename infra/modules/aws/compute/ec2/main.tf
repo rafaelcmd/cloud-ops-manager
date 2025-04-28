@@ -193,6 +193,10 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
       }
     ]
   })
+
+  depends_on = [
+    null_resource.wait_for_api_cw_agent_ready
+  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
@@ -204,7 +208,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
   }
 
   depends_on = [
-    aws_instance.cloud_ops_manager_api_ec2
+    null_resource.wait_for_api_cw_agent_ready
   ]
 }
 
@@ -223,8 +227,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
   }
 
   depends_on = [
-    aws_ssm_association.cloud_ops_manager_api_adot_config,
-    aws_ssm_association.cloud_ops_manager_api_adot_install
+    null_resource.wait_for_api_cw_agent_ready
   ]
 }
 
@@ -421,6 +424,10 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
       }
     ]
   })
+
+  depends_on = [
+    null_resource.wait_for_consumer_cw_agent_ready
+  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
@@ -432,7 +439,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
   }
 
   depends_on = [
-    aws_instance.cloud_ops_manager_consumer_ec2
+    null_resource.wait_for_consumer_cw_agent_ready
   ]
 }
 
@@ -451,7 +458,6 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
   }
 
   depends_on = [
-    aws_ssm_association.cloud_ops_manager_consumer_adot_config,
-    aws_ssm_association.cloud_ops_manager_consumer_adot_install
+    null_resource.wait_for_consumer_cw_agent_ready
   ]
 }
