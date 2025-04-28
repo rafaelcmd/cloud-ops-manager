@@ -174,7 +174,7 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
   name          = "CloudOpsManagerAPIADOTInstall"
   document_type = "Command"
 
-  content = {
+  content = jsonencode({
     schemaVersion = "2.2"
     description   = "Install ADOT on CloudOpsManager API EC2 instance"
     mainSteps = [
@@ -192,7 +192,7 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
         }
       }
     ]
-  }
+  })
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
@@ -402,7 +402,7 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
   name          = "CloudOpsManagerConsumerADOTInstall"
   document_type = "Command"
 
-  content = {
+  content = jsonencode({
     schemaVersion = "2.2"
     description   = "Install ADOT on CloudOpsManager Consumer EC2 instance"
     mainSteps = [
@@ -420,7 +420,7 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
         }
       }
     ]
-  }
+  })
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
