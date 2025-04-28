@@ -10,6 +10,12 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
+  user_data = <<EOT
+  #!/bin/bash
+  curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+  yum install -y /home/ec2-user/xray.rpm
+  EOT
+
   tags = {
     Name = "cloud-ops-manager-api"
   }
@@ -180,6 +186,12 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   vpc_security_group_ids = [var.cloud_ops_manager_consumer_security_group_id]
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
+
+  user_data = <<EOT
+  #!/bin/bash
+  curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+  yum install -y /home/ec2-user/xray.rpm
+  EOT
 
   tags = {
     Name = "cloud-ops-manager-consumer"
