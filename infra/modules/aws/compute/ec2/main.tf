@@ -10,14 +10,6 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
-  user_data = <<EOF
-    #!/bin/bash
-    yum update -y
-    yum install -y xray
-    systemctl enable xray
-    systemctl start xray
-  EOF
-
   tags = {
     Name = "cloud-ops-manager-api"
   }
@@ -188,14 +180,6 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   vpc_security_group_ids = [var.cloud_ops_manager_consumer_security_group_id]
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
-
-  user_data = <<EOF
-    #!/bin/bash
-    yum update -y
-    yum install -y xray
-    systemctl enable xray
-    systemctl start xray
-  EOF
 
   tags = {
     Name = "cloud-ops-manager-consumer"
