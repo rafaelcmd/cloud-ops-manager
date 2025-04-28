@@ -12,8 +12,13 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   user_data = <<EOT
   #!/bin/bash
-  curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+  set -e
+
+  curl -f https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+
   sudo yum install -y /home/ec2-user/xray.rpm
+
+  rm -f /home/ec2-user/xray.rpm
   EOT
 
   tags = {
@@ -189,8 +194,13 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
 
   user_data = <<EOT
   #!/bin/bash
-  curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+  set -e
+
+  curl -f https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+
   sudo yum install -y /home/ec2-user/xray.rpm
+
+  rm -f /home/ec2-user/xray.rpm
   EOT
 
   tags = {
