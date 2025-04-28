@@ -27,32 +27,32 @@ resource "aws_ssm_parameter" "cloud_ops_manager_api_cloudwatch_agent_config" {
   type = "String"
   value = jsonencode(
     {
-      "agent": {
-        "metrics_collection_interval": 60,
-        "run_as_user": "root"
+      "agent" : {
+        "metrics_collection_interval" : 60,
+        "run_as_user" : "root"
       },
-      "logs": {
-        "logs_collected": {
-          "files": {
-            "collect_list": [
+      "logs" : {
+        "logs_collected" : {
+          "files" : {
+            "collect_list" : [
               {
-                "file_path": "/var/log/cloud-ops-manager-api.log",
-                "log_group_name": "/aws/ec2/cloud-ops-manager-api",
-                "log_stream_name": "cloud-ops-manager-api-{instance_id}"
+                "file_path" : "/var/log/cloud-ops-manager-api.log",
+                "log_group_name" : "/aws/ec2/cloud-ops-manager-api",
+                "log_stream_name" : "cloud-ops-manager-api-{instance_id}"
               }
             ]
           }
         }
       },
-      "metrics": {
-        "metrics_collected": {
-          "cpu": {
-            "measurement": [
+      "metrics" : {
+        "metrics_collected" : {
+          "cpu" : {
+            "measurement" : [
               "cpu_usage_idle",
               "cpu_usage_user",
               "cpu_usage_system"
             ],
-            "metrics_collection_interval": 60
+            "metrics_collection_interval" : 60
           }
         }
       }
@@ -65,35 +65,77 @@ resource "aws_ssm_parameter" "cloud_ops_manager_consumer_cloudwatch_agent_config
   type = "String"
   value = jsonencode(
     {
-      "agent": {
-        "metrics_collection_interval": 60,
-        "run_as_user": "root"
+      "agent" : {
+        "metrics_collection_interval" : 60,
+        "run_as_user" : "root"
       },
-      "logs": {
-        "logs_collected": {
-          "files": {
-            "collect_list": [
+      "logs" : {
+        "logs_collected" : {
+          "files" : {
+            "collect_list" : [
               {
-                "file_path": "/var/log/cloud-ops-manager-consumer.log",
-                "log_group_name": "/aws/ec2/cloud-ops-manager-consumer",
-                "log_stream_name": "cloud-ops-manager-consumer-{instance_id}"
+                "file_path" : "/var/log/cloud-ops-manager-consumer.log",
+                "log_group_name" : "/aws/ec2/cloud-ops-manager-consumer",
+                "log_stream_name" : "cloud-ops-manager-consumer-{instance_id}"
               }
             ]
           }
         }
       },
-      "metrics": {
-        "metrics_collected": {
-          "cpu": {
-            "measurement": [
+      "metrics" : {
+        "metrics_collected" : {
+          "cpu" : {
+            "measurement" : [
               "cpu_usage_idle",
               "cpu_usage_user",
               "cpu_usage_system"
             ],
-            "metrics_collection_interval": 60
+            "metrics_collection_interval" : 60
           }
         }
       }
     }
   )
+}
+
+resource "aws_ssm_parameter" "cloud_ops_manager_api_adot_collector_xray_config" {
+  name  = "/CloudOpsManager/ADOTCollectorConfig-API"
+  type  = "String"
+  value = <<-EOT
+    receivers:
+        otlp:
+          protocols:
+            grpc:
+            http:
+
+      exporters:
+        awsxray:
+
+      service:
+        pipelines:
+          traces:
+            receivers: [otlp]
+            exporters: [awsxray]
+  EOT
+}
+
+resource "aws_ssm_parameter" "cloud_ops_manager_consumer_adot_collector_xray_config" {
+  name  = "/CloudOpsManager/ADOTCollectorConfig-Consumer"
+  type  = "String"
+  value = <<-EOT
+    receivers:
+        otlp:
+          protocols:
+            grpc:
+            http:
+
+      exporters:
+        awsxray:
+
+      service:
+        pipelines:
+          traces:
+            receivers: [otlp]
+            exporters: [awsxray]
+  EOT
 }

@@ -10,17 +10,6 @@ resource "aws_instance" "cloud_ops_manager_api_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_api_ec2_profile.name
 
-  user_data = <<EOT
-  #!/bin/bash
-  set -e
-  sudo yum update -y
-  curl -f https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
-  sudo yum install -y /home/ec2-user/xray.rpm
-  rm -f /home/ec2-user/xray.rpm
-  sudo systemctl enable xray
-  sudo systemctl start xray
-  EOT
-
   tags = {
     Name = "cloud-ops-manager-api"
   }
@@ -181,6 +170,64 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   ]
 }
 
+resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
+  name          = "CloudOpsManagerAPIADOTInstall"
+  document_type = "Command"
+
+  content = {
+    schemaVersion = "2.2"
+    description   = "Install ADOT on CloudOpsManager API EC2 instance"
+    mainSteps = [
+      {
+        action = "aws:runShellScript"
+        name   = "installADOT"
+        inputs = {
+          runCommand = [
+            "sudo yum update -y",
+            "curl -O https://aws-otel-collector.s3.amazonaws.com/aws-otel-collector-latest-linux-amd64.rpm",
+            "sudo rpm -Uvh ./aws-otel-collector-latest-linux-amd64.rpm",
+            "sudo systemctl enable aws-otel-collector",
+            "sudo systemctl start aws-otel-collector"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
+  name = aws_ssm_document.cloud_ops_manager_api_adot_install_document.name
+
+  targets {
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
+  }
+
+  depends_on = [
+    aws_instance.cloud_ops_manager_api_ec2
+  ]
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
+  name = "AmazonCloudWatch-ManageAgent"
+
+  targets {
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
+  }
+
+  parameters = {
+    action                        = "configure"
+    mode                          = "ec2"
+    optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-API"
+  }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_api_adot_config,
+    aws_ssm_association.cloud_ops_manager_api_adot_install
+  ]
+}
+
 # ------------------------------------------------------------------------------
 # Consumer EC2 Instance
 # ------------------------------------------------------------------------------
@@ -191,17 +238,6 @@ resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
   vpc_security_group_ids = [var.cloud_ops_manager_consumer_security_group_id]
 
   iam_instance_profile = aws_iam_instance_profile.cloud_ops_manager_consumer_ec2_profile.name
-
-  user_data = <<EOT
-  #!/bin/bash
-  set -e
-  sudo yum update -y
-  curl -f https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
-  sudo yum install -y /home/ec2-user/xray.rpm
-  rm -f /home/ec2-user/xray.rpm
-  sudo systemctl enable xray
-  sudo systemctl start xray
-  EOT
 
   tags = {
     Name = "cloud-ops-manager-consumer"
@@ -352,12 +388,70 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
   }
 
   parameters = {
-    action                            = "configure"
-    mode                              = "ec2"
-    optionalConfigurationLocation     = "/CloudOpsManager/CloudWatchAgentConfig-Consumer"
+    action                        = "configure"
+    mode                          = "ec2"
+    optionalConfigurationLocation = "/CloudOpsManager/CloudWatchAgentConfig-Consumer"
   }
 
   depends_on = [
     null_resource.wait_for_consumer_cw_agent_ready
+  ]
+}
+
+resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
+  name          = "CloudOpsManagerConsumerADOTInstall"
+  document_type = "Command"
+
+  content = {
+    schemaVersion = "2.2"
+    description   = "Install ADOT on CloudOpsManager Consumer EC2 instance"
+    mainSteps = [
+      {
+        action = "aws:runShellScript"
+        name   = "installADOT"
+        inputs = {
+          runCommand = [
+            "sudo yum update -y",
+            "curl -O https://aws-otel-collector.s3.amazonaws.com/aws-otel-collector-latest-linux-amd64.rpm",
+            "sudo rpm -Uvh ./aws-otel-collector-latest-linux-amd64.rpm",
+            "sudo systemctl enable aws-otel-collector",
+            "sudo systemctl start aws-otel-collector"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
+  name = aws_ssm_document.cloud_ops_manager_consumer_adot_install_document.name
+
+  targets {
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+  }
+
+  depends_on = [
+    aws_instance.cloud_ops_manager_consumer_ec2
+  ]
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
+  name = "AmazonCloudWatch-ManageAgent"
+
+  targets {
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+  }
+
+  parameters = {
+    action                        = "configure"
+    mode                          = "ec2"
+    optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-Consumer"
+  }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_consumer_adot_config,
+    aws_ssm_association.cloud_ops_manager_consumer_adot_install
   ]
 }
