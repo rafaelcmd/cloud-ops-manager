@@ -141,8 +141,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent_package" 
 resource "null_resource" "wait_for_api_cw_agent_ready" {
   provisioner "local-exec" {
     command = <<EOT
-      echo "Waiting 60 seconds to allow CloudWatch Agent installation..."
-      sleep 60
+      echo "Waiting 120 seconds to allow CloudWatch Agent installation..."
+      sleep 120
     EOT
   }
 
@@ -311,8 +311,8 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_pack
 resource "null_resource" "wait_for_consumer_cw_agent_ready" {
   provisioner "local-exec" {
     command = <<EOT
-      echo "Waiting 60 seconds to allow CloudWatch Agent installation..."
-      sleep 60
+      echo "Waiting 120 seconds to allow CloudWatch Agent installation..."
+      sleep 120
     EOT
   }
 
