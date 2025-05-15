@@ -13,15 +13,25 @@ var (
 	ErrInvalidSpec          = errors.New("invalid spec")
 )
 
-type ProvisionRequest struct {
-	ID       uuid.UUID                  `json:"id"`
-	Type     valueObjects.ResourceType  `json:"type"`
-	Provider valueObjects.CloudProvider `json:"provider"`
-	Spec     interface{}                `json:"spec"`
+type ProvisionSpec interface {
+	ValidateSpec() error
 }
 
-func NewProvisionRequest(id uuid.UUID, resourceType valueObjects.ResourceType, provider valueObjects.CloudProvider, spec interface{}) (*ProvisionRequest, error) {
-	if id == uuid.Nil {
+type ProvisionResourceID uuid.UUID
+
+type ProvisionResource struct {
+	ID       ProvisionResourceID        `json:"id"`
+	Type     valueObjects.ResourceType  `json:"type"`
+	Provider valueObjects.CloudProvider `json:"provider"`
+	Spec     ProvisionSpec              `json:"spec"`
+}
+
+func NewProvisionResourceID() ProvisionResourceID {
+	return ProvisionResourceID(uuid.New())
+}
+
+func NewProvisionResource(id ProvisionResourceID, resourceType valueObjects.ResourceType, provider valueObjects.CloudProvider, spec ProvisionSpec) (*ProvisionResource, error) {
+	if uuid.UUID(id) == uuid.Nil {
 		return nil, ErrInvalidID
 	}
 
@@ -37,7 +47,11 @@ func NewProvisionRequest(id uuid.UUID, resourceType valueObjects.ResourceType, p
 		return nil, ErrInvalidSpec
 	}
 
-	return &ProvisionRequest{
+	if err := spec.ValidateSpec(); err != nil {
+		return nil, err
+	}
+
+	return &ProvisionResource{
 		ID:       id,
 		Type:     resourceType,
 		Provider: provider,
