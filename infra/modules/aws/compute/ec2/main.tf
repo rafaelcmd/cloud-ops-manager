@@ -293,7 +293,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_consumer_ssm_access" {
         ]
         Resource = [
           var.provisioner_consumer_sqs_queue_parameter_arn,
-          aws_ssm_parameter.cloud_ops_manager_api_cloudwatch_agent_config.arn
+          aws_ssm_parameter.cloud_ops_manager_consumer_cloudwatch_agent_config.arn
         ]
       }
     ]
