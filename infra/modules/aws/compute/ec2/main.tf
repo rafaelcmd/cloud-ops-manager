@@ -134,10 +134,20 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
   }
 
   depends_on = [
-    aws_instance.cloud_ops_manager_api_ec2,
-    aws_iam_role_policy.cloud_ops_manager_api_ssm_access
+    aws_instance.cloud_ops_manager_api_ec2
   ]
 }
+
+resource "null_resource" "wait_for_cloudwatch_agent" {
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_api_install_cw_agent
+  ]
+}
+
 
 resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   name = "AmazonCloudWatch-ManageAgent"
@@ -154,7 +164,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
   }
 
   depends_on = [
-    aws_ssm_association.cloud_ops_manager_api_install_cw_agent
+    null_resource.wait_for_cloudwatch_agent
   ]
 }
 
@@ -347,8 +357,17 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
   }
 
   depends_on = [
-    aws_instance.cloud_ops_manager_consumer_ec2,
-    aws_iam_role_policy.cloud_ops_manager_consumer_ssm_access
+    aws_instance.cloud_ops_manager_consumer_ec2
+  ]
+}
+
+resource "null_resource" "wait_for_cloudwatch_agent" {
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent
   ]
 }
 
@@ -367,7 +386,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
   }
 
   depends_on = [
-    aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent
+    null_resource.wait_for_cloudwatch_agent
   ]
 }
 
