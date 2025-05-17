@@ -32,3 +32,13 @@ variable "cloud_ops_manager_consumer_deploy_bucket_arn" {
   type        = string
   description = "S3 Bucket ARN"
 }
+
+variable "nat_gateway_id" {
+  type        = string
+  description = "NAT Gateway ID"
+}
+
+variable "route_table_association_id" {
+  type        = string
+  description = "Route Table Association ID"
+}

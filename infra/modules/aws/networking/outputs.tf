@@ -27,3 +27,11 @@ output "rds_subnet_group" {
   description = "RDS Subnet Group"
   value       = aws_db_subnet_group.rds_subnet_group.name
 }
+
+output "nat_gateway_ready" {
+  value = aws_nat_gateway.cloud_ops_manager_nat_gateway_a.id
+}
+
+output "private_route_table_association_ready" {
+  value = aws_route_table_association.cloud_ops_manager_private_association_a.id
+}

@@ -365,6 +365,11 @@ resource "null_resource" "wait_for_consumer_cloudwatch_agent" {
     command = "sleep 120"
   }
 
+  triggers = {
+    nat_gateway_id = var.nat_gateway_id
+    route_table_association_id = var.route_table_association_id
+  }
+
   depends_on = [
     aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent
   ]
