@@ -170,6 +170,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
 resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
   name          = "CloudOpsManagerAPIADOTInstall"
   document_type = "Command"
+  document_format = "JSON"
 
   content = jsonencode({
     schemaVersion = "2.2"
@@ -190,6 +191,10 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
       }
     ]
   })
+
+  depends_on = [
+    null_resource.wait_for_api_cloudwatch_agent
+  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
@@ -199,6 +204,10 @@ resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
     key    = "InstanceIds"
     values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
+
+  depends_on = [
+    aws_ssm_document.cloud_ops_manager_api_adot_install_document
+  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
@@ -214,6 +223,10 @@ resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-API"
   }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_api_adot_install
+  ]
 }
 
 # ------------------------------------------------------------------------------
@@ -394,6 +407,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
 resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
   name          = "CloudOpsManagerConsumerADOTInstall"
   document_type = "Command"
+  document_format = "JSON"
 
   content = jsonencode({
     schemaVersion = "2.2"
