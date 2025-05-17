@@ -28,7 +28,7 @@ resource "aws_ssm_parameter" "cloud_ops_manager_api_cloudwatch_agent_config" {
   value = jsonencode({
     agent = {
       metrics_collection_interval = 60
-      run_as_user                = "root"
+      run_as_user                 = "root"
     },
     logs = {
       logs_collected = {
@@ -67,7 +67,7 @@ resource "aws_ssm_parameter" "cloud_ops_manager_consumer_cloudwatch_agent_config
   value = jsonencode({
     agent = {
       metrics_collection_interval = 60
-      run_as_user                = "root"
+      run_as_user                 = "root"
     },
     logs = {
       logs_collected = {

@@ -168,7 +168,6 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
 }
 
 resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
-  count = 0
   name          = "CloudOpsManagerAPIADOTInstall"
   document_type = "Command"
 
@@ -194,17 +193,15 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
-  count = 0
-  name = aws_ssm_document.cloud_ops_manager_api_adot_install_document[0].name
+  name = aws_ssm_document.cloud_ops_manager_api_adot_install_document.name
 
   targets {
     key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_api_ec2.id ]
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
-  count = 0
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
@@ -366,7 +363,7 @@ resource "null_resource" "wait_for_consumer_cloudwatch_agent" {
   }
 
   triggers = {
-    nat_gateway_id = var.nat_gateway_id
+    nat_gateway_id             = var.nat_gateway_id
     route_table_association_id = var.route_table_association_id
   }
 
@@ -395,7 +392,6 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
 }
 
 resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
-  count = 0
   name          = "CloudOpsManagerConsumerADOTInstall"
   document_type = "Command"
 
@@ -418,20 +414,26 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
       }
     ]
   })
+
+  depends_on = [
+    wait_for_consumer_cloudwatch_agent
+  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
-  count = 0
-  name = aws_ssm_document.cloud_ops_manager_consumer_adot_install_document[0].name
+  name = aws_ssm_document.cloud_ops_manager_consumer_adot_install_document.name
 
   targets {
     key    = "InstanceIds"
     values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
   }
+
+  depends_on = [
+    aws_ssm_document.cloud_ops_manager_consumer_adot_install_document
+  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
-  count = 0
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
@@ -444,4 +446,8 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-Consumer"
   }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_consumer_adot_install
+  ]
 }
