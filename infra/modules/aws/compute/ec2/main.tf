@@ -416,7 +416,7 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
   })
 
   depends_on = [
-    wait_for_consumer_cloudwatch_agent
+    null_resource.wait_for_consumer_cloudwatch_agent
   ]
 }
 
