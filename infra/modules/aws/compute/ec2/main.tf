@@ -129,6 +129,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
 
   parameters = {
     action = "Install"
+    name   = "AmazonCloudWatchAgent"
   }
 
   depends_on = [
@@ -150,6 +151,10 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/CloudWatchAgentConfig-API"
   }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_api_install_cw_agent
+  ]
 }
 
 resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
@@ -355,6 +360,10 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/CloudWatchAgentConfig-Consumer"
   }
+
+  depends_on = [
+    aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent
+  ]
 }
 
 resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
