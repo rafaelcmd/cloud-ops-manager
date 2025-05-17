@@ -225,8 +225,25 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_configure_collector" {
         name   = "configureADOT"
         inputs = {
           runCommand = [
+            "set -e",
             "mkdir -p /opt/aws/aws-otel-collector",
             "aws ssm get-parameter --name /CloudOpsManager/ADOTCollectorConfig-API --query 'Parameter.Value' --output text > /opt/aws/aws-otel-collector/config.yaml",
+            "if [ ! -f /etc/systemd/system/aws-otel-collector.service ]; then",
+            "  cat <<EOF | sudo tee /etc/systemd/system/aws-otel-collector.service",
+            "  [Unit]",
+            "  Description=ADOT Collector",
+            "  After=network.target",
+            "",
+            "  [Service]",
+            "  ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/config.yaml",
+            "  Restart=always",
+            "",
+            "  [Install]",
+            "  WantedBy=multi-user.target",
+            "EOF",
+            "fi",
+            "sudo systemctl daemon-reload",
+            "sudo systemctl enable aws-otel-collector",
             "sudo systemctl restart aws-otel-collector"
           ]
         }
@@ -481,8 +498,25 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_configure_collector
         name   = "configureADOT"
         inputs = {
           runCommand = [
+            "set -e",
             "mkdir -p /opt/aws/aws-otel-collector",
             "aws ssm get-parameter --name /CloudOpsManager/ADOTCollectorConfig-Consumer --query 'Parameter.Value' --output text > /opt/aws/aws-otel-collector/config.yaml",
+            "if [ ! -f /etc/systemd/system/aws-otel-collector.service ]; then",
+            "  cat <<EOF | sudo tee /etc/systemd/system/aws-otel-collector.service",
+            "  [Unit]",
+            "  Description=ADOT Collector",
+            "  After=network.target",
+            "",
+            "  [Service]",
+            "  ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/config.yaml",
+            "  Restart=always",
+            "",
+            "  [Install]",
+            "  WantedBy=multi-user.target",
+            "EOF",
+            "fi",
+            "sudo systemctl daemon-reload",
+            "sudo systemctl enable aws-otel-collector",
             "sudo systemctl restart aws-otel-collector"
           ]
         }
