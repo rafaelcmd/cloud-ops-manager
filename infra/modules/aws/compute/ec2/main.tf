@@ -181,7 +181,10 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
         name   = "installADOT"
         inputs = {
           runCommand = [
-            "sudo dnf install -y aws-otel-collector",
+            "set -e",
+            "cd /tmp",
+            "curl -fLO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm",
+            "sudo rpm -Uvh aws-otel-collector.rpm",
             "sudo systemctl enable aws-otel-collector",
             "sudo systemctl start aws-otel-collector"
           ]
@@ -416,7 +419,10 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
         name   = "installADOT"
         inputs = {
           runCommand = [
-            "sudo dnf install -y aws-otel-collector",
+            "set -e",
+            "cd /tmp",
+            "curl -fLO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm",
+            "sudo rpm -Uvh aws-otel-collector.rpm",
             "sudo systemctl enable aws-otel-collector",
             "sudo systemctl start aws-otel-collector"
           ]
