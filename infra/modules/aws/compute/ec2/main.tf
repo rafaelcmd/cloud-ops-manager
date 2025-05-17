@@ -120,7 +120,7 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
-  name = "AmazonCloudWatch-ManageAgent"
+  name = "AWS-ConfigureAWSPackage"
 
   targets {
     key    = "InstanceIds"
@@ -329,7 +329,7 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attac
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
-  name = "AmazonCloudWatch-ManageAgent"
+  name = "AWS-ConfigureAWSPackage"
 
   targets {
     key    = "InstanceIds"
