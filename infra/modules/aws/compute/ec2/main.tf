@@ -119,35 +119,21 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
-resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent_package" {
-  name = "AWS-ConfigureAWSPackage"
+resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
+  name = "AmazonCloudWatch-ManageAgent"
 
   targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-api"]
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
 
   parameters = {
     action = "Install"
-    name   = "AmazonCloudWatchAgent"
   }
 
   depends_on = [
     aws_instance.cloud_ops_manager_api_ec2,
     aws_iam_role_policy_attachment.cloud_ops_manager_api_ssm_managed_core_attach
-  ]
-}
-
-resource "null_resource" "wait_for_api_cw_agent_ready" {
-  provisioner "local-exec" {
-    command = <<EOT
-      echo "Waiting 120 seconds to allow CloudWatch Agent installation..."
-      sleep 120
-    EOT
-  }
-
-  depends_on = [
-    aws_ssm_association.cloud_ops_manager_api_install_cw_agent_package
   ]
 }
 
@@ -164,13 +150,10 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/CloudWatchAgentConfig-API"
   }
-
-  depends_on = [
-    null_resource.wait_for_api_cw_agent_ready
-  ]
 }
 
 resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
+  count = 0
   name          = "CloudOpsManagerAPIADOTInstall"
   document_type = "Command"
 
@@ -193,26 +176,20 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
       }
     ]
   })
-
-  depends_on = [
-    null_resource.wait_for_api_cw_agent_ready
-  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
+  count = 0
   name = aws_ssm_document.cloud_ops_manager_api_adot_install_document.name
 
   targets {
     key    = "InstanceIds"
     values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
-
-  depends_on = [
-    null_resource.wait_for_api_cw_agent_ready
-  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
+  count = 0
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
@@ -225,10 +202,6 @@ resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-API"
   }
-
-  depends_on = [
-    null_resource.wait_for_api_cw_agent_ready
-  ]
 }
 
 # ------------------------------------------------------------------------------
@@ -350,12 +323,12 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_consumer_xray_attac
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
-resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_package" {
-  name = "AWS-ConfigureAWSPackage"
+resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
+  name = "AmazonCloudWatch-ManageAgent"
 
   targets {
-    key    = "tag:Name"
-    values = ["cloud-ops-manager-consumer"]
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
   }
 
   parameters = {
@@ -366,19 +339,6 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent_pack
   depends_on = [
     aws_instance.cloud_ops_manager_consumer_ec2,
     aws_iam_role_policy_attachment.cloud_ops_manager_consumer_ssm_managed_core_attach
-  ]
-}
-
-resource "null_resource" "wait_for_consumer_cw_agent_ready" {
-  provisioner "local-exec" {
-    command = <<EOT
-      echo "Waiting 120 seconds to allow CloudWatch Agent installation..."
-      sleep 120
-    EOT
-  }
-
-  depends_on = [
-    aws_ssm_association.cloud_ops_manager_consumer_install_cw_agent_package
   ]
 }
 
@@ -395,13 +355,10 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/CloudWatchAgentConfig-Consumer"
   }
-
-  depends_on = [
-    null_resource.wait_for_consumer_cw_agent_ready
-  ]
 }
 
 resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
+  count = 0
   name          = "CloudOpsManagerConsumerADOTInstall"
   document_type = "Command"
 
@@ -424,26 +381,20 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
       }
     ]
   })
-
-  depends_on = [
-    null_resource.wait_for_consumer_cw_agent_ready
-  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
+  count = 0
   name = aws_ssm_document.cloud_ops_manager_consumer_adot_install_document.name
 
   targets {
     key    = "InstanceIds"
     values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
   }
-
-  depends_on = [
-    null_resource.wait_for_consumer_cw_agent_ready
-  ]
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
+  count = 0
   name = "AmazonCloudWatch-ManageAgent"
 
   targets {
@@ -456,8 +407,4 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
     mode                          = "ec2"
     optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-Consumer"
   }
-
-  depends_on = [
-    null_resource.wait_for_consumer_cw_agent_ready
-  ]
 }
