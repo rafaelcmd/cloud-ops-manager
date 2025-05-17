@@ -225,6 +225,7 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_configure_collector" {
         name   = "configureADOT"
         inputs = {
           runCommand = [
+            "mkdir -p /opt/aws/aws-otel-collector",
             "aws ssm get-parameter --name /CloudOpsManager/ADOTCollectorConfig-API --query 'Parameter.Value' --output text > /opt/aws/aws-otel-collector/config.yaml",
             "sudo systemctl restart aws-otel-collector"
           ]
@@ -480,6 +481,7 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_configure_collector
         name   = "configureADOT"
         inputs = {
           runCommand = [
+            "mkdir -p /opt/aws/aws-otel-collector",
             "aws ssm get-parameter --name /CloudOpsManager/ADOTCollectorConfig-Consumer --query 'Parameter.Value' --output text > /opt/aws/aws-otel-collector/config.yaml",
             "sudo systemctl restart aws-otel-collector"
           ]
