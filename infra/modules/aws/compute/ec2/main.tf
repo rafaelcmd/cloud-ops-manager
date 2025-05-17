@@ -180,11 +180,11 @@ resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
 
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
   count = 0
-  name = aws_ssm_document.cloud_ops_manager_api_adot_install_document.name
+  name = aws_ssm_document.cloud_ops_manager_api_adot_install_document[0].name
 
   targets {
     key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_api_ec2.id]
+    values = [aws_instance.cloud_ops_manager_api_ec2.id ]
   }
 }
 
@@ -385,7 +385,7 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
   count = 0
-  name = aws_ssm_document.cloud_ops_manager_consumer_adot_install_document.name
+  name = aws_ssm_document.cloud_ops_manager_consumer_adot_install_document[0].name
 
   targets {
     key    = "InstanceIds"
