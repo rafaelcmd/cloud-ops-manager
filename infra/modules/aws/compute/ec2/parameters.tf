@@ -133,13 +133,13 @@ resource "aws_ssm_parameter" "cloud_ops_manager_consumer_adot_collector_xray_con
           grpc:
           http:
 
-      exporters:
-        awsxray:
+    exporters:
+      awsxray:
 
-      service:
-        pipelines:
-          traces:
-            receivers: [otlp]
-            exporters: [awsxray]
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          exporters: [awsxray]
   EOT
 }

@@ -455,15 +455,15 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install" {
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
-  name = aws_ssm_document.cloud_ops_manager_api_adot_install_document.name
+  name = aws_ssm_document.cloud_ops_manager_consumer_adot_install.name
 
   targets {
     key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_api_ec2.id]
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
   }
 
   depends_on = [
-    aws_ssm_document.cloud_ops_manager_api_adot_install_document
+    aws_ssm_document.cloud_ops_manager_consumer_adot_install
   ]
 }
 
