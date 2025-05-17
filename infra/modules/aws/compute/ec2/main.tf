@@ -88,8 +88,9 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
         Action = [
           "ssm:GetParameter",
           "ssm:GetParameters",
+          "ssm:GetParametersByPath"
         ]
-        Resource = aws_instance.cloud_ops_manager_api_ec2.arn
+        Resource = aws_ssm_parameter.cloud_ops_manager_api_cloudwatch_agent_config.arn
       }
     ]
   })
@@ -279,8 +280,12 @@ resource "aws_iam_role_policy" "cloud_ops_manager_consumer_ssm_access" {
         Action = [
           "ssm:GetParameter",
           "ssm:GetParameters",
+          "ssm:GetParametersByPath"
         ]
-        Resource = var.provisioner_consumer_sqs_queue_parameter_arn
+        Resource = [
+          var.provisioner_consumer_sqs_queue_parameter_arn,
+          aws_ssm_parameter.cloud_ops_manager_api_cloudwatch_agent_config.arn
+        ]
       }
     ]
   })
