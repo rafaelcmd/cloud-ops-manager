@@ -101,35 +101,37 @@ resource "aws_ssm_parameter" "cloud_ops_manager_consumer_cloudwatch_agent_config
 }
 
 resource "aws_ssm_parameter" "cloud_ops_manager_api_adot_collector_xray_config" {
-  name  = "/CloudOpsManager/ADOTCollectorConfig-API"
-  type  = "String"
+  name = "/CloudOpsManager/ADOTCollectorConfig-API"
+  type = "String"
+
   value = <<-EOT
     receivers:
-        otlp:
-          protocols:
-            grpc:
-            http:
+      otlp:
+        protocols:
+          grpc:
+          http:
 
-      exporters:
-        awsxray:
+    exporters:
+      awsxray:
 
-      service:
-        pipelines:
-          traces:
-            receivers: [otlp]
-            exporters: [awsxray]
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          exporters: [awsxray]
   EOT
 }
 
 resource "aws_ssm_parameter" "cloud_ops_manager_consumer_adot_collector_xray_config" {
-  name  = "/CloudOpsManager/ADOTCollectorConfig-Consumer"
-  type  = "String"
+  name = "/CloudOpsManager/ADOTCollectorConfig-Consumer"
+  type = "String"
+
   value = <<-EOT
     receivers:
-        otlp:
-          protocols:
-            grpc:
-            http:
+      otlp:
+        protocols:
+          grpc:
+          http:
 
       exporters:
         awsxray:

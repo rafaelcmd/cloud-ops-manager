@@ -168,8 +168,8 @@ resource "aws_ssm_association" "cloud_ops_manager_api_configure_cw_agent" {
 }
 
 resource "aws_ssm_document" "cloud_ops_manager_api_adot_install_document" {
-  name          = "CloudOpsManagerAPIADOTInstall"
-  document_type = "Command"
+  name            = "CloudOpsManagerAPIADOTInstall"
+  document_type   = "Command"
   document_format = "JSON"
 
   content = jsonencode({
@@ -211,21 +211,39 @@ resource "aws_ssm_association" "cloud_ops_manager_api_adot_install" {
   ]
 }
 
+resource "aws_ssm_document" "cloud_ops_manager_api_adot_configure_collector" {
+  name            = "CloudOpsManagerAPIADOTConfigure"
+  document_type   = "Command"
+  document_format = "JSON"
+
+  content = jsonencode({
+    schemaVersion = "2.2"
+    description   = "Configure ADOT on CloudOpsManager API EC2 instance"
+    mainSteps = [
+      {
+        action = "aws:runShellScript"
+        name   = "configureADOT"
+        inputs = {
+          runCommand = [
+            "aws ssm get-parameter --name /CloudOpsManager/ADOTCollectorConfig-API --query 'Parameter.Value' --output text > /opt/aws/aws-otel-collector/config.yaml",
+            "sudo systemctl restart aws-otel-collector"
+          ]
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_ssm_association" "cloud_ops_manager_api_adot_config" {
-  name = "AmazonCloudWatch-ManageAgent"
+  name = aws_ssm_document.cloud_ops_manager_api_adot_configure_collector.name
 
   targets {
     key    = "InstanceIds"
     values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
 
-  parameters = {
-    action                        = "configure"
-    mode                          = "ec2"
-    optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-API"
-  }
-
   depends_on = [
+    aws_ssm_document.cloud_ops_manager_api_adot_configure_collector,
     aws_ssm_association.cloud_ops_manager_api_adot_install
   ]
 }
@@ -405,9 +423,9 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_configure_cw_agent" {
   ]
 }
 
-resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
-  name          = "CloudOpsManagerConsumerADOTInstall"
-  document_type = "Command"
+resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install" {
+  name            = "CloudOpsManagerConsumerADOTInstall"
+  document_type   = "Command"
   document_format = "JSON"
 
   content = jsonencode({
@@ -437,33 +455,51 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_install_document" {
 }
 
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_install" {
-  name = aws_ssm_document.cloud_ops_manager_consumer_adot_install_document.name
+  name = aws_ssm_document.cloud_ops_manager_api_adot_install_document.name
 
   targets {
     key    = "InstanceIds"
-    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+    values = [aws_instance.cloud_ops_manager_api_ec2.id]
   }
 
   depends_on = [
-    aws_ssm_document.cloud_ops_manager_consumer_adot_install_document
+    aws_ssm_document.cloud_ops_manager_api_adot_install_document
   ]
 }
 
+resource "aws_ssm_document" "cloud_ops_manager_consumer_adot_configure_collector" {
+  name            = "CloudOpsManagerConsumerADOTConfigure"
+  document_type   = "Command"
+  document_format = "JSON"
+
+  content = jsonencode({
+    schemaVersion = "2.2"
+    description   = "Configure ADOT on CloudOpsManager Consumer EC2 instance"
+    mainSteps = [
+      {
+        action = "aws:runShellScript"
+        name   = "configureADOT"
+        inputs = {
+          runCommand = [
+            "aws ssm get-parameter --name /CloudOpsManager/ADOTCollectorConfig-Consumer --query 'Parameter.Value' --output text > /opt/aws/aws-otel-collector/config.yaml",
+            "sudo systemctl restart aws-otel-collector"
+          ]
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
-  name = "AmazonCloudWatch-ManageAgent"
+  name = aws_ssm_document.cloud_ops_manager_consumer_adot_configure_collector.name
 
   targets {
     key    = "InstanceIds"
     values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
   }
 
-  parameters = {
-    action                        = "configure"
-    mode                          = "ec2"
-    optionalConfigurationLocation = "/CloudOpsManager/ADOTCollectorConfig-Consumer"
-  }
-
   depends_on = [
+    aws_ssm_document.cloud_ops_manager_consumer_adot_configure_collector,
     aws_ssm_association.cloud_ops_manager_consumer_adot_install
   ]
 }
