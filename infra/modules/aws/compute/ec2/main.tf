@@ -140,7 +140,7 @@ resource "aws_ssm_association" "cloud_ops_manager_api_install_cw_agent" {
 
 resource "null_resource" "wait_for_api_cloudwatch_agent" {
   provisioner "local-exec" {
-    command = "sleep 60"
+    command = "sleep 120"
   }
 
   depends_on = [
@@ -362,7 +362,7 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_install_cw_agent" {
 
 resource "null_resource" "wait_for_consumer_cloudwatch_agent" {
   provisioner "local-exec" {
-    command = "sleep 60"
+    command = "sleep 120"
   }
 
   depends_on = [
