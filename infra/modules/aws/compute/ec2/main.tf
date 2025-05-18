@@ -537,3 +537,21 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
     null_resource.wait_for_consumer_cloudwatch_agent
   ]
 }
+
+resource "aws_ssm_association" "cloud_ops_manager_consumer_xray_daemon" {
+    name = "AWS-ConfigureAWSPackage"
+
+    targets {
+      key    = "InstanceIds"
+      values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+    }
+
+    parameters = {
+      action = "Install"
+      name   = "XRayDaemon"
+    }
+
+    depends_on = [
+      aws_instance.cloud_ops_manager_consumer_ec2
+    ]
+}
