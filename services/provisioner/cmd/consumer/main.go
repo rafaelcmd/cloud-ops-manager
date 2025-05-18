@@ -56,7 +56,7 @@ func main() {
 		}
 
 		for _, message := range output.Messages {
-			processCtx, subSeg := xray.BeginSubsegment(ctx, "ProcessMessage")
+			processCtx, subSeg := xray.BeginSubsegment(pollCtx, "ProcessMessage")
 			log.Printf("Received message: %s", aws.ToString(message.Body))
 
 			// Save message data in RDS

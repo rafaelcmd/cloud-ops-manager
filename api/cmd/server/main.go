@@ -19,7 +19,10 @@ var (
 )
 
 func main() {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	ctx, seg := xray.BeginSegment(context.Background(), "ResourceProvisionerAPI")
+	defer seg.Close(nil)
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
 		log.Fatalf("Unable to load AWS config, %v", err)
 	}
@@ -29,7 +32,7 @@ func main() {
 	sqsClient = sqs.NewFromConfig(cfg)
 	ssmClient = ssm.NewFromConfig(cfg)
 
-	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput{
+	param, err := ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
 		Name: aws.String("/CLOUD_OPS_MANAGER/SQS_QUEUE_URL"),
 	})
 	if err != nil {
