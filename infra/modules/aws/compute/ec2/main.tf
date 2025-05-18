@@ -553,7 +553,9 @@ resource "aws_ssm_document" "cloud_ops_manager_consumer_xray_install" {
         inputs = {
           runCommand = [
             "set -e",
-            "sudo yum install -y aws-xray-daemon",
+            "cd /tmp",
+            "curl -O https://s3.amazonaws.com/aws-xray-assets.us-east-1/xray-daemon/aws-xray-daemon-3.x.rpm",
+            "sudo yum install -y ./aws-xray-daemon-3.x.rpm",
             "sudo systemctl enable xray",
             "sudo systemctl start xray"
           ]
