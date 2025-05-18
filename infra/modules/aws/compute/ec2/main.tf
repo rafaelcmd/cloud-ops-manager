@@ -538,20 +538,40 @@ resource "aws_ssm_association" "cloud_ops_manager_consumer_adot_config" {
   ]
 }
 
-resource "aws_ssm_association" "cloud_ops_manager_consumer_xray_daemon" {
-    name = "AWS-ConfigureAWSPackage"
+resource "aws_ssm_document" "cloud_ops_manager_consumer_xray_install" {
+  name            = "InstallXRayDaemonForConsumer"
+  document_type   = "Command"
+  document_format = "JSON"
 
-    targets {
-      key    = "InstanceIds"
-      values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
-    }
-
-    parameters = {
-      action = "Install"
-      name   = "XRayDaemon"
-    }
-
-    depends_on = [
-      aws_instance.cloud_ops_manager_consumer_ec2
+  content = jsonencode({
+    schemaVersion = "2.2"
+    description   = "Install XRay Daemon on CloudOpsManager Consumer EC2 instance"
+    mainSteps = [
+      {
+        action = "aws:runShellScript"
+        name   = "installXRayDaemon"
+        inputs = {
+          runCommand = [
+            "set -e",
+            "sudo yum install -y aws-xray-daemon",
+            "sudo systemctl enable xray",
+            "sudo systemctl start xray"
+          ]
+        }
+      }
     ]
+  })
+}
+
+resource "aws_ssm_association" "cloud_ops_manager_consumer_xray_daemon" {
+  name = aws_ssm_document.cloud_ops_manager_consumer_xray_install.name
+
+  targets {
+    key    = "InstanceIds"
+    values = [aws_instance.cloud_ops_manager_consumer_ec2.id]
+  }
+
+  depends_on = [
+    aws_instance.cloud_ops_manager_consumer_ec2
+  ]
 }
