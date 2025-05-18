@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -25,6 +24,8 @@ func main() {
 		log.Fatalf("Unable to load AWS config, %v", err)
 	}
 
+	cfg.HTTPClient = xray.Client(cfg.HTTPClient.(*http.Client))
+
 	sqsClient = sqs.NewFromConfig(cfg)
 	ssmClient = ssm.NewFromConfig(cfg)
 
@@ -37,25 +38,24 @@ func main() {
 
 	queueUrl = *param.Parameter.Value
 
-	xraySegmentedServer := xray.Handler(xray.NewFixedSegmentNamer("resource-provisioner"), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/resource-provisioner" && r.Method == http.MethodPost {
-			handleProvisionPOSTRequest(w, r)
-		} else if r.URL.Path == "/resource-provisioner" && r.Method == http.MethodGet {
-			handleProvisionGETRequest(w, r)
-		} else {
-			http.NotFound(w, r)
-		}
-	}))
+	xrayHandler := xray.Handler(xray.NewFixedSegmentNamer("resource-provisioner"), http.HandlerFunc(router))
+	log.Println("Server running on port 5000")
+	log.Fatal(http.ListenAndServe(":5000", xrayHandler))
+}
 
-	log.Printf("Server running on port 5000")
-	err = http.ListenAndServe(":5000", xraySegmentedServer)
-	if err != nil {
-		log.Fatalf("Failed to start server, %v", err)
+func router(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case r.URL.Path == "/resource-provisioner" && r.Method == http.MethodPost:
+		handleProvisionPOSTRequest(w, r)
+	case r.URL.Path == "/resource-provisioner" && r.Method == http.MethodGet:
+		handleProvisionGETRequest(w, r)
+	default:
+		http.NotFound(w, r)
 	}
 }
 
 func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Received POST request to /resource-provisioner")
+	log.Println("Handling POST request for resource provisioning")
 
 	ctx := r.Context()
 
@@ -67,41 +67,26 @@ func handleProvisionPOSTRequest(w http.ResponseWriter, r *http.Request) {
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		http.Error(w, "Failed to encode message", http.StatusInternalServerError)
+		http.Error(w, "Failed to marshal request body", http.StatusInternalServerError)
 		return
 	}
-
-	log.Printf("Sending message to SQS queue: %s", queueUrl)
 
 	_, err = sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 		QueueUrl:    aws.String(queueUrl),
 		MessageBody: aws.String(string(body)),
 	})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to send message: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Failed to send message to SQS", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	_, err = w.Write([]byte("Message successfully enqueued for processing."))
-
-	log.Printf("Response sent to client: %s", "Message successfully enqueued for processing.")
-
-	if err != nil {
-		log.Printf("Failed to write response, %v", err)
-	}
+	w.Write([]byte("Resource provisioning request accepted"))
+	log.Println("Resource provisioning request sent to SQS")
 }
 
 func handleProvisionGETRequest(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Received GET request to /resource-provisioner")
-
+	log.Println("Received GET request")
 	w.WriteHeader(http.StatusOK)
-
-	_, err := w.Write([]byte("GET request received."))
-
-	log.Printf("Response sent to client: %s", "GET request received.")
-
-	if err != nil {
-		log.Printf("Failed to write response, %v", err)
-	}
+	w.Write([]byte("GET request received."))
 }

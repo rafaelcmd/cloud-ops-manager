@@ -24,14 +24,16 @@ func main() {
 	sqsClient := sqs.NewFromConfig(cfg)
 	ssmClient := ssm.NewFromConfig(cfg)
 
-	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput{
+	ssmCtx, seg := xray.BeginSegment(ctx, "GetSQSQueueURL")
+	param, err := ssmClient.GetParameter(ssmCtx, &ssm.GetParameterInput{
 		Name: aws.String("/CLOUD_OPS_MANAGER/SQS_QUEUE_URL"),
 	})
+	seg.Close(err)
 	if err != nil {
 		log.Fatalf("Unable to get SQS queue URL from Parameter Store, %v", err)
 	}
 
-	queueUrl := *param.Parameter.Value
+	queueUrl := aws.ToString(param.Parameter.Value)
 	if queueUrl == "" {
 		log.Fatalf("SQS queue URL is empty")
 	}
@@ -39,11 +41,14 @@ func main() {
 	log.Println("Polling messages from SQS queue:", queueUrl)
 
 	for {
-		output, err := sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
+		pollCtx, pollSeg := xray.BeginSegment(ctx, "PollSQSMessages")
+
+		output, err := sqsClient.ReceiveMessage(pollCtx, &sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(queueUrl),
 			MaxNumberOfMessages: 5,
 			WaitTimeSeconds:     10,
 		})
+		pollSeg.Close(err)
 
 		if err != nil {
 			log.Printf("Failed to receive messages, %v", err)
@@ -51,12 +56,13 @@ func main() {
 		}
 
 		for _, message := range output.Messages {
+			processCtx, subSeg := xray.BeginSubsegment(ctx, "ProcessMessage")
 			log.Printf("Received message: %s", aws.ToString(message.Body))
 
 			// Save message data in RDS
 
 			// Delete the message after processing
-			_, err := sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+			_, err := sqsClient.DeleteMessage(processCtx, &sqs.DeleteMessageInput{
 				QueueUrl:      aws.String(queueUrl),
 				ReceiptHandle: message.ReceiptHandle,
 			})
@@ -65,6 +71,7 @@ func main() {
 			} else {
 				log.Println("Message deleted successfully")
 			}
+			subSeg.Close(nil)
 		}
 	}
 }
