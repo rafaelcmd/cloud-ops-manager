@@ -24,7 +24,7 @@ func main() {
 		log.Fatalf("Unable to load AWS config, %v", err)
 	}
 
-	cfg.HTTPClient = xray.Client(cfg.HTTPClient.(*http.Client))
+	cfg.HTTPClient = xray.Client(&http.Client{})
 
 	sqsClient = sqs.NewFromConfig(cfg)
 	ssmClient = ssm.NewFromConfig(cfg)
