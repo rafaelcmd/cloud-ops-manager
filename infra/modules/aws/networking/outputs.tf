@@ -35,3 +35,10 @@ output "nat_gateway_ready" {
 output "private_route_table_association_ready" {
   value = aws_route_table_association.cloud_ops_manager_private_association_a.id
 }
+
+output "cloud_ops_manager_api_public_subnet_ids" {
+  value = [
+    aws_subnet.cloud_ops_manager_public_subnet_a.id,
+    aws_subnet.cloud_ops_manager_public_subnet_b.id,
+  ]
+}
