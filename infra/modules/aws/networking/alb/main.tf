@@ -1,5 +1,5 @@
 resource "aws_lb" "cloud_ops_manager_api_alb" {
-  name               = "cloud_ops_manager_api_alb"
+  name               = "cloud-ops-manager-api-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [var.cloud_ops_manager_api_security_group_id]
@@ -7,7 +7,7 @@ resource "aws_lb" "cloud_ops_manager_api_alb" {
 }
 
 resource "aws_lb_target_group" "cloud_ops_manager_api_tg" {
-  name     = "cloud_ops_manager_api_tg"
+  name     = "cloud-ops-manager-api-tg"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.cloud_ops_manager_vpc_id
