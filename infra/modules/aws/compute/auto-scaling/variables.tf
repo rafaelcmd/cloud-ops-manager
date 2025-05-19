@@ -4,11 +4,11 @@ variable "cloud_ops_manager_api_security_group_id" {
 }
 
 variable "cloud_ops_manager_api_public_subnet_ids" {
-  type = list(string)
+  type        = list(string)
   description = "Public subnet ids list"
 }
 
 variable "cloud_ops_manager_api_tg_arn" {
-  type = string
+  type        = string
   description = "LB target groups"
 }
