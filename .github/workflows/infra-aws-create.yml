@@ -36,17 +36,17 @@ jobs:
         run: terraform init
 
       - name: Terraform Apply (Image Builder Only)
-        run: terraform apply -auto-approve -target=aws_imagebuilder_image_pipeline.api_pipeline
+        run: terraform apply -auto-approve -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
 
       - name: Trigger AMI Build
         run: |
-          PIPELINE_ARN=$(terraform output -raw image_builder_pipeline_arn)
+          PIPELINE_ARN=$(terraform output -raw cloud_ops_manager_api_pipeline_arn)
           aws imagebuilder start-image-pipeline-execution --image-pipeline-arn "$PIPELINE_ARN"
           echo "AMI build triggered successfully."
 
       - name: Wait for AMI Build Completion
         run: |
-          PIPELINE_ARN=$(terraform output -raw image_builder_pipeline_arn)
+          PIPELINE_ARN=$(terraform output -raw cloud_ops_manager_api_pipeline_arn)
           while true; do
             STATUS=$(aws imagebuilder get-image-pipeline-execution --image-pipeline-arn "$PIPELINE_ARN" --query 'imagePipelineExecution.status' --output text)
             if [ "$STATUS" == "COMPLETED" ]; then
