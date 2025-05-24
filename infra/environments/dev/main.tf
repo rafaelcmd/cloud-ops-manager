@@ -76,4 +76,7 @@ module "alb" {
 
 module "cloud_watch" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/monitoring/cloud-watch?ref=main"
+
+  cloud_ops_manager_api_autoscaling_group_name = module.auto_scaling.cloud_ops_manager_api_autoscaling_group_name
+  cloud_ops_manager_api_scale_out_policy_arn   = module.auto_scaling.cloud_ops_manager_api_scale_out_policy_arn
 }
