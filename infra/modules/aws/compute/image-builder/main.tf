@@ -96,7 +96,6 @@ resource "aws_imagebuilder_image_pipeline" "cloud_ops_manager_api_pipeline" {
 }
 
 resource "aws_imagebuilder_image" "cloud_ops_manager_api_image" {
-  name                             = "cloud-ops-manager-api-image"
   image_recipe_arn                 = aws_imagebuilder_image_recipe.cloud_ops_manager_api_recipe.arn
   infrastructure_configuration_arn = aws_imagebuilder_infrastructure_configuration.cloud_ops_manager_api_infra_config.arn
 
