@@ -8,7 +8,7 @@ resource "aws_lb" "cloud_ops_manager_api_alb" {
 
 resource "aws_lb_target_group" "cloud_ops_manager_api_tg" {
   name     = "cloud-ops-manager-api-tg"
-  port     = 80
+  port     = 5000
   protocol = "HTTP"
   vpc_id   = var.cloud_ops_manager_vpc_id
 
@@ -24,7 +24,7 @@ resource "aws_lb_target_group" "cloud_ops_manager_api_tg" {
 
 resource "aws_lb_listener" "cloud_ops_manager_api_listener" {
   load_balancer_arn = aws_lb.cloud_ops_manager_api_alb.arn
-  port              = "5000"
+  port              = "80"
   protocol          = "HTTP"
 
   default_action {
