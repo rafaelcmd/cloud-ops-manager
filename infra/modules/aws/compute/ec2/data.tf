@@ -1,6 +1,6 @@
 data "aws_ami" "cloud_ops_manager_api_latest" {
   most_recent = true
-  owners = ["self"]
+  owners      = ["self"]
 
   filter {
     name   = "name"
