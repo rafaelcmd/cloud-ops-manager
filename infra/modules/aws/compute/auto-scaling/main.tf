@@ -30,3 +30,19 @@ resource "aws_autoscaling_group" "cloud_ops_manager_api_autoscaling_group" {
     propagate_at_launch = true
   }
 }
+
+resource "aws_autoscaling_policy" "cloud_ops_manager_api_scale_out" {
+  name                   = "${aws_autoscaling_group.cloud_ops_manager_api_autoscaling_group.name}-scale-out"
+  scaling_adjustment      = 1
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 60
+  autoscaling_group_name = aws_autoscaling_group.cloud_ops_manager_api_autoscaling_group.name
+}
+
+resource "aws_autoscaling_policy" "cloud_ops_manager_api_scale_in" {
+  name                   = "${aws_autoscaling_group.cloud_ops_manager_api_autoscaling_group.name}-scale-in"
+  scaling_adjustment      = -1
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 60
+  autoscaling_group_name = aws_autoscaling_group.cloud_ops_manager_api_autoscaling_group.name
+}
