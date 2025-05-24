@@ -17,7 +17,7 @@ resource "aws_iam_role" "image_builder_api_role" {
 
 resource "aws_iam_role_policy_attachment" "image_builder_api_role_policy" {
   role       = aws_iam_role.image_builder_api_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSImageBuilderServiceRole"
+  policy_arn = "arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder"
 }
 
 resource "aws_imagebuilder_component" "cloud_ops_manager_api_install_agents" {
@@ -30,31 +30,32 @@ resource "aws_imagebuilder_component" "cloud_ops_manager_api_install_agents" {
   name: InstallMonitoringAgents
   description: Install CloudWatch, X-Ray, ADOT agents
   schemaVersion: 1.0
+
   phases:
-    -name: build
+    - name: build
       steps:
         - name: InstallCloudWatchAgent
-           action: ExecuteBash
-           inputs:
-              commands:
-                - yum install -y amazon-cloudwatch-agent
-                - systemctl enable amazon-cloudwatch-agent
-                - systemctl start amazon-cloudwatch-agent
+          action: ExecuteBash
+          inputs:
+            commands:
+              - yum install -y amazon-cloudwatch-agent
+              - systemctl enable amazon-cloudwatch-agent
+              - systemctl start amazon-cloudwatch-agent
         - name: InstallXRayDaemon
-           action: ExecuteBash
-           inputs:
-              commands:
-                - yum install -y xray
-                - systemctl enable xray
-                - systemctl start xray
+          action: ExecuteBash
+          inputs:
+            commands:
+              - yum install -y xray
+              - systemctl enable xray
+              - systemctl start xray
         - name: InstallADOT
-           action: ExecuteBash
-           inputs:
-              commands:
-                - cd /tmp
-                - curl -fLO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm
-                - rpm -Uvh aws-otel-collector.rpm
-                - systemctl enable aws-otel-collector
+          action: ExecuteBash
+          inputs:
+            commands:
+              - cd /tmp
+              - curl -fLO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm
+              - rpm -Uvh aws-otel-collector.rpm
+              - systemctl enable aws-otel-collector
   EOT
 }
 
@@ -77,9 +78,14 @@ resource "aws_imagebuilder_image_recipe" "cloud_ops_manager_api_recipe" {
   }
 }
 
+resource "aws_iam_instance_profile" "cloud_ops_manager_api_image_builder_instance_profile" {
+  name = "imagebuilder-instance-profile"
+  role = aws_iam_role.image_builder_api_role.name
+}
+
 resource "aws_imagebuilder_infrastructure_configuration" "cloud_ops_manager_api_infra_config" {
   name                          = "cloud-ops-manager-api-infra-config"
-  instance_profile_name         = "imagebuilder-instance-profile"
+  instance_profile_name         = aws_iam_instance_profile.cloud_ops_manager_api_image_builder_instance_profile.name
   security_group_ids            = [var.cloud_ops_manager_api_sg_id]
   subnet_id                     = var.cloud_ops_manager_api_subnet_id
   terminate_instance_on_failure = true
