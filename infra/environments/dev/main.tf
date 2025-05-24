@@ -73,3 +73,7 @@ module "alb" {
   cloud_ops_manager_api_security_group_id = module.aws_security.cloud_ops_manager_api_security_group_id
   cloud_ops_manager_vpc_id                = module.aws_networking.cloud_ops_manager_vpc_id
 }
+
+module "cloud_watch" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/monitoring/cloud-watch?ref=main"
+}
