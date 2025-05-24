@@ -36,16 +36,16 @@ jobs:
         run: terraform init
 
       - name: Terraform Format
-        run: terraform fmt -check -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
+        run: terraform fmt -check
 
       - name: Terraform Validate
-        run: terraform validate -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
+        run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -input=false -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
+        run: terraform plan -input=false -target=aws_imagebuilder_image_pipeline
 
       - name: Terraform Apply (Image Builder Only)
-        run: terraform apply -auto-approve -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
+        run: terraform apply -auto-approve -target=aws_imagebuilder_image_pipeline
 
       - name: Trigger AMI Build
         run: |
