@@ -88,6 +88,6 @@ module "ecs" {
 module "image_builder" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/image-builder?ref=main"
 
-  cloud_ops_manager_api_security_group_id = module.aws_security.cloud_ops_manager_api_security_group_id
-  cloud_ops_manager_api_public_subnet_ids = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
+  cloud_ops_manager_api_sg_id = module.aws_security.cloud_ops_manager_api_security_group_id
+  cloud_ops_manager_api_subnet_id = module.aws_networking.cloud_ops_manager_api_public_subnet_ids[0]
 }
