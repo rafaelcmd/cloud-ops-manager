@@ -36,13 +36,13 @@ jobs:
         run: terraform init
 
       - name: Terraform Format
-        run: terraform fmt -check
+        run: terraform fmt -check -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
 
       - name: Terraform Validate
-        run: terraform validate
+        run: terraform validate -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
 
       - name: Terraform Plan
-        run: terraform plan -input=false
+        run: terraform plan -input=false -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
 
       - name: Terraform Apply (Image Builder Only)
         run: terraform apply -auto-approve -target=aws_imagebuilder_image_pipeline.cloud_ops_manager_api_pipeline
