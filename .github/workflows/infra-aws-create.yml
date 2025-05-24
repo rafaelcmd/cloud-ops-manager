@@ -7,73 +7,9 @@ permissions:
   contents: read
 
 jobs:
-  build-api-ami:
-    name: Build API AMI with Image Builder
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: infra/environments/dev
-        shell: bash
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
-      - name: Terraform Init (Image Builder)
-        run: terraform init
-
-      - name: Terraform Format
-        run: terraform fmt -check
-
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        run: terraform plan -input=false -target=module.image_builder
-
-      - name: Terraform Apply (Image Builder Only)
-        run: terraform apply -auto-approve -input=false -target=module.image_builder
-
-      - name: Trigger AMI Build
-        run: |
-          PIPELINE_ARN=$(terraform output -raw cloud_ops_manager_api_pipeline_arn)
-          aws imagebuilder start-image-pipeline-execution --image-pipeline-arn "$PIPELINE_ARN"
-          echo "AMI build triggered successfully."
-
-      - name: Wait for AMI Build Completion
-        run: |
-          PIPELINE_ARN=$(terraform output -raw cloud_ops_manager_api_pipeline_arn)
-          while true; do
-            STATUS=$(aws imagebuilder get-image-pipeline-execution --image-pipeline-arn "$PIPELINE_ARN" --query 'imagePipelineExecution.status' --output text)
-            if [ "$STATUS" == "COMPLETED" ]; then
-              echo "AMI build completed successfully."
-              break
-            elif [ "$STATUS" == "FAILED" ]; then
-              echo "AMI build failed."
-              exit 1
-            else
-              echo "Current status: $STATUS. Waiting for completion..."
-              sleep 60
-            fi
-          done
-
   create-infrastructure:
     name: Create AWS Infrastructure
     runs-on: ubuntu-latest
-    needs: build-api-ami
 
     defaults:
       run:
