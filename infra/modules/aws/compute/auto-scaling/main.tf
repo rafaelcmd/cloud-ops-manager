@@ -11,9 +11,9 @@ resource "aws_launch_template" "cloud_ops_manager_api_launch_template" {
 
 resource "aws_autoscaling_group" "cloud_ops_manager_api_autoscaling_group" {
   name                      = "cloud-ops-manager-api-asg"
-  max_size                  = 3
+  max_size                  = 2
   min_size                  = 1
-  desired_capacity          = 2
+  desired_capacity          = 1
   vpc_zone_identifier       = var.cloud_ops_manager_api_public_subnet_ids
   health_check_type         = "ELB"
   health_check_grace_period = 300
