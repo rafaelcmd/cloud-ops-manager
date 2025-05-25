@@ -146,7 +146,7 @@ resource "aws_iam_instance_profile" "image_builder_profile" {
 # ------------------------------------------------------------------------------
 resource "aws_imagebuilder_component" "adot_install_and_configure" {
   name        = "adot-install-and-configure"
-  platform = "Linux"
+  platform    = "Linux"
   version     = "1.0.0"
   description = "Install and configure ADOT"
 
@@ -172,7 +172,8 @@ resource "aws_imagebuilder_component" "adot_install_and_configure" {
           inputs:
             commands:
               - mkdir -p /opt/aws/aws-otel-collector
-              - cat <<EOF > /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
+              - |
+                cat <<EOF > /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
                 receivers:
                   otlp:
                     protocols:
@@ -185,8 +186,8 @@ resource "aws_imagebuilder_component" "adot_install_and_configure" {
                 exporters:
                   awsxray:
                   awssemf:
-                  awcloudwatchlogs:
-                    log_group_name: /aws/cloodops-manager-logs
+                  awscloudwatchlogs:
+                    log_group_name: /aws/cloudops-manager-logs
                     log_stream_name: instance-{instance_id}
                     region: "us-east-1"
 
@@ -200,35 +201,36 @@ resource "aws_imagebuilder_component" "adot_install_and_configure" {
                     metrics:
                       receivers: [otlp]
                       processors: [batch]
-                      exporters: [awssemf, awcloudwatchlogs]
+                      exporters: [awssemf, awscloudwatchlogs]
 
                     logs:
                       receivers: [otlp]
                       processors: [batch]
                       exporters: [awscloudwatchlogs]
-  EOF
+                EOF
 
-    - name: CreateSystemdService
-        action: ExecuteBash
-        inputs:
-          commands:
-            - if [ ! -f /etc/systemd/system/aws-otel-collector.service ]; then
-            -   cat <<SERVICE > /etc/systemd/system/aws-otel-collector.service
-            - [Unit]
-            - Description=AWS OTel Collector
-            - After=network.target
-            -
-            - [Service]
-            - ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
-            - Restart=always
-            -
-            - [Install]
-            - WantedBy=multi-user.target
-            - SERVICE
-            - fi
-            - systemctl daemon-reload
-            - systemctl enable aws-otel-collector
-            - systemctl start aws-otel-collector
+        - name: CreateSystemdService
+          action: ExecuteBash
+          inputs:
+            commands:
+              - |
+                if [ ! -f /etc/systemd/system/aws-otel-collector.service ]; then
+                  cat <<SERVICE > /etc/systemd/system/aws-otel-collector.service
+                  [Unit]
+                  Description=AWS OTel Collector
+                  After=network.target
+
+                  [Service]
+                  ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
+                  Restart=always
+
+                  [Install]
+                  WantedBy=multi-user.target
+                  SERVICE
+                fi
+              - systemctl daemon-reload
+              - systemctl enable aws-otel-collector
+              - systemctl start aws-otel-collector
   EOT
 }
 
