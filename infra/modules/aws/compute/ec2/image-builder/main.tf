@@ -142,6 +142,41 @@ resource "aws_iam_role_policy_attachment" "image_builder_policy" {
   policy_arn = "arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder"
 }
 
+resource "aws_iam_role_policy" "adot_permissions" {
+  name = "cloud-ops-adot-permissions"
+  role = aws_iam_role.image_builder_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "image_builder_profile" {
   name = "cloud-ops-imagebuilder-profile"
   role = aws_iam_role.image_builder_role.name
@@ -167,7 +202,7 @@ phases:
         action: ExecuteBash
         inputs:
           commands:
-            - yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            - dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             - systemctl enable amazon-ssm-agent
             - systemctl start amazon-ssm-agent
 
@@ -175,7 +210,7 @@ phases:
         action: ExecuteBash
         inputs:
           commands:
-            - yum install -y unzip curl
+            - dnf install -y unzip curl --allowerasing
             - cd /tmp
             - curl -LO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm
             - rpm -Uvh aws-otel-collector.rpm
