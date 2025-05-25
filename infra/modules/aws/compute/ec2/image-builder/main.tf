@@ -32,6 +32,7 @@ terraform {
 resource "aws_vpc" "image_builder_vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
+  enable_dns_support   = true
   tags = {
     Name = "image-builder-vpc"
   }
@@ -125,10 +126,15 @@ resource "aws_iam_role" "image_builder_role" {
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Service = "imagebuilder.amazonaws.com" }
+      Principal = { Service = "ec2.amazonaws.com" }
       Action    = "sts:AssumeRole"
     }]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.image_builder_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_role_policy_attachment" "image_builder_policy" {
@@ -145,93 +151,102 @@ resource "aws_iam_instance_profile" "image_builder_profile" {
 # Component for ADOT Installation and Configuration
 # ------------------------------------------------------------------------------
 resource "aws_imagebuilder_component" "adot_install_and_configure" {
-  name        = "adot-install-and-configure"
+  name        = "install-adot-collector"
   platform    = "Linux"
   version     = "1.0.0"
-  description = "Install and configure ADOT"
+  description = "Install and configure AWS OTel Collector for Logs, Metrics, and Traces"
 
-  data = <<EOT
-  name: Install and Configure ADOT
-  description: Install and configure the AWS Distro for OpenTelemetry Collector
-  schemaVersion: 1.0
-  phases:
-    - name: build
-      steps:
-        name: Install ADOT
+  data = <<-DOC
+name: InstallAndConfigureADOT
+description: Install and configure ADOT for CloudWatch and X-Ray
+schemaVersion: 1.0
+phases:
+  - name: build
+    steps:
+      - name: InstallSSMAgent
         action: ExecuteBash
         inputs:
           commands:
-            - set -e
+            - yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            - systemctl enable amazon-ssm-agent
+            - systemctl start amazon-ssm-agent
+
+      - name: InstallADOT
+        action: ExecuteBash
+        inputs:
+          commands:
             - yum install -y unzip curl
             - cd /tmp
             - curl -LO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm
             - rpm -Uvh aws-otel-collector.rpm
 
-        name: Configure ADOT
+      - name: ConfigureADOT
         action: ExecuteBash
         inputs:
           commands:
             - mkdir -p /opt/aws/aws-otel-collector
             - |
-              cat <<EOF > /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
+              cat <<EOF > /opt/aws/aws-otel-collector/config.yaml
               receivers:
                 otlp:
                   protocols:
                     grpc:
                     http:
-
+                prometheus:
+                  config:
+                    scrape_configs:
+                      - job_name: 'node'
+                        static_configs:
+                          - targets: ['localhost:9100']
+                      - job_name: 'application'
+                        static_configs:
+                          - targets: ['localhost:8080']
               processors:
                 batch:
-
               exporters:
                 awsxray:
-                awssemf:
+                awsemf:
                 awscloudwatchlogs:
-                  log_group_name: /aws/cloudops-manager-logs
+                  log_group_name: /aws/cloudops-manager
                   log_stream_name: instance-{instance_id}
-                  region: "us-east-1"
-
+                  region: us-east-1
               service:
                 pipelines:
                   traces:
                     receivers: [otlp]
                     processors: [batch]
                     exporters: [awsxray]
-
                   metrics:
-                    receivers: [otlp]
+                    receivers: [prometheus]
                     processors: [batch]
-                    exporters: [awssemf, awscloudwatchlogs]
-
+                    exporters: [awsemf]
                   logs:
                     receivers: [otlp]
                     processors: [batch]
                     exporters: [awscloudwatchlogs]
               EOF
 
-         name: CreateSystemdService
+      - name: SetupSystemd
         action: ExecuteBash
         inputs:
           commands:
             - |
-              if [ ! -f /etc/systemd/system/aws-otel-collector.service ]; then
-                cat <<SERVICE > /etc/systemd/system/aws-otel-collector.service
-                [Unit]
-                Description=AWS OTel Collector
-                After=network.target
+              cat <<SERVICE > /etc/systemd/system/aws-otel-collector.service
+              [Unit]
+              Description=AWS OTel Collector
+              After=network.target
 
-                [Service]
-                ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
-                Restart=always
+              [Service]
+              ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/config.yaml
+              Restart=always
 
-                [Install]
-                WantedBy=multi-user.target
-                SERVICE
-              fi
+              [Install]
+              WantedBy=multi-user.target
+              SERVICE
             - systemctl daemon-reload
             - systemctl enable aws-otel-collector
             - systemctl start aws-otel-collector
-  EOT
+DOC
 }
 
 # ------------------------------------------------------------------------------
@@ -240,7 +255,7 @@ resource "aws_imagebuilder_component" "adot_install_and_configure" {
 resource "aws_imagebuilder_image_recipe" "image_builder_recipe" {
   name         = "image-builder-recipe"
   version      = "1.0.0"
-  parent_image = "ami-08b5b3a93ed654d19"
+  parent_image = "ami-0953476d60561c955"
 
   block_device_mapping {
     device_name = "/dev/xvda"
