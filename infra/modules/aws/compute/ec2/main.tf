@@ -76,41 +76,6 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_sqs_access" {
   })
 }
 
-resource "aws_iam_role_policy" "cloud_ops_manager_api_ssm_access" {
-  name = "AllowSSMGetParameters"
-  role = aws_iam_role.cloud_ops_manager_api_ec2_role.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ssm:GetParameter",
-          "ssm:GetParameters",
-          "ssm:GetParametersByPath"
-        ]
-        Resource = aws_ssm_parameter.cloud_ops_manager_api_cloudwatch_agent_config.arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_ssm_managed_core_attach" {
-  role       = aws_iam_role.cloud_ops_manager_api_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_cw_agent_attach" {
-  role       = aws_iam_role.cloud_ops_manager_api_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-}
-
-resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_xray_attach" {
-  role       = aws_iam_role.cloud_ops_manager_api_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
-}
-
 # ------------------------------------------------------------------------------
 # Consumer EC2 Instance
 # ------------------------------------------------------------------------------
