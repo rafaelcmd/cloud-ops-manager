@@ -157,80 +157,80 @@ resource "aws_imagebuilder_component" "adot_install_and_configure" {
   phases:
     - name: build
       steps:
-        - name: Install ADOT
-          action: ExecuteBash
-          inputs:
-            commands:
-              - set -e
-              - yum install -y unzip curl
-              - cd /tmp
-              - curl -LO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm
-              - rpm -Uvh aws-otel-collector.rpm
+        name: Install ADOT
+        action: ExecuteBash
+        inputs:
+          commands:
+            - set -e
+            - yum install -y unzip curl
+            - cd /tmp
+            - curl -LO https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm
+            - rpm -Uvh aws-otel-collector.rpm
 
-        - name: Configure ADOT
-          action: ExecuteBash
-          inputs:
-            commands:
-              - mkdir -p /opt/aws/aws-otel-collector
-              - |
-                cat <<EOF > /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
-                receivers:
-                  otlp:
-                    protocols:
-                      grpc:
-                      http:
+        name: Configure ADOT
+        action: ExecuteBash
+        inputs:
+          commands:
+            - mkdir -p /opt/aws/aws-otel-collector
+            - |
+              cat <<EOF > /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
+              receivers:
+                otlp:
+                  protocols:
+                    grpc:
+                    http:
 
-                processors:
-                  batch:
+              processors:
+                batch:
 
-                exporters:
-                  awsxray:
-                  awssemf:
-                  awscloudwatchlogs:
-                    log_group_name: /aws/cloudops-manager-logs
-                    log_stream_name: instance-{instance_id}
-                    region: "us-east-1"
+              exporters:
+                awsxray:
+                awssemf:
+                awscloudwatchlogs:
+                  log_group_name: /aws/cloudops-manager-logs
+                  log_stream_name: instance-{instance_id}
+                  region: "us-east-1"
 
-                service:
-                  pipelines:
-                    traces:
-                      receivers: [otlp]
-                      processors: [batch]
-                      exporters: [awsxray]
+              service:
+                pipelines:
+                  traces:
+                    receivers: [otlp]
+                    processors: [batch]
+                    exporters: [awsxray]
 
-                    metrics:
-                      receivers: [otlp]
-                      processors: [batch]
-                      exporters: [awssemf, awscloudwatchlogs]
+                  metrics:
+                    receivers: [otlp]
+                    processors: [batch]
+                    exporters: [awssemf, awscloudwatchlogs]
 
-                    logs:
-                      receivers: [otlp]
-                      processors: [batch]
-                      exporters: [awscloudwatchlogs]
-                EOF
+                  logs:
+                    receivers: [otlp]
+                    processors: [batch]
+                    exporters: [awscloudwatchlogs]
+              EOF
 
-        - name: CreateSystemdService
-          action: ExecuteBash
-          inputs:
-            commands:
-              - |
-                if [ ! -f /etc/systemd/system/aws-otel-collector.service ]; then
-                  cat <<SERVICE > /etc/systemd/system/aws-otel-collector.service
-                  [Unit]
-                  Description=AWS OTel Collector
-                  After=network.target
+         name: CreateSystemdService
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              if [ ! -f /etc/systemd/system/aws-otel-collector.service ]; then
+                cat <<SERVICE > /etc/systemd/system/aws-otel-collector.service
+                [Unit]
+                Description=AWS OTel Collector
+                After=network.target
 
-                  [Service]
-                  ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
-                  Restart=always
+                [Service]
+                ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/aws-otel-collector-config.yaml
+                Restart=always
 
-                  [Install]
-                  WantedBy=multi-user.target
-                  SERVICE
-                fi
-              - systemctl daemon-reload
-              - systemctl enable aws-otel-collector
-              - systemctl start aws-otel-collector
+                [Install]
+                WantedBy=multi-user.target
+                SERVICE
+              fi
+            - systemctl daemon-reload
+            - systemctl enable aws-otel-collector
+            - systemctl start aws-otel-collector
   EOT
 }
 
