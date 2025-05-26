@@ -227,34 +227,40 @@ phases:
                   protocols:
                     grpc:
                     http:
-                prometheus:
-                  config:
-                    scrape_configs:
-                      - job_name: 'node'
-                        static_configs:
-                          - targets: ['localhost:9100']
-                      - job_name: 'application'
-                        static_configs:
-                          - targets: ['localhost:8080']
+
+                filelog:
+                  include: ["/var/log/cloudops-manager/*.log"]
+                  start_at: beginning
+                  operators:
+                    - type: json_parser
+                      id: parse-json
+                      timestamp:
+                        parse_from: attributes.timestamp
+                        layout_type: '%Y-%m-%dT%H:%M:%S.%LZ'
+                      severity:
+                        parse_from: attributes.level
+                    - type: move
+                      from: body.message
+                      to: body
+
               processors:
                 batch:
+
               exporters:
-                awsxray:
-                awsemf:
+                awsxray: {}
+
                 awscloudwatchlogs:
                   log_group_name: /aws/cloudops-manager
                   log_stream_name: instance-{instance_id}
                   region: us-east-1
+
               service:
                 pipelines:
                   traces:
                     receivers: [otlp]
                     processors: [batch]
                     exporters: [awsxray]
-                  metrics:
-                    receivers: [prometheus]
-                    processors: [batch]
-                    exporters: [awsemf]
+
                   logs:
                     receivers: [otlp]
                     processors: [batch]
