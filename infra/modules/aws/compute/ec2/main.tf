@@ -2,7 +2,7 @@
 # API EC2 Instance
 # ------------------------------------------------------------------------------
 resource "aws_instance" "cloud_ops_manager_api_ec2" {
-  ami                         = "ami-001e72181847394a7"
+  ami                         = "ami-0efa71ba2c2061280"
   instance_type               = "t2.micro"
   subnet_id                   = var.cloud_ops_manager_public_subnet_id
   vpc_security_group_ids      = [var.cloud_ops_manager_api_security_group_id]
@@ -80,7 +80,7 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_sqs_access" {
 # Consumer EC2 Instance
 # ------------------------------------------------------------------------------
 resource "aws_instance" "cloud_ops_manager_consumer_ec2" {
-  ami                    = "ami-001e72181847394a7"
+  ami                    = "ami-0efa71ba2c2061280"
   instance_type          = "t2.micro"
   subnet_id              = var.cloud_ops_manager_private_subnet_id
   vpc_security_group_ids = [var.cloud_ops_manager_consumer_security_group_id]
