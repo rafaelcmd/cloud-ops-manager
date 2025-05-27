@@ -46,13 +46,8 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ec2_instance_connect" {
     Statement = [
       {
         Effect = "Allow"
-        Action = [
-          "ec2-instance-connect:SendSSHPublicKey"
-        ]
-        Resource = [
-          aws_instance.cloud_ops_manager_api_ec2.arn,
-          aws_instance.cloud_ops_manager_consumer_ec2.arn
-        ]
+        Action = ["ec2-instance-connect:SendSSHPublicKey"]
+        Resource = aws_instance.cloud_ops_manager_api_ec2.arn
       }
     ]
   })
@@ -71,6 +66,34 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_sqs_access" {
           "sqs:SendMessage",
         ]
         Resource = var.provisioner_consumer_sqs_queue_arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.cloud_ops_manager_api_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy" "cloud_ops_manager_api_observability" {
+  name = "AllowObservability"
+  role = aws_iam_role.cloud_ops_manager_api_ec2_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords",
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
       }
     ]
   })
