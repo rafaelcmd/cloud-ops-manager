@@ -96,7 +96,7 @@ jobs:
               [Service]
               ExecStart=/usr/local/bin/$SERVICE_NAME
               Restart=always
-              User=${USER}
+              User=ec2-user
               StandardOutput=append:/var/log/cloud-ops-manager/api.log
               StandardError=append:/var/log/cloud-ops-manager/api.log
             
