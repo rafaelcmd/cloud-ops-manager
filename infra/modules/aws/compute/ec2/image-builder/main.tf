@@ -229,7 +229,7 @@ phases:
                     http:
 
                 filelog:
-                  include: ["/var/log/cloudops-manager/*.log"]
+                  include: ["/var/log/cloud-ops-manager/*.log"]
                   start_at: beginning
                   operators:
                     - type: json_parser
