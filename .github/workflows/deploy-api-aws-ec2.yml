@@ -84,10 +84,8 @@ jobs:
             SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
             
             sudo mkdir -p /var/log/cloud-ops-manager
-            sudo chown ec2-user:ec2-user /var/log/cloud-ops-manager
-            
             sudo touch /var/log/cloud-ops-manager/api.log
-            sudo chown ec2-user:ec2-user /var/log/cloud-ops-manager/api.log
+            sudo chown ec2-user:ec2-user /var/log/cloud-ops-manager /var/log/cloud-ops-manager/api.log
             
             if [ ! -f "$SERVICE_FILE" ]; then
               echo "Creating systemd service..."
