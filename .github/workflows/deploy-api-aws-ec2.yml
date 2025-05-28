@@ -83,6 +83,9 @@ jobs:
             SERVICE_NAME="cloud-ops-manager-api"
             SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
             
+            sudo mkdir -p /var/log/cloud-ops-manager
+            sudo chown ${USER}:${USER} /var/log/cloud-ops-manager
+            
             if [ ! -f "$SERVICE_FILE" ]; then
               echo "Creating systemd service..."
               sudo bash -c "cat > $SERVICE_FILE <<EOF
@@ -102,8 +105,6 @@ jobs:
               EOF"
             fi
             
-            sudo mkdir -p /var/log/cloud-ops-manager
-            sudo chown ${USER}:${USER} /var/log/cloud-ops-manager
             sudo systemctl daemon-reload
             sudo systemctl enable "$SERVICE_NAME"
             sudo systemctl restart "$SERVICE_NAME"
