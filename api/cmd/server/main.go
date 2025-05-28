@@ -27,6 +27,14 @@ var (
 )
 
 func main() {
+	logFile, err := os.OpenFile("/var/log/cloud-ops-manager/api.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Unable to open log file: %v", err)
+	}
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+
 	ctx := context.Background()
 
 	shutdown := initTracer(ctx)

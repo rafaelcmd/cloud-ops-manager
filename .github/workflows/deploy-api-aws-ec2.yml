@@ -94,8 +94,8 @@ jobs:
               ExecStart=/usr/local/bin/$SERVICE_NAME
               Restart=always
               User=${USER}
-              StandardOutput=append:/var/log/cloud-ops-manager-api.log
-              StandardError=inherit
+              StandardOutput=append:/var/log/cloud-ops-manager/api.log
+              StandardError=append:/var/log/cloud-ops-manager/api.log
             
               [Install]
               WantedBy=multi-user.target
