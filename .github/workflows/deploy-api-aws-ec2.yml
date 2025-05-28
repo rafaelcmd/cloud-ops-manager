@@ -102,6 +102,8 @@ jobs:
               EOF"
             fi
             
+            sudo mkdir -p /var/log/cloud-ops-manager
+            sudo chown ${USER}:${USER} /var/log/cloud-ops-manager
             sudo systemctl daemon-reload
             sudo systemctl enable "$SERVICE_NAME"
             sudo systemctl restart "$SERVICE_NAME"
