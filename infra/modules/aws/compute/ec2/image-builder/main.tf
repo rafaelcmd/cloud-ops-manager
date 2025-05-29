@@ -262,7 +262,7 @@ phases:
                     exporters: [awsxray]
 
                   logs:
-                    receivers: [otlp]
+                    receivers: [filelog]
                     processors: [batch]
                     exporters: [awscloudwatchlogs]
               EOF
