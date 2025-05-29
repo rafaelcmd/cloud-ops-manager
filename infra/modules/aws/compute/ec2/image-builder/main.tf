@@ -227,6 +227,7 @@ phases:
                   protocols:
                     grpc:
                     http:
+                      endpoint: 0.0.0.0:4318
 
                 filelog:
                   include: ["/var/log/cloud-ops-manager/*.log"]
@@ -236,7 +237,7 @@ phases:
                       id: parse-json
                       timestamp:
                         parse_from: attributes.timestamp
-                        layout_type: '%Y-%m-%dT%H:%M:%S.%LZ'
+                        layout: '%Y-%m-%dT%H:%M:%S.%LZ'
                       severity:
                         parse_from: attributes.level
                     - type: move
