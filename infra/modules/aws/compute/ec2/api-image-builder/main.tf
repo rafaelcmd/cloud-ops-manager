@@ -237,7 +237,7 @@ phases:
 
                 awscloudwatchlogs:
                   log_group_name: /aws/cloudops-manager
-                  log_stream_name: instance-{instance_id}
+                  log_stream_name: "instance-${INSTANCE_ID}"
                   region: us-east-1
 
               service:
@@ -264,6 +264,8 @@ phases:
               After=network.target
 
               [Service]
+              ExecStartPre=/bin/bash -c 'echo INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id) > /etc/default/adot-env'
+              EnvironmentFile=/etc/default/adot-env
               ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/config.yaml
               Restart=always
 
