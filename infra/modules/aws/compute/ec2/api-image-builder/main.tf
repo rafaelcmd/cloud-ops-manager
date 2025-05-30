@@ -258,13 +258,13 @@ phases:
         inputs:
           commands:
             - |
+              echo "INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)" > /etc/default/adot-env
               cat <<SERVICE > /etc/systemd/system/aws-otel-collector.service
               [Unit]
               Description=AWS OTel Collector
               After=network.target
 
               [Service]
-              ExecStartPre=/bin/bash -c 'echo INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id) > /etc/default/adot-env'
               EnvironmentFile=/etc/default/adot-env
               ExecStart=/opt/aws/aws-otel-collector/bin/aws-otel-collector --config /opt/aws/aws-otel-collector/config.yaml
               Restart=always
