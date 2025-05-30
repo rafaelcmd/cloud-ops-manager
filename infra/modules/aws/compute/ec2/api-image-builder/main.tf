@@ -237,7 +237,7 @@ phases:
 
                 awscloudwatchlogs:
                   log_group_name: /aws/cloudops-manager
-                  log_stream_name: "instance-${INSTANCE_ID}"
+                  log_stream_name: "instance-$${INSTANCE_ID}"
                   region: us-east-1
 
               service:
