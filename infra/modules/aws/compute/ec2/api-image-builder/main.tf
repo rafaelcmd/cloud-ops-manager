@@ -1,6 +1,3 @@
-# ---------------------------------------------------------------------------------
-# Provider Configuration
-# ---------------------------------------------------------------------------------
 terraform {
   required_version = ">= 1.11.0"
 
@@ -12,73 +9,67 @@ terraform {
   }
 }
 
-# ------------------------------------------------------------------------------
-# Terraform Cloud Configuration
-# ------------------------------------------------------------------------------
 terraform {
   cloud {
 
     organization = "cloudops-manager-org"
 
     workspaces {
-      name = "cloudops-manager-image-builder"
+      name = "cloudops-manager-api-image-builder"
     }
   }
 }
 
-# ------------------------------------------------------------------------------
-# VPC, Subnet, Internet Gateway, Route Table, and Security Group
-# ------------------------------------------------------------------------------
-resource "aws_vpc" "image_builder_vpc" {
+resource "aws_vpc" "cloudops_manager_api_image_builder_vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
-    Name = "image-builder-vpc"
+    Name = "cloudops-manager-api-image-builder-vpc"
   }
 }
 
 resource "aws_subnet" "image_builder_subnet" {
-  vpc_id                  = aws_vpc.image_builder_vpc.id
+  vpc_id                  = aws_vpc.cloudops_manager_api_image_builder_vpc.id
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
   availability_zone       = "us-east-1a"
 
   tags = {
-    Name = "image-builder-subnet"
+    Name = "cloudops-manager-api-image-builder-subnet"
   }
 }
 
-resource "aws_internet_gateway" "image_builder_igw" {
-  vpc_id = aws_vpc.image_builder_vpc.id
+resource "aws_internet_gateway" "cloudops_manager_api_image_builder_igw" {
+  vpc_id = aws_vpc.cloudops_manager_api_image_builder_vpc.id
 
   tags = {
-    Name = "image-builder-igw"
+    Name = "cloudops-manager-api-image-builder-igw"
   }
 }
 
 resource "aws_route_table" "image_builder_rt" {
-  vpc_id = aws_vpc.image_builder_vpc.id
+  vpc_id = aws_vpc.cloudops_manager_api_image_builder_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.image_builder_igw.id
+    gateway_id = aws_internet_gateway.cloudops_manager_api_image_builder_igw.id
   }
 
   tags = {
-    Name = "image-builder-rt"
+    Name = "cloudops-manager-api-image-builder-rt"
   }
 }
 
-resource "aws_route_table_association" "image_builder_rta" {
+resource "aws_route_table_association" "cloudops_manager_api_image_builder_rta" {
   subnet_id      = aws_subnet.image_builder_subnet.id
   route_table_id = aws_route_table.image_builder_rt.id
 }
 
 resource "aws_security_group" "image_builder_sg" {
-  name        = "image-builder-sg"
+  name        = "cloudops-manager-api-image-builder-sg"
   description = "Allow SSH, HTTP, HTTPS"
-  vpc_id      = aws_vpc.image_builder_vpc.id
+  vpc_id      = aws_vpc.cloudops_manager_api_image_builder_vpc.id
 
   ingress {
     description = "SSH"
@@ -112,15 +103,12 @@ resource "aws_security_group" "image_builder_sg" {
   }
 
   tags = {
-    Name = "image-builder-sg"
+    Name = "cloudops-manager-api-image-builder-sg"
   }
 }
 
-# ------------------------------------------------------------------------------
-# IAM Role + Instance Profile for Image Builder
-# ------------------------------------------------------------------------------
-resource "aws_iam_role" "image_builder_role" {
-  name = "cloud-ops-image-builder-role"
+resource "aws_iam_role" "cloudops_manager_api_image_builder_role" {
+  name = "cloud-ops-manager-api-image-builder-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -132,19 +120,19 @@ resource "aws_iam_role" "image_builder_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "ssm_policy" {
-  role       = aws_iam_role.image_builder_role.name
+resource "aws_iam_role_policy_attachment" "cloudops_manager_api_ssm_policy" {
+  role       = aws_iam_role.cloudops_manager_api_image_builder_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-resource "aws_iam_role_policy_attachment" "image_builder_policy" {
-  role       = aws_iam_role.image_builder_role.name
+resource "aws_iam_role_policy_attachment" "cloudops_manager_api_image_builder_policy" {
+  role       = aws_iam_role.cloudops_manager_api_image_builder_role.name
   policy_arn = "arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder"
 }
 
-resource "aws_iam_role_policy" "adot_permissions" {
+resource "aws_iam_role_policy" "cloudops_manager_api_adot_permissions" {
   name = "cloud-ops-adot-permissions"
-  role = aws_iam_role.image_builder_role.id
+  role = aws_iam_role.cloudops_manager_api_image_builder_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -177,16 +165,13 @@ resource "aws_iam_role_policy" "adot_permissions" {
   })
 }
 
-resource "aws_iam_instance_profile" "image_builder_profile" {
-  name = "cloud-ops-imagebuilder-profile"
-  role = aws_iam_role.image_builder_role.name
+resource "aws_iam_instance_profile" "cloudops_manager_api_image_builder_profile" {
+  name = "cloud-ops-manager-api-imagebuilder-profile"
+  role = aws_iam_role.cloudops_manager_api_image_builder_role.name
 }
 
-# ------------------------------------------------------------------------------
-# Component for ADOT Installation and Configuration
-# ------------------------------------------------------------------------------
-resource "aws_imagebuilder_component" "adot_install_and_configure" {
-  name        = "install-adot-collector"
+resource "aws_imagebuilder_component" "cloudops_manager_api_adot_install_and_configure" {
+  name        = "cloudops-manager-api-install-adot-collector"
   platform    = "Linux"
   version     = "1.0.0"
   description = "Install and configure AWS OTel Collector for Logs, Metrics, and Traces"
@@ -230,7 +215,7 @@ phases:
                       endpoint: 0.0.0.0:4318
 
                 filelog:
-                  include: ["/var/log/cloud-ops-manager/*.log"]
+                  include: ["/var/log/cloud-ops-manager/api.log"]
                   start_at: beginning
                   operators:
                     - type: json_parser
@@ -291,11 +276,8 @@ phases:
 DOC
 }
 
-# ------------------------------------------------------------------------------
-# Image Recipe
-# ------------------------------------------------------------------------------
-resource "aws_imagebuilder_image_recipe" "image_builder_recipe" {
-  name         = "image-builder-recipe"
+resource "aws_imagebuilder_image_recipe" "cloudops_manager_api_image_builder_recipe" {
+  name         = "cloudops-manager-api-image-builder-recipe"
   version      = "1.0.0"
   parent_image = "ami-0953476d60561c955"
 
@@ -308,43 +290,35 @@ resource "aws_imagebuilder_image_recipe" "image_builder_recipe" {
     }
   }
 
-  # Install OS updates
   component {
     component_arn = "arn:aws:imagebuilder:us-east-1:aws:component/update-linux/1.0.2/1"
   }
 
-  # Install and configuring ADOT
   component {
-    component_arn = aws_imagebuilder_component.adot_install_and_configure.arn
+    component_arn = aws_imagebuilder_component.cloudops_manager_api_adot_install_and_configure.arn
   }
 
-  description = "CloudOps Manager Base Image"
+  description = "CloudOps Manager API Base Image"
 }
 
-# ------------------------------------------------------------------------------
-# Infrastructure Configuration
-# ------------------------------------------------------------------------------
-resource "aws_imagebuilder_infrastructure_configuration" "image_builder_infra" {
-  name                          = "cloud-ops-infra-config"
-  instance_profile_name         = aws_iam_instance_profile.image_builder_profile.name
+resource "aws_imagebuilder_infrastructure_configuration" "cloudops_manager_api_image_builder_infra" {
+  name                          = "cloud-opsmanager-api-infra-config"
+  instance_profile_name         = aws_iam_instance_profile.cloudops_manager_api_image_builder_profile.name
   subnet_id                     = aws_subnet.image_builder_subnet.id
   security_group_ids            = [aws_security_group.image_builder_sg.id]
   terminate_instance_on_failure = true
 
   tags = {
-    Name = "cloud-ops-infra"
+    Name = "cloud-opsmanager-apiimage-builder-infra"
   }
 }
 
-# ------------------------------------------------------------------------------
-# Image Pipeline
-# ------------------------------------------------------------------------------
-resource "aws_imagebuilder_image_pipeline" "cloud_ops_pipeline" {
-  name                             = "cloud-ops-pipeline"
-  image_recipe_arn                 = aws_imagebuilder_image_recipe.image_builder_recipe.arn
-  infrastructure_configuration_arn = aws_imagebuilder_infrastructure_configuration.image_builder_infra.arn
+resource "aws_imagebuilder_image_pipeline" "cloudops_manager_api_image_builder_pipeline" {
+  name                             = "cloud-ops-manager-api-pipeline"
+  image_recipe_arn                 = aws_imagebuilder_image_recipe.cloudops_manager_api_image_builder_recipe.arn
+  infrastructure_configuration_arn = aws_imagebuilder_infrastructure_configuration.cloudops_manager_api_image_builder_infra.arn
 
   tags = {
-    Name = "cloud-ops-pipeline"
+    Name = "cloud-ops-manager-api-pipeline"
   }
 }
