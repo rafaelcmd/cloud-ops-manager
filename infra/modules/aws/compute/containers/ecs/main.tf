@@ -34,7 +34,7 @@ resource "aws_ecs_task_definition" "cloud_ops_manager_api_task" {
   container_definitions = jsonencode([
     {
       name      = "cloud-ops-manager-api"
-      image     = "ami-08b5b3a93ed654d19"
+      image     = "ami-077c7efa4f912139d"
       essential = true
       portMappings = [
         {
