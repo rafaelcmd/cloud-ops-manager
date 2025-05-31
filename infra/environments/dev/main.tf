@@ -84,3 +84,7 @@ module "cloud_watch" {
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/containers/ecs?ref=main"
 }
+
+module "ecr" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/storage/ecr?ref=main"
+}
