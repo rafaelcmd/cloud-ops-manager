@@ -2,7 +2,7 @@
 # API EC2 Instance
 # ------------------------------------------------------------------------------
 resource "aws_instance" "cloud_ops_manager_api_ec2" {
-  ami                         = "ami-01686b4d6520be3e7"
+  ami                         = "ami-077c7efa4f912139d"
   instance_type               = "t2.micro"
   subnet_id                   = var.cloud_ops_manager_public_subnet_id
   vpc_security_group_ids      = [var.cloud_ops_manager_api_security_group_id]
