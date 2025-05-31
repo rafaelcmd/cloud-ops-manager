@@ -52,6 +52,7 @@ resource "aws_lb_target_group" "cloud_ops_manager_api_ecs_tg" {
   port     = 5000
   protocol = "HTTP"
   vpc_id   = var.cloud_ops_manager_vpc_id
+  target_type = "ip"
 
   health_check {
     path                = "/resource-provisioner"
