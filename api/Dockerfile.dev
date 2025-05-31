@@ -8,7 +8,9 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /app/cloud-ops-manager-api ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o cloud-ops-manager-api ./cmd/server
+
+RUN chmod +x cloud-ops-manager-api
 
 # ---- Minimal runtime stage ----
 FROM gcr.io/distroless/static:nonroot
