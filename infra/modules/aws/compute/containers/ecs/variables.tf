@@ -1,8 +1,3 @@
-variable "api_repository_url" {
-  description = "The URL of the ECR repository for the Cloud Ops Manager API."
-  type        = string
-}
-
 variable "cloud_ops_manager_api_public_subnet_ids" {
   description = "List of public subnet IDs for the Cloud Ops Manager API ECS service."
   type        = list(string)
