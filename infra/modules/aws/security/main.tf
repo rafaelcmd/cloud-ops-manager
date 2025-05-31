@@ -68,3 +68,25 @@ resource "aws_security_group" "rds_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+resource "aws_security_group" "cloud_ops_manager_api_ecs_sg" {
+  name        = "cloud-ops-manager-api-ecs-sg"
+  description = "Security group for CloudOps Manager API ECS tasks"
+  vpc_id      = var.cloud_ops_manager_vpc_id
+
+  ingress {
+    description = "Allow HTTP access from API Gateway"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0/0"]
+  }
+}

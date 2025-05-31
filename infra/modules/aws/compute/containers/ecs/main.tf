@@ -62,3 +62,28 @@ resource "aws_ecs_task_definition" "cloud_ops_manager_api_task_definition" {
     }
   ])
 }
+
+resource "aws_ecs_service" "cloud_ops_manager_api_ecs_service" {
+  name            = "cloud-ops-manager-api-ecs-service"
+  cluster         = aws_ecs_cluster.cloud_ops_manager_api_cluster.id
+  task_definition = aws_ecs_task_definition.cloud_ops_manager_api_task_definition.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.cloud_ops_manager_api_public_subnet_ids
+    security_groups  = [var.cloud_ops_manager_api_ecs_security_group_id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = var.cloud_ops_manager_api_ecs_tg_arn
+    container_name   = "cloud-ops-manager-api"
+    container_port   = 5000
+  }
+
+  depends_on = [
+    var.cloud_ops_manager_api_ecs_listener,
+    var.cloud_ops_manager_api_ecs_tg,
+  ]
+}
