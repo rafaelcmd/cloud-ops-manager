@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "cloud_ops_manager_api_task_definition" {
   container_definitions = jsonencode([
     {
       name  = "cloud-ops-manager-api"
-      image = "${data.terraform_remote_state.cloudops-manager-ecr-repository.outputs.api_repository_url}:latest"
+      image = "${data.terraform_remote_state.cloudops_manager_ecr_repository.outputs.repository_url}:latest"
 
       portMappings = [
         {
