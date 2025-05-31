@@ -3,14 +3,14 @@ resource "aws_ecs_cluster" "cloud_ops_manager_api_cluster" {
 }
 
 resource "aws_iam_role" "cloud_ops_manager_api_ecs_task_execution_role" {
-  name               = "cloud-ops-manager-api-ecs-task-execution-role"
+  name = "cloud-ops-manager-api-ecs-task-execution-role"
 
   assume_role_policy = jsondecode({
     Version = "2012-10-17"
     Statement = [
       {
-        Effect    = "Allow"
-        Action    = "sts:AssumeRole"
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
         Principal = {
           Service = "ecs-tasks.amazonaws.com"
         }
@@ -25,8 +25,8 @@ resource "aws_iam_role_policy_attachment" "cloud_ops_manager_api_ecs_task_execut
 }
 
 resource "aws_cloudwatch_log_group" "cloud_ops_manager_api_ecs_log_group" {
-    name              = "/ecs/cloud-ops-manager"
-    retention_in_days = 7
+  name              = "/ecs/cloud-ops-manager"
+  retention_in_days = 7
 }
 
 resource "aws_ecs_task_definition" "cloud_ops_manager_api_task_definition" {
@@ -40,8 +40,8 @@ resource "aws_ecs_task_definition" "cloud_ops_manager_api_task_definition" {
 
   container_definitions = jsonencode([
     {
-      name      = "cloud-ops-manager-api"
-      image     = "${var.api_repository_url}:latest"
+      name  = "cloud-ops-manager-api"
+      image = "${var.api_repository_url}:latest"
 
       portMappings = [
         {
@@ -53,7 +53,7 @@ resource "aws_ecs_task_definition" "cloud_ops_manager_api_task_definition" {
 
       logConfiguration = {
         logDriver = "awslogs"
-        options   = {
+        options = {
           "awslogs-group"         = aws_cloudwatch_log_group.cloud_ops_manager_api_ecs_log_group.name
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "ecs-api"

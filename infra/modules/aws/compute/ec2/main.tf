@@ -45,8 +45,8 @@ resource "aws_iam_role_policy" "cloud_ops_manager_api_ec2_instance_connect" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["ec2-instance-connect:SendSSHPublicKey"]
+        Effect   = "Allow"
+        Action   = ["ec2-instance-connect:SendSSHPublicKey"]
         Resource = aws_instance.cloud_ops_manager_api_ec2.arn
       }
     ]

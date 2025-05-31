@@ -8,6 +8,6 @@ resource "aws_ecr_repository" "cloud_ops_manager_ecr_repository" {
   }
 
   tags = {
-    Name        = "cloud-ops-manager-ecr-repository"
+    Name = "cloud-ops-manager-ecr-repository"
   }
 }
