@@ -69,10 +69,10 @@ module "auto_scaling" {
 module "alb" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/networking/alb?ref=main"
 
-  cloud_ops_manager_api_public_subnet_ids = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
-  cloud_ops_manager_api_security_group_id = module.aws_security.cloud_ops_manager_api_security_group_id
+  cloud_ops_manager_api_public_subnet_ids     = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
+  cloud_ops_manager_api_security_group_id     = module.aws_security.cloud_ops_manager_api_security_group_id
   cloud_ops_manager_api_ecs_security_group_id = module.aws_security.cloud_ops_manager_api_ecs_security_group_id
-  cloud_ops_manager_vpc_id                = module.aws_networking.cloud_ops_manager_vpc_id
+  cloud_ops_manager_vpc_id                    = module.aws_networking.cloud_ops_manager_vpc_id
 }
 
 module "cloud_watch" {
