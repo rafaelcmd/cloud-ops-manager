@@ -12,14 +12,21 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o cloud-ops-manager-api ./cm
 
 RUN chmod +x cloud-ops-manager-api
 
-RUN mkdir -p /app/logs
+RUN mkdir -p /app/logs && chown -R 1000:1000 /app/logs
 
-# ---- Minimal runtime stage ----
-FROM gcr.io/distroless/static:nonroot
+# ---- Runtime stage ----
+FROM alpine:3.19
+
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+RUN mkdir -p /app/logs && chown -R appuser:appgroup /app/logs
+
 COPY --from=builder /app/cloud-ops-manager-api .
 
-COPY --from=builder /app/logs ./logs
+USER appuser
 
 ENTRYPOINT ["/app/cloud-ops-manager-api"]
