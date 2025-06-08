@@ -66,6 +66,8 @@ func router(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	switch {
+	case r.URL.Path == "/health" && r.Method == http.MethodGet:
+		handleHealthCheck(ctx, w, r)
 	case r.URL.Path == "/resource-provisioner" && r.Method == http.MethodPost:
 		handleProvisionPOSTRequest(ctx, w, r)
 	case r.URL.Path == "/resource-provisioner" && r.Method == http.MethodGet:
@@ -73,6 +75,16 @@ func router(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func handleHealthCheck(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	_, span := tracer.Start(ctx, "handleHealthCheck")
+	defer span.End()
+
+	log.Println("Handling health check request")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+	log.Println("Health check response sent")
 }
 
 func handleProvisionPOSTRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
