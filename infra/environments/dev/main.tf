@@ -86,7 +86,7 @@ module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/containers/ecs?ref=main"
 
   cloud_ops_manager_api_public_subnet_ids = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
-  cloud_ops_manager_ecs_task_sg           = module.aws_security.cloud_ops_manager_ecs_tg_sg
+  cloud_ops_manager_ecs_task_sg           = module.aws_security.cloud_ops_manager_ecs_task_sg
   cloud_ops_manager_api_ecs_tg_arn        = module.alb.cloud_ops_manager_api_ecs_tg_arn
   cloud_ops_manager_api_ecs_listener      = module.alb.cloud_ops_manager_api_ecs_listener
   cloud_ops_manager_api_ecs_tg            = module.alb.cloud_ops_manager_api_ecs_tg
