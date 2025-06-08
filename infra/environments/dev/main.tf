@@ -69,10 +69,10 @@ module "auto_scaling" {
 module "alb" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/networking/alb?ref=main"
 
-  cloud_ops_manager_api_public_subnet_ids     = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
-  cloud_ops_manager_api_security_group_id     = module.aws_security.cloud_ops_manager_api_security_group_id
-  cloud_ops_manager_api_ecs_security_group_id = module.aws_security.cloud_ops_manager_api_ecs_security_group_id
-  cloud_ops_manager_vpc_id                    = module.aws_networking.cloud_ops_manager_vpc_id
+  cloud_ops_manager_api_public_subnet_ids = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
+  cloud_ops_manager_api_security_group_id = module.aws_security.cloud_ops_manager_api_security_group_id
+  cloud_ops_manager_ecs_alb_sg            = module.aws_security.cloud_ops_manager_ecs_alb_security_group_id
+  cloud_ops_manager_vpc_id                = module.aws_networking.cloud_ops_manager_vpc_id
 }
 
 module "cloud_watch" {
@@ -85,9 +85,9 @@ module "cloud_watch" {
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/containers/ecs?ref=main"
 
-  cloud_ops_manager_api_public_subnet_ids     = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
-  cloud_ops_manager_api_ecs_security_group_id = module.aws_security.cloud_ops_manager_api_ecs_security_group_id
-  cloud_ops_manager_api_ecs_tg_arn            = module.alb.cloud_ops_manager_api_ecs_tg_arn
-  cloud_ops_manager_api_ecs_listener          = module.alb.cloud_ops_manager_api_ecs_listener
-  cloud_ops_manager_api_ecs_tg                = module.alb.cloud_ops_manager_api_ecs_tg
+  cloud_ops_manager_api_public_subnet_ids = module.aws_networking.cloud_ops_manager_api_public_subnet_ids
+  cloud_ops_manager_ecs_tg_sg             = module.aws_security.cloud_ops_manager_ecs_tg_sg
+  cloud_ops_manager_api_ecs_tg_arn        = module.alb.cloud_ops_manager_api_ecs_tg_arn
+  cloud_ops_manager_api_ecs_listener      = module.alb.cloud_ops_manager_api_ecs_listener
+  cloud_ops_manager_api_ecs_tg            = module.alb.cloud_ops_manager_api_ecs_tg
 }
