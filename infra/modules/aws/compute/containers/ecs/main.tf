@@ -72,7 +72,7 @@ resource "aws_ecs_service" "cloud_ops_manager_api_ecs_service" {
 
   network_configuration {
     subnets          = var.cloud_ops_manager_api_public_subnet_ids
-    security_groups  = [var.cloud_ops_manager_api_ecs_security_group_id]
+    security_groups  = [var.cloud_ops_manager_ecs_tg_sg]
     assign_public_ip = true
   }
 

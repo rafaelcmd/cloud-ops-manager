@@ -13,7 +13,7 @@ variable "cloud_ops_manager_vpc_id" {
   type        = string
 }
 
-variable "cloud_ops_manager_api_ecs_security_group_id" {
+variable "cloud_ops_manager_ecs_alb_sg" {
   type        = string
   description = "Security Group ID for ECS"
 }

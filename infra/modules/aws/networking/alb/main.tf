@@ -43,7 +43,7 @@ resource "aws_lb" "cloud_ops_manager_api_ecs_alb" {
   name               = "cloud-ops-manager-api-ecs-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [var.cloud_ops_manager_api_ecs_security_group_id]
+  security_groups    = [var.cloud_ops_manager_ecs_alb_sg]
   subnets            = var.cloud_ops_manager_api_public_subnet_ids
 }
 

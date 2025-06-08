@@ -13,10 +13,10 @@ output "rds_security_group_ids" {
   value       = [aws_security_group.rds_sg.id]
 }
 
-output "cloud_ops_manager_api_ecs_security_group_id" {
-  value = aws_security_group.cloud_ops_manager_api_ecs_sg.id
+output "cloud_ops_manager_ecs_tg_sg" {
+  value = aws_security_group.cloud_ops_manager_ecs_tg_sg.id
 }
 
 output "cloud_ops_manager_ecs_alb_security_group_id" {
-  value = aws_security_group.cloud_ops_manager_ecs_alb.id
+  value = aws_security_group.cloud_ops_manager_ecs_alb_sg.id
 }
