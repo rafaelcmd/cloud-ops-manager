@@ -12,10 +12,14 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o cloud-ops-manager-api ./cm
 
 RUN chmod +x cloud-ops-manager-api
 
+RUN mkdir -p /app/logs
+
 # ---- Minimal runtime stage ----
 FROM gcr.io/distroless/static:nonroot
 
 WORKDIR /app
 COPY --from=builder /app/cloud-ops-manager-api .
+
+COPY --from=builder /app/logs ./logs
 
 ENTRYPOINT ["/app/cloud-ops-manager-api"]
