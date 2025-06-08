@@ -69,6 +69,20 @@ resource "aws_security_group" "rds_sg" {
   }
 }
 
+resource "aws_security_group" "cloud_ops_manager_ecs_alb" {
+    name        = "cloud-ops-manager-ecs-alb-sg"
+    description = "Security group for CloudOps Manager ECS ALB"
+    vpc_id      = var.cloud_ops_manager_vpc_id
+
+    ingress {
+      description = "Allow HTTP access from API Gateway"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
 resource "aws_security_group" "cloud_ops_manager_api_ecs_sg" {
   name        = "cloud-ops-manager-api-ecs-sg"
   description = "Security group for CloudOps Manager API ECS tasks"
