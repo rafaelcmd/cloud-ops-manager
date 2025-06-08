@@ -55,7 +55,7 @@ resource "aws_lb_target_group" "cloud_ops_manager_api_ecs_tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/resource-provisioner"
+    path                = "/health"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
