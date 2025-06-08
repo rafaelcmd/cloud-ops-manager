@@ -3,7 +3,7 @@ variable "cloud_ops_manager_api_public_subnet_ids" {
   type        = list(string)
 }
 
-variable "cloud_ops_manager_ecs_tg_sg" {
+variable "cloud_ops_manager_ecs_task_sg" {
   description = "Security Group ID for the Cloud Ops Manager API ECS service."
   type        = string
 }
