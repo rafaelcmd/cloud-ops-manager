@@ -57,7 +57,7 @@ func main() {
 
 	queueUrl = *param.Parameter.Value
 
-	http.HandleFunc("/resource-provisioner", router)
+	http.HandleFunc("/", router)
 	log.Fatal(http.ListenAndServe(":5000", nil))
 }
 
