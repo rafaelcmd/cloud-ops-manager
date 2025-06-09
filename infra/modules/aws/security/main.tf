@@ -74,14 +74,6 @@ resource "aws_security_group" "cloud_ops_manager_ecs_task_sg" {
   description = "Security group for CloudOps Manager API ECS tasks"
   vpc_id      = var.cloud_ops_manager_vpc_id
 
-  ingress {
-    description = "Allow HTTP access from API Gateway"
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
