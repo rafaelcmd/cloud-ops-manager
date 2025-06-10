@@ -14,9 +14,11 @@ output "rds_security_group_ids" {
 }
 
 output "cloud_ops_manager_ecs_task_sg" {
+  description = "Security group for CloudOps Manager ECS tasks"
   value = aws_security_group.cloud_ops_manager_ecs_task_sg.id
 }
 
 output "cloud_ops_manager_ecs_alb_security_group_id" {
+  description = "Security group ID for the CloudOps Manager ECS ALB"
   value = aws_security_group.cloud_ops_manager_ecs_alb_sg.id
 }
