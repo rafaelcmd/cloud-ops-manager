@@ -20,5 +20,5 @@ variable "cloud_ops_manager_api_ecs_listener" {
 
 variable "cloud_ops_manager_api_ecs_tg" {
   description = "Target group for the Cloud Ops Manager API ECS service."
-  type        = any
+  type        = string
 }
