@@ -83,7 +83,6 @@ resource "aws_ecs_service" "cloud_ops_manager_api_ecs_service" {
   }
 
   depends_on = [
-    var.cloud_ops_manager_api_ecs_listener,
-    var.cloud_ops_manager_api_ecs_tg,
+    var.cloud_ops_manager_api_ecs_listener
   ]
 }
