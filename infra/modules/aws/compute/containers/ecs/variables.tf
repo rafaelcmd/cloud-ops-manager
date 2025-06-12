@@ -17,8 +17,3 @@ variable "cloud_ops_manager_api_ecs_listener" {
   description = "ARN of the listener for the Cloud Ops Manager API ECS service."
   type        = string
 }
-
-variable "cloud_ops_manager_api_ecs_tg" {
-  description = "Target group for the Cloud Ops Manager API ECS service."
-  type        = string
-}
