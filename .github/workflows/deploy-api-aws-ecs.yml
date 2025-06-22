@@ -1,0 +1,26 @@
+name: Deploy - API to AWS ECS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to ECR
+        run: aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: Build and Push Docker image
+        run: |
+          docker build -t cloud-ops-manager-api ../../api/Dockerfile.dev
+          docker tag cloud-ops-manager-api:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cloud-ops-manager-api:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cloud-ops-manager-api:latest
+
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster cloud-ops-manager-api-cluster \
+            --service cloud-ops-manager-api-ecs-service \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}
