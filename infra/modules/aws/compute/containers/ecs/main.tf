@@ -67,7 +67,9 @@ resource "aws_ecs_service" "cloud_ops_manager_api_ecs_service" {
   name            = "cloud-ops-manager-api-ecs-service"
   cluster         = aws_ecs_cluster.cloud_ops_manager_api_cluster.id
   task_definition = aws_ecs_task_definition.cloud_ops_manager_api_task_definition.arn
-  desired_count   = 1
+  desired_count   = 4
+  deployment_maximum_percent = 200
+  deployment_minimum_healthy_percent = 100
   launch_type     = "FARGATE"
 
   network_configuration {

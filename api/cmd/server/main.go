@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"go.opentelemetry.io/otel"
@@ -27,7 +26,7 @@ var (
 )
 
 func main() {
-	logFile, err := os.OpenFile("/app/logs/api.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	/*logFile, err := os.OpenFile("/app/logs/api.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("Unable to open log file: %v", err)
 	}
@@ -55,31 +54,32 @@ func main() {
 		log.Fatalf("Unable to get SQS queue URL from Parameter Store, %v", err)
 	}
 
-	queueUrl = *param.Parameter.Value
+	queueUrl = *param.Parameter.Value*/
 
 	http.HandleFunc("/", router)
-	log.Fatal(http.ListenAndServe(":5000", nil))
+	log.Println("Server is running and listening on port 5000")
+	log.Fatal(http.ListenAndServe("0.0.0.0:5000", nil))
 }
 
 func router(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracer.Start(r.Context(), "router")
-	defer span.End()
+	/*ctx, span := tracer.Start(r.Context(), "router")
+	defer span.End()*/
 
 	switch {
 	case r.URL.Path == "/health" && r.Method == http.MethodGet:
-		handleHealthCheck(ctx, w, r)
-	case r.URL.Path == "/resource-provisioner" && r.Method == http.MethodPost:
+		handleHealthCheck(w, r)
+	/*case r.URL.Path == "/resource-provisioner" && r.Method == http.MethodPost:
 		handleProvisionPOSTRequest(ctx, w, r)
 	case r.URL.Path == "/resource-provisioner" && r.Method == http.MethodGet:
-		handleProvisionGETRequest(ctx, w, r)
+		handleProvisionGETRequest(ctx, w, r)*/
 	default:
 		http.NotFound(w, r)
 	}
 }
 
-func handleHealthCheck(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	_, span := tracer.Start(ctx, "handleHealthCheck")
-	defer span.End()
+func handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	/*_, span := tracer.Start(ctx, "handleHealthCheck")
+	defer span.End()*/
 
 	log.Println("Handling health check request")
 	w.WriteHeader(http.StatusOK)
