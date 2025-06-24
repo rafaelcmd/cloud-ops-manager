@@ -64,13 +64,13 @@ resource "aws_ecs_task_definition" "cloud_ops_manager_api_task_definition" {
 }
 
 resource "aws_ecs_service" "cloud_ops_manager_api_ecs_service" {
-  name            = "cloud-ops-manager-api-ecs-service"
-  cluster         = aws_ecs_cluster.cloud_ops_manager_api_cluster.id
-  task_definition = aws_ecs_task_definition.cloud_ops_manager_api_task_definition.arn
-  desired_count   = 4
-  deployment_maximum_percent = 200
+  name                               = "cloud-ops-manager-api-ecs-service"
+  cluster                            = aws_ecs_cluster.cloud_ops_manager_api_cluster.id
+  task_definition                    = aws_ecs_task_definition.cloud_ops_manager_api_task_definition.arn
+  desired_count                      = 4
+  deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 100
-  launch_type     = "FARGATE"
+  launch_type                        = "FARGATE"
 
   network_configuration {
     subnets          = var.cloud_ops_manager_api_public_subnet_ids

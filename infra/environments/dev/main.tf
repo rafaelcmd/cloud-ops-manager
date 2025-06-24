@@ -11,7 +11,7 @@ module "aws_security" {
 module "aws_api_gateway" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/api-gateway?ref=main"
 
-  auth_lambda_invoke_arn     = module.aws_lambda.cloud_ops_manager_api_auth_lambda_invoke_arn
+  auth_lambda_invoke_arn = module.aws_lambda.cloud_ops_manager_api_auth_lambda_invoke_arn
 }
 
 module "aws_sqs_queue" {
