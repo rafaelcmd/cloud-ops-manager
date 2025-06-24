@@ -43,14 +43,6 @@ module "s3" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/s3?ref=main"
 }
 
-module "auto_scaling" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/compute/auto-scaling?ref=main"
-
-  cloud_ops_manager_api_security_group_id = module.aws_security.cloud_ops_manager_api_security_group_id
-  cloud_ops_manager_api_public_subnet_ids = [module.aws_networking.cloud_ops_manager_public_subnet_id_a, module.aws_networking.cloud_ops_manager_public_subnet_id_b]
-  cloud_ops_manager_api_tg_arn            = module.alb.cloud_ops_manager_api_tg_arn
-}
-
 module "alb" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/networking/alb?ref=main"
 
