@@ -25,7 +25,7 @@ jobs:
 
       - name: Build and Push Docker image
         run: |
-          docker build -f ../../api/Dockerfile.dev -t cloud-ops-manager-api ../../api
+          docker build -f api/Dockerfile.dev -t cloud-ops-manager-api api
           docker tag cloud-ops-manager-api:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cloud-ops-manager-api:latest
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cloud-ops-manager-api:latest
 
