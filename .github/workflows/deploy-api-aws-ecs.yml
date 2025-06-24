@@ -14,7 +14,7 @@ jobs:
           fetch-depth: 1
 
       - name: Log in to AWS ECR
-        run: aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cloud_ops_manager_ecr_repository:latest"
+        run: aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/cloud_ops_manager_ecr_repository:latest
 
       - name: Build and Push Docker image
         run: |
