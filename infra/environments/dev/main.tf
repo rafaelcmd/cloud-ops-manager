@@ -30,19 +30,6 @@ module "aws_lambda" {
   cloud_ops_manager_api_deployment_execution_arn = module.aws_api_gateway.cloud_ops_manager_api_deployment_execution_arn
 }
 
-module "rds" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/database/rds?ref=main"
-
-  rds_subnet_group       = module.aws_networking.rds_subnet_group
-  rds_security_group_ids = module.aws_security.rds_security_group_ids
-  db_username            = "teste"
-  db_password            = "teste12345"
-}
-
-module "s3" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/s3?ref=main"
-}
-
 module "alb" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/networking/alb?ref=main"
 
