@@ -15,3 +15,7 @@ module "shared_vpc" {
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/cloudops_api/aws/ecs?ref=main"
 }
+
+module "alb_resource_provisioner_api" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/cloudops_api/aws/alb?ref=main"
+}
