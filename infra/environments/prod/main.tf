@@ -16,6 +16,10 @@ module "shared_vpc" {
 
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/cloudops_api/aws/ecs?ref=main"
+
+  vpc_id = module.shared_vpc.vpc_id
+  private_subnet_ids = [module.shared_vpc.private_subnet_ids]
+  target_group_arn = module.alb_resource_provisioner_api.target_group_arn
 }
 
 module "alb_resource_provisioner_api" {
