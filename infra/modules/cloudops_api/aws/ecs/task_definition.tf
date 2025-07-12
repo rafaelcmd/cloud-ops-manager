@@ -9,7 +9,7 @@ resource "aws_ecs_task_definition" "api" {
   container_definitions = jsonencode([
     {
       name  = "resource-provisioner-api"
-      image = "${data.terraform_remote_state.resource_provisioner_ecr_repository.outputs.repository_url}:latest"
+      image = "${data.terraform_remote_state.cloudops_manager_ecr_repository.outputs.repository_url}:latest"
       portMappings = [{
         containerPort = 5000
         hostPort      = 5000

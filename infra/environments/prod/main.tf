@@ -23,7 +23,6 @@ module "alb_resource_provisioner_api" {
 
   alb_name           = "resource-provisioner-alb"
   internal           = false
-  load_balancer_type = "application"
   security_groups    = [module.ecs.ecs_service_sg]
   subnets            = module.shared_vpc.public_subnet_ids
 
