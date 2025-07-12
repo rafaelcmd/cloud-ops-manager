@@ -17,18 +17,18 @@ module "shared_vpc" {
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/cloudops_api/aws/ecs?ref=main"
 
-  vpc_id = module.shared_vpc.vpc_id
+  vpc_id             = module.shared_vpc.vpc_id
   private_subnet_ids = [module.shared_vpc.private_subnet_ids]
-  target_group_arn = module.alb_resource_provisioner_api.target_group_arn
+  target_group_arn   = module.alb_resource_provisioner_api.target_group_arn
 }
 
 module "alb_resource_provisioner_api" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/shared/aws/alb?ref=main"
 
-  alb_name           = "resource-provisioner-alb"
-  internal           = false
-  security_groups    = [module.ecs.ecs_service_sg]
-  subnets            = module.shared_vpc.public_subnet_ids
+  alb_name        = "resource-provisioner-alb"
+  internal        = false
+  security_groups = [module.ecs.ecs_service_sg]
+  subnets         = module.shared_vpc.public_subnet_ids
 
   target_group_name     = "resource-provisioner-tg"
   target_group_port     = 5000
