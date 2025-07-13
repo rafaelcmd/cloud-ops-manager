@@ -13,8 +13,7 @@ variable "target_group_arn" {
   type        = string
 }
 
-variable "tags" {
-  description = "A map of tags to assign to the resources"
-  type        = map(string)
-  default     = {}
+variable "alb_sg_id" {
+  description = "Security group ID for the ECS task"
+  type        = string
 }

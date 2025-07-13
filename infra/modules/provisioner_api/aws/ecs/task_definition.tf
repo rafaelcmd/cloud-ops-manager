@@ -18,3 +18,25 @@ resource "aws_ecs_task_definition" "api" {
     }
   ])
 }
+
+resource "aws_security_group" "api_ecs_task_sg" {
+  name        = "cloud-ops-manager-api-ecs-sg"
+  description = "Security group for CloudOps Manager API ECS tasks"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "Allow traffic from ALB on port 5000"
+    from_port       = 5000
+    to_port         = 5000
+    protocol        = "tcp"
+    security_groups = [var.alb_sg_id]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}

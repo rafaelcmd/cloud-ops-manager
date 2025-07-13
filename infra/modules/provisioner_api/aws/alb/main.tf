@@ -45,3 +45,27 @@ resource "aws_lb_listener" "this" {
     Name = "${var.project}-${var.environment}-${var.listener_port}"
   })
 }
+
+resource "aws_security_group" "this" {
+  name        = "cloud-ops-manager-ecs-alb-sg"
+  description = "Security group for CloudOps Manager ECS ALB"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "Allow HTTP access from API Gateway"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow outbound traffic to ECS tasks on port 5000"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  tags = var.tags
+}
