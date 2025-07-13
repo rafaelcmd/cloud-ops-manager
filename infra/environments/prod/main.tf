@@ -23,7 +23,7 @@ module "ecs" {
 }
 
 module "alb_resource_provisioner_api" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/shared/aws/alb?ref=main"
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/provisioner_api/aws/alb?ref=main"
 
   alb_name        = "resource-provisioner-alb"
   internal        = false
