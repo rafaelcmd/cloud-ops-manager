@@ -28,7 +28,6 @@ module "alb_resource_provisioner_api" {
 
   alb_name        = "resource-provisioner-alb"
   internal        = false
-  security_groups = [module.ecs.ecs_service_sg]
   subnets         = module.shared_vpc.public_subnet_ids
 
   target_group_name     = "resource-provisioner-tg"
