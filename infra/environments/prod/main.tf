@@ -54,3 +54,7 @@ module "alb_resource_provisioner_api" {
     Project     = "cloudops"
   }
 }
+
+module "sqs" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/provisioner_api/aws/sqs?ref=main"
+}
