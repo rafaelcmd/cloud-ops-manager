@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	httpmod "github.com/rafaelcmd/cloud-ops-manager/api/internal/adapters/inbound/http"
 	sqsmod "github.com/rafaelcmd/cloud-ops-manager/api/internal/adapters/outbound/sqs"
 	"github.com/rafaelcmd/cloud-ops-manager/api/internal/application/service"
@@ -20,13 +21,21 @@ func main() {
 		log.Fatalf("failed to load AWS config: %v", err)
 	}
 
-	queueURL := os.Getenv("SQS_QUEUE_URL")
-	if queueURL == "" {
-		log.Fatal("SQS_QUEUE_URL must be set")
+	provisionerQueueParamName := "/CLOUD_OPS_MANAGER/PROVISIONER_QUEUE_URL"
+	ssmClient := ssm.NewFromConfig(cfg)
+	provisionerQueueParamOutput, err := ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
+		Name: &provisionerQueueParamName,
+	})
+	if err != nil {
+		log.Fatalf("failed to get SQS queue URL from parameter store: %v", err)
+	}
+	provisionerQueueURL := *provisionerQueueParamOutput.Parameter.Value
+	if provisionerQueueURL == "" {
+		log.Fatal("SQS queue URL parameter must be set")
 	}
 
 	sqsClient := sqs.NewFromConfig(cfg)
-	publisher := sqsmod.NewResourcePublisher(sqsClient, queueURL)
+	publisher := sqsmod.NewResourcePublisher(sqsClient, provisionerQueueURL)
 	resourceService := service.NewResourceService(publisher)
 	resourceHandler := httpmod.NewResourceHandler(resourceService)
 
