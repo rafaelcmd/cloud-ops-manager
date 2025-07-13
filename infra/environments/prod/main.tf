@@ -26,9 +26,9 @@ module "ecs" {
 module "alb_resource_provisioner_api" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/provisioner_api/aws/alb?ref=main"
 
-  alb_name        = "resource-provisioner-alb"
-  internal        = false
-  subnets         = module.shared_vpc.public_subnet_ids
+  alb_name = "resource-provisioner-alb"
+  internal = false
+  subnets  = module.shared_vpc.public_subnet_ids
 
   target_group_name     = "resource-provisioner-tg"
   target_group_port     = 5000
