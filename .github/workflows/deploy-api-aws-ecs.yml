@@ -32,7 +32,7 @@ jobs:
       - name: Update ECS Service
         run: |
           aws ecs update-service \
-            --cluster cloud-ops-manager-api-cluster \
-            --service cloud-ops-manager-api-ecs-service \
+            --cluster cloudops-manager-cluster \
+            --service resource-provisioner-api-service \
             --force-new-deployment \
             --region ${{ secrets.AWS_REGION }}
