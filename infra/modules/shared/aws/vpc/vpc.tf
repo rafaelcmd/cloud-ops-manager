@@ -62,21 +62,24 @@ resource "aws_route_table_association" "public_subnets" {
 
 # Create NAT Gateway for private subnets
 resource "aws_eip" "nat" {
+  count = length(aws_subnet.public)
   tags = {
-    Name = "cloud_ops_manager_nat_a"
+    Name = "cloud_ops_manager_nat_${count.index + 1}"
   }
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
-  allocation_id = aws_eip.nat.allocation_id
-  subnet_id     = aws_subnet.public.id
+  count         = length(aws_subnet.public)
+  allocation_id = aws_eip.nat[count.index].allocation_id
+  subnet_id     = aws_subnet.public[count.index].id
 }
 
 resource "aws_route_table" "private_rt" {
+  count  = length(aws_subnet.private)
   vpc_id = aws_vpc.main.id
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+    nat_gateway_id = aws_nat_gateway.nat_gateway[count.index % length(aws_nat_gateway.nat_gateway)].id
   }
 }
