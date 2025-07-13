@@ -21,6 +21,7 @@ module "ecs" {
   private_subnet_ids = module.shared_vpc.private_subnet_ids
   target_group_arn   = module.alb_resource_provisioner_api.target_group_arn
   alb_sg_id          = module.alb_resource_provisioner_api.alb_sg_id
+  lb_listener        = module.alb_resource_provisioner_api.lb_listener
 }
 
 module "alb_resource_provisioner_api" {

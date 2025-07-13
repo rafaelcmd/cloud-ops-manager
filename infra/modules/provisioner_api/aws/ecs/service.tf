@@ -18,4 +18,8 @@ resource "aws_ecs_service" "api_service" {
     container_name   = "resource-provisioner-api"
     container_port   = 5000
   }
+
+  depends_on = [
+    var.lb_listener
+  ]
 }
