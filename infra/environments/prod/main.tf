@@ -22,6 +22,8 @@ module "ecs" {
   target_group_arn   = module.alb_resource_provisioner_api.target_group_arn
   alb_sg_id          = module.alb_resource_provisioner_api.alb_sg_id
   lb_listener        = module.alb_resource_provisioner_api.lb_listener
+  datadog_api_key    = "1234567890abcdef1234567890abcdef"
+  aws_region         = "us-east-1"
 }
 
 module "alb_resource_provisioner_api" {
