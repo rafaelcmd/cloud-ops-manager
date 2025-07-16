@@ -63,6 +63,11 @@ resource "aws_ecs_task_definition" "api" {
       }
     }
   ])
+
+  depends_on = [
+    aws_cloudwatch_log_group.ecs_api,
+    aws_cloudwatch_log_group.datadog_agent
+  ]
 }
 
 resource "aws_security_group" "api_ecs_task_sg" {
@@ -86,8 +91,3 @@ resource "aws_security_group" "api_ecs_task_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
-depends_on = [
-  aws_cloudwatch_log_group.ecs_api,
-  aws_cloudwatch_log_group.datadog_agent
-]
