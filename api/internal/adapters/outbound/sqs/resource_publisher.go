@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/rafaelcmd/cloud-ops-manager/api/internal/domain/model"
 	"github.com/rafaelcmd/cloud-ops-manager/api/internal/domain/ports/outbound"
+	"log"
 )
 
 type ResourcePublisher struct {
@@ -30,6 +31,7 @@ func (p *ResourcePublisher) Publish(ctx context.Context, resource model.Resource
 		return fmt.Errorf("failed to marshal resource: %w", err)
 	}
 
+	log.Printf("Publishing resource to SQS: %s", string(body))
 	_, err = p.client.SendMessage(ctx, &sqs.SendMessageInput{
 		MessageBody: aws.String(string(body)),
 		QueueUrl:    aws.String(p.queueURL),
