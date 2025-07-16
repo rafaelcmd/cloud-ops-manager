@@ -18,6 +18,14 @@ resource "aws_ecs_task_definition" "api" {
         hostPort      = 5000
         protocol      = "tcp"
       }]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/resource-provisioner-api"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "api"
+        }
+      }
     },
     {
       name      = "datadog-agent"
@@ -44,11 +52,11 @@ resource "aws_ecs_task_definition" "api" {
           name  = "DD_CONTAINER_EXCLUDE"
           value = "name:datadog-agent"
         }
-      ],
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/resource-provisioner-api"
+          "awslogs-group"         = "/ecs/datadog-agent"
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "datadog"
         }
@@ -78,3 +86,8 @@ resource "aws_security_group" "api_ecs_task_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+depends_on = [
+  aws_cloudwatch_log_group.ecs_api,
+  aws_cloudwatch_log_group.datadog_agent
+]
