@@ -53,7 +53,11 @@ resource "aws_iam_policy" "ecs_task_policy" {
           "sqs:SendMessage",
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
+          "sqs:GetQueueAttributes",
+          "ecs:DescribeTasks",
+          "ecs:ListTasks",
+          "logs:*",
+          "cloudwatch:*",
         ]
         Resource = "*"
       }

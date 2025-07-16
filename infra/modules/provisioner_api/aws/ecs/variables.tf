@@ -22,3 +22,14 @@ variable "lb_listener" {
   description = "ARN of the ALB listener for the ECS service"
   type        = string
 }
+
+variable "datadog_api_key" {
+  description = "Datadog API key for monitoring"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region where the ECS service will be deployed"
+  type        = string
+  default     = "us-east-1"
+}

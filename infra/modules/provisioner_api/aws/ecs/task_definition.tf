@@ -12,11 +12,47 @@ resource "aws_ecs_task_definition" "api" {
     {
       name  = "resource-provisioner-api"
       image = "${data.terraform_remote_state.cloudops_manager_ecr_repository.outputs.repository_url}:latest"
+      essential = true
       portMappings = [{
         containerPort = 5000
         hostPort      = 5000
         protocol      = "tcp"
       }]
+    },
+    {
+      name = "datadog-agent"
+      image = "datadog/agent:latest"
+      essential = true
+      environment = [
+        {
+          name  = "DD_API_KEY"
+          value = var.datadog_api_key
+        },
+        {
+          name  = "ECS_FARGATE"
+          value = "true"
+        },
+        {
+          name  = "DD_LOGS_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
+          value = "true"
+        },
+        {
+          name  = "DD_CONTAINER_EXCLUDE"
+          value = "name:datadog-agent"
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/resource-provisioner-api"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "datadog"
+        }
+      }
     }
   ])
 }
