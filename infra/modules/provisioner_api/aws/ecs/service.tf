@@ -6,6 +6,7 @@ resource "aws_ecs_service" "api_service" {
   deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 100
   launch_type                        = "FARGATE"
+  platform_version                   = "1.4.0"
 
   network_configuration {
     subnets          = var.private_subnet_ids

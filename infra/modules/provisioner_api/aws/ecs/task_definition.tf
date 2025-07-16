@@ -34,6 +34,14 @@ resource "aws_ecs_task_definition" "api" {
         {
           name  = "DD_TAGS"
           value = "project:cloudops,environment:prod"
+        },
+        {
+          name  = "DD_LOGS_INJECTION"
+          value = "true"
+        },
+        {
+          name  = "DD_TRACE_AGENT_URL"
+          value = "http://127.0.0.1:8126"
         }
       ]
       logConfiguration = {
@@ -47,24 +55,20 @@ resource "aws_ecs_task_definition" "api" {
     },
     {
       name      = "datadog-agent"
-      image     = "datadog/agent:latest"
+      image     = "gcr.io/datadoghq/agent:latest"
       essential = true
       environment = [
+        {
+          name  = "DD_ENABLE_METADATA_COLLECTION"
+          value = "true"
+        },
         {
           name  = "DD_PROCESS_AGENT_ENABLED"
           value = "true"
         },
         {
-          name  = "DD_SERVICE"
-          value = "resource-provisioner-api"
-        },
-        {
           name  = "DD_ENV"
           value = "prod"
-        },
-        {
-          name  = "DD_VERSION"
-          value = "1.0.0"
         },
         {
           name  = "DD_TAGS"
@@ -91,14 +95,6 @@ resource "aws_ecs_task_definition" "api" {
           value = "name:datadog-agent"
         }
       ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "/ecs/datadog-agent"
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "datadog"
-        }
-      }
     }
   ])
 
