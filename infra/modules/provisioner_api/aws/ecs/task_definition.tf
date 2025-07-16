@@ -5,13 +5,13 @@ resource "aws_ecs_task_definition" "api" {
   cpu                      = "256"
   memory                   = "512"
 
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_role.arn
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn      = aws_iam_role.ecs_task_role.arn
 
   container_definitions = jsonencode([
     {
-      name  = "resource-provisioner-api"
-      image = "${data.terraform_remote_state.cloudops_manager_ecr_repository.outputs.repository_url}:latest"
+      name      = "resource-provisioner-api"
+      image     = "${data.terraform_remote_state.cloudops_manager_ecr_repository.outputs.repository_url}:latest"
       essential = true
       portMappings = [{
         containerPort = 5000
@@ -20,8 +20,8 @@ resource "aws_ecs_task_definition" "api" {
       }]
     },
     {
-      name = "datadog-agent"
-      image = "datadog/agent:latest"
+      name      = "datadog-agent"
+      image     = "datadog/agent:latest"
       essential = true
       environment = [
         {
