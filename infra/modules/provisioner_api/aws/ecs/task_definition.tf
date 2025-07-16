@@ -90,6 +90,9 @@ resource "aws_ecs_task_definition" "api" {
           name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
           value = "true"
         },
+        { name  = "DD_CONTAINER_INCLUDE"
+          value = "name:resource-provisioner-api"
+        },
         {
           name  = "DD_CONTAINER_EXCLUDE"
           value = "name:datadog-agent"
