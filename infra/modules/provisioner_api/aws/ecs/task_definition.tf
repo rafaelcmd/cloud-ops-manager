@@ -20,11 +20,23 @@ resource "aws_ecs_task_definition" "api" {
       }]
       environment = [
         {
+          name  = "DD_LOGS_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "DD_LOGS_CONFIG"
+          value = "true"
+        },
+        {
+          name  = "DD_LOGS_SOURCE"
+          value = "go"
+        },
+        {
           name  = "DD_SERVICE"
           value = "resource-provisioner-api"
         },
         {
-          name  = "DD_ENV"
+          name  = "DD_LOGS_ENV"
           value = "prod"
         },
         {
@@ -87,8 +99,12 @@ resource "aws_ecs_task_definition" "api" {
           value = "true"
         },
         {
-          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
+          name  = "DD_LOGS_CONFIG"
           value = "true"
+        },
+        {
+          name  = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL"
+          value = "false"
         },
         { name  = "DD_CONTAINER_INCLUDE"
           value = "name:resource-provisioner-api"
