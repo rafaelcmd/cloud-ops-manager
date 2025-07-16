@@ -95,6 +95,14 @@ resource "aws_ecs_task_definition" "api" {
           value = "name:datadog-agent"
         }
       ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/datadog-agent"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "agent"
+        }
+      }
     }
   ])
 
