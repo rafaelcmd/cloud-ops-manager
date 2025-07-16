@@ -18,6 +18,24 @@ resource "aws_ecs_task_definition" "api" {
         hostPort      = 5000
         protocol      = "tcp"
       }]
+      environment = [
+        {
+          name  = "DD_SERVICE"
+          value = "resource-provisioner-api"
+        },
+        {
+          name  = "DD_ENV"
+          value = "prod"
+        },
+        {
+          name  = "DD_VERSION"
+          value = "1.0.0"
+        },
+        {
+          name  = "DD_TAGS"
+          value = "project:cloudops,environment:prod"
+        }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -32,6 +50,26 @@ resource "aws_ecs_task_definition" "api" {
       image     = "datadog/agent:latest"
       essential = true
       environment = [
+        {
+          name  = "DD_PROCESS_AGENT_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "DD_SERVICE"
+          value = "resource-provisioner-api"
+        },
+        {
+          name  = "DD_ENV"
+          value = "prod"
+        },
+        {
+          name  = "DD_VERSION"
+          value = "1.0.0"
+        },
+        {
+          name  = "DD_TAGS"
+          value = "project:cloudops,environment:prod"
+        },
         {
           name  = "DD_API_KEY"
           value = var.datadog_api_key
