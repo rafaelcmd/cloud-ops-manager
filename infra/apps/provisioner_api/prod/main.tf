@@ -1,5 +1,5 @@
 module "shared_vpc" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/shared/aws/vpc?ref=main"
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/vpc?ref=main"
 
   vpc_cidr             = "10.0.0.0/16"
   public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
@@ -15,19 +15,19 @@ module "shared_vpc" {
 }
 
 module "ecs" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/provisioner_api/aws/ecs?ref=main"
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/ecs?ref=main"
 
   vpc_id             = module.shared_vpc.vpc_id
   private_subnet_ids = module.shared_vpc.private_subnet_ids
-  target_group_arn   = module.alb_resource_provisioner_api.target_group_arn
-  alb_sg_id          = module.alb_resource_provisioner_api.alb_sg_id
-  lb_listener        = module.alb_resource_provisioner_api.lb_listener
+  target_group_arn   = module.alb.target_group_arn
+  alb_sg_id          = module.alb.alb_sg_id
+  lb_listener        = module.alb.lb_listener
   datadog_api_key    = "e7c019bdf1efdc64e8be56dc188a55e3"
   aws_region         = "us-east-1"
 }
 
-module "alb_resource_provisioner_api" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/provisioner_api/aws/alb?ref=main"
+module "alb" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/alb?ref=main"
 
   alb_name = "resource-provisioner-alb"
   internal = false
@@ -59,5 +59,5 @@ module "alb_resource_provisioner_api" {
 }
 
 module "sqs" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/provisioner_api/aws/sqs?ref=main"
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/sqs?ref=main"
 }
