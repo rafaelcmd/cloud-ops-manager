@@ -9,7 +9,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: infra/environments/prod/
+        working-directory: infra/apps/provisioner_api/prod
 
     steps:
       - uses: actions/checkout@v4
