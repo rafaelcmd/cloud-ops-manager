@@ -1,24 +1,19 @@
-module "shared_vpc" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/vpc?ref=main"
+data "terraform_remote_state" "shared_vpc" {
+  backend = "remote"
 
-  vpc_cidr             = "10.0.0.0/16"
-  public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
-  availability_zones   = ["us-east-1a", "us-east-1b"]
-  project              = "cloudops"
-  environment          = "prod"
-
-  tags = {
-    Owner      = "platform-team"
-    CostCenter = "cloudops-prod"
+  config = {
+    organization = "cloudops-manager-org"
+    workspaces = {
+      name = "cloudops-shared-vpc"
+    }
   }
 }
 
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/ecs?ref=main"
 
-  vpc_id             = module.shared_vpc.vpc_id
-  private_subnet_ids = module.shared_vpc.private_subnet_ids
+  vpc_id             = data.terraform_remote_state.shared_vpc.outputs.vpc_id
+  private_subnet_ids = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
   target_group_arn   = module.alb.target_group_arn
   alb_sg_id          = module.alb.alb_sg_id
   lb_listener        = module.alb.lb_listener
@@ -31,12 +26,12 @@ module "alb" {
 
   alb_name = "resource-provisioner-alb"
   internal = false
-  subnets  = module.shared_vpc.public_subnet_ids
+  subnets  = data.terraform_remote_state.shared_vpc.outputs.public_subnet_ids
 
   target_group_name     = "resource-provisioner-tg"
   target_group_port     = 5000
   target_group_protocol = "HTTP"
-  vpc_id                = module.shared_vpc.vpc_id
+  vpc_id                = data.terraform_remote_state.shared_vpc.outputs.vpc_id
   target_type           = "ip"
 
   health_check_path     = "/health"
