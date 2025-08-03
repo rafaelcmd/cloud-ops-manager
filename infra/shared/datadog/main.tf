@@ -1,7 +1,7 @@
 resource "datadog_integration_aws_account" "this" {
-  account_tags   = ["env:prod"]
   aws_account_id = var.aws_account_id
   aws_partition  = var.aws_partition
+  account_tags   = ["env:prod"]
 
   aws_regions {
     include_all = true
@@ -13,15 +13,18 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
-  metrics_config {
-    namespace_filters {
-      include = ["ecs_fargate"]
-    }
+  logs_config {
+    lambda_forwarder {}
   }
 
-  resources_config {
-    exclude_tags = []
-    include_tags = ["project:cloudops"]
+  metrics_config {
+    namespace_filters {}
+  }
+
+  resources_config {}
+
+  traces_config {
+    xray_services {}
   }
 }
 
