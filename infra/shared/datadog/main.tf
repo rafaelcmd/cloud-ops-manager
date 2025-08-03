@@ -14,15 +14,11 @@ resource "datadog_integration_aws_account" "this" {
   }
 
   logs_config {
-    lambda_forwarder {
-      arn = null
-    }
+    lambda_forwarder {}
   }
 
   metrics_config {
-    namespace_filters {
-      include = ["ecs_fargate"]
-    }
+    namespace_filters {}
   }
 
   resources_config {}
