@@ -12,13 +12,16 @@ resource "datadog_integration_aws_account" "this" {
       role_name = aws_iam_role.datadog_integration_role.name
     }
   }
-}
 
-resource "datadog_integration_aws_namespace_rules" "this" {
-  account_id = var.aws_account_id
+  metrics_config {
+    namespace_filters = {
+      include = ["ecs_fargate"]
+    }
+  }
 
-  namespace_rules = {
-    ecs_fargate = true
+  resources_config {
+    tag_filter_type = "include"
+    tag_filter_list = ["project:cloudops"]
   }
 }
 
