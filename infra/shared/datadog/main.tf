@@ -14,14 +14,14 @@ resource "datadog_integration_aws_account" "this" {
   }
 
   metrics_config {
-    namespace_filters = {
+    namespace_filters {
       include = ["ecs_fargate"]
     }
   }
 
   resources_config {
-    tag_filter_type = "include"
-    tag_filter_list = ["project:cloudops"]
+    exclude_tags = []
+    include_tags = ["project:cloudops"]
   }
 }
 
