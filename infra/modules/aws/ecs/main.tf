@@ -79,3 +79,8 @@ resource "aws_cloudwatch_log_group" "datadog_agent" {
   name              = "/ecs/datadog-agent"
   retention_in_days = 3
 }
+
+resource "aws_cloudwatch_log_group" "log_router" {
+  name              = "/ecs/log-router"
+  retention_in_days = 3
+}

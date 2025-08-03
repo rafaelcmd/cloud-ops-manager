@@ -63,12 +63,32 @@ resource "aws_ecs_task_definition" "api" {
           "awslogs-stream-prefix" = "agent"
         }
       }
+    },
+    {
+      name      = "log-router"
+      image     = "amazon/aws-for-fluent-bit:latest"
+      essential = false
+      firelensConfiguration = {
+        type = "fluentbit"
+        options = {
+          "enable-ecs-log-metadata" = "true"
+        }
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/log-router"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "log-router"
+        }
+      }
     }
   ])
 
   depends_on = [
     aws_cloudwatch_log_group.ecs_api,
-    aws_cloudwatch_log_group.datadog_agent
+    aws_cloudwatch_log_group.datadog_agent,
+    aws_cloudwatch_log_group.log_router
   ]
 }
 
