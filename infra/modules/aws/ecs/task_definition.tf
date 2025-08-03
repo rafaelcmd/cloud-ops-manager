@@ -17,15 +17,15 @@ resource "aws_ecs_task_definition" "api" {
         protocol      = "tcp"
       }]
       environment = [
-        { name = "DD_SERVICE",           value = "resource-provisioner-api" },
-        { name = "DD_ENV",               value = "prod" },
-        { name = "DD_VERSION",           value = "1.0.0" },
-        { name = "DD_LOGS_ENABLED",      value = "true" },
-        { name = "DD_LOGS_CONFIG",       value = "true" },
-        { name = "DD_LOGS_INJECTION",    value = "true" },
-        { name = "DD_LOGS_SOURCE",       value = "go" },
-        { name = "DD_TAGS",              value = "project:cloudops,environment:prod" },
-        { name = "DD_TRACE_AGENT_URL",   value = "http://127.0.0.1:8126" }
+        { name = "DD_SERVICE", value = "resource-provisioner-api" },
+        { name = "DD_ENV", value = "prod" },
+        { name = "DD_VERSION", value = "1.0.0" },
+        { name = "DD_LOGS_ENABLED", value = "true" },
+        { name = "DD_LOGS_CONFIG", value = "true" },
+        { name = "DD_LOGS_INJECTION", value = "true" },
+        { name = "DD_LOGS_SOURCE", value = "go" },
+        { name = "DD_TAGS", value = "project:cloudops,environment:prod" },
+        { name = "DD_TRACE_AGENT_URL", value = "http://127.0.0.1:8126" }
       ]
       logConfiguration = {
         logDriver = "awsfirelens"
@@ -33,6 +33,7 @@ resource "aws_ecs_task_definition" "api" {
           Name       = "datadog"
           Host       = "http-intake.logs.datadoghq.com"
           TLS        = "on"
+          apiKey     = var.datadog_api_key
           dd_service = "provisioner_api"
           dd_source  = "ecs"
           dd_tags    = "env:prod,project:cloudops"
@@ -44,16 +45,16 @@ resource "aws_ecs_task_definition" "api" {
       image     = "gcr.io/datadoghq/agent:7.51.0"
       essential = true
       environment = [
-        { name = "DD_API_KEY",                    value = var.datadog_api_key },
-        { name = "DD_ENV",                        value = "prod" },
-        { name = "DD_TAGS",                       value = "project:cloudops,environment:prod" },
-        { name = "ECS_FARGATE",                   value = "true" },
-        { name = "DD_LOGS_ENABLED",               value = "true" },
-        { name = "DD_PROCESS_AGENT_ENABLED",      value = "true" },
+        { name = "DD_API_KEY", value = var.datadog_api_key },
+        { name = "DD_ENV", value = "prod" },
+        { name = "DD_TAGS", value = "project:cloudops,environment:prod" },
+        { name = "ECS_FARGATE", value = "true" },
+        { name = "DD_LOGS_ENABLED", value = "true" },
+        { name = "DD_PROCESS_AGENT_ENABLED", value = "true" },
         { name = "DD_ENABLE_METADATA_COLLECTION", value = "true" },
         { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "false" },
-        { name = "DD_CONTAINER_INCLUDE",          value = "name:resource-provisioner-api" },
-        { name = "DD_CONTAINER_EXCLUDE",          value = "name:datadog-agent" }
+        { name = "DD_CONTAINER_INCLUDE", value = "name:resource-provisioner-api" },
+        { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
