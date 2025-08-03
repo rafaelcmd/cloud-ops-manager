@@ -61,7 +61,7 @@ resource "aws_ecs_task_definition" "api" {
         options = {
           "awslogs-group"         = "/ecs/resource-provisioner-api"
           "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "api"
+          "awslogs-stream-prefix" = "ecs"
         }
       }
     },
