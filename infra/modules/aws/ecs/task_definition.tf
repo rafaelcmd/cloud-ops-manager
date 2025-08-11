@@ -38,7 +38,7 @@ resource "aws_ecs_task_definition" "api" {
     },
     {
       name      = "datadog-agent"
-      image     = "gcr.io/datadoghq/agent:7.51.0"
+      image     = "gcr.io/datadoghq/agent:7.60.0"
       essential = true
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
@@ -48,6 +48,7 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_ENABLED", value = "true" },
         { name = "DD_PROCESS_AGENT_ENABLED", value = "true" },
         { name = "DD_ENABLE_METADATA_COLLECTION", value = "true" },
+        { name = "DD_ECS_TASK_COLLECTION_ENABLED", value = "true" },
         { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
         { name = "DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION", value = "true" },
         { name = "DD_CONTAINER_INCLUDE", value = "name:resource-provisioner-api" },
