@@ -2,23 +2,42 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"os"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/sirupsen/logrus"
+	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+
 	httpmod "github.com/rafaelcmd/cloud-ops-manager/api/internal/adapters/inbound/http"
 	sqsmod "github.com/rafaelcmd/cloud-ops-manager/api/internal/adapters/outbound/sqs"
 	"github.com/rafaelcmd/cloud-ops-manager/api/internal/application/service"
-	"log"
-	"net/http"
-	"os"
 )
 
 func main() {
+	// Initialize structured logging
+	log := logrus.New()
+	log.SetFormatter(&logrus.JSONFormatter{})
+	log.SetLevel(logrus.InfoLevel)
+
+	// Initialize Datadog tracer
+	tracer.Start(
+		tracer.WithEnv(os.Getenv("DD_ENV")),
+		tracer.WithService(os.Getenv("DD_SERVICE")),
+		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
+	)
+	defer tracer.Stop()
+
 	ctx := context.Background()
+
+	log.Info("Starting Cloud Ops Manager API")
 
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		log.Fatalf("failed to load AWS config: %v", err)
+		log.WithError(err).Fatal("failed to load AWS config")
 	}
 
 	provisionerQueueParamName := "/CLOUD_OPS_MANAGER/PROVISIONER_QUEUE_URL"
@@ -27,12 +46,14 @@ func main() {
 		Name: &provisionerQueueParamName,
 	})
 	if err != nil {
-		log.Fatalf("failed to get SQS queue URL from parameter store: %v", err)
+		log.WithError(err).Fatal("failed to get SQS queue URL from parameter store")
 	}
 	provisionerQueueURL := *provisionerQueueParamOutput.Parameter.Value
 	if provisionerQueueURL == "" {
 		log.Fatal("SQS queue URL parameter must be set")
 	}
+
+	log.WithField("queue_url", provisionerQueueURL).Info("Retrieved SQS queue URL")
 
 	sqsClient := sqs.NewFromConfig(cfg)
 	publisher := sqsmod.NewResourcePublisher(sqsClient, provisionerQueueURL)
@@ -41,13 +62,16 @@ func main() {
 
 	router := httpmod.NewRouter(resourceHandler)
 
+	// Wrap router with Datadog tracing
+	mux := httptrace.WrapHandler(router, "cloud-ops-manager.api", "")
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "5000"
 	}
 
-	log.Printf("API running on http://localhost:%s", port)
-	if err := http.ListenAndServe(":"+port, router); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+	log.WithField("port", port).Info("API server starting")
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
+		log.WithError(err).Fatal("failed to start server")
 	}
 }

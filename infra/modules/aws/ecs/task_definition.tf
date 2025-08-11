@@ -21,22 +21,18 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_ENV", value = "prod" },
         { name = "DD_VERSION", value = "1.0.0" },
         { name = "DD_LOGS_ENABLED", value = "true" },
-        { name = "DD_LOGS_CONFIG", value = "true" },
         { name = "DD_LOGS_INJECTION", value = "true" },
         { name = "DD_LOGS_SOURCE", value = "go" },
         { name = "DD_TAGS", value = "project:cloudops,environment:prod" },
-        { name = "DD_TRACE_AGENT_URL", value = "http://127.0.0.1:8126" }
+        { name = "DD_TRACE_AGENT_URL", value = "http://127.0.0.1:8126" },
+        { name = "DD_API_KEY", value = var.datadog_api_key }
       ]
       logConfiguration = {
-        logDriver = "awsfirelens"
+        logDriver = "awslogs"
         options = {
-          Name       = "datadog"
-          Host       = "http-intake.logs.datadoghq.com"
-          TLS        = "on"
-          apiKey     = var.datadog_api_key
-          dd_service = "provisioner_api"
-          dd_source  = "ecs"
-          dd_tags    = "env:prod,project:cloudops"
+          "awslogs-group"         = "/ecs/resource-provisioner-api"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "api"
         }
       }
     },
@@ -52,7 +48,8 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_ENABLED", value = "true" },
         { name = "DD_PROCESS_AGENT_ENABLED", value = "true" },
         { name = "DD_ENABLE_METADATA_COLLECTION", value = "true" },
-        { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "false" },
+        { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
+        { name = "DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION", value = "true" },
         { name = "DD_CONTAINER_INCLUDE", value = "name:resource-provisioner-api" },
         { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" }
       ]
@@ -64,32 +61,12 @@ resource "aws_ecs_task_definition" "api" {
           "awslogs-stream-prefix" = "agent"
         }
       }
-    },
-    {
-      name      = "log-router"
-      image     = "amazon/aws-for-fluent-bit:latest"
-      essential = false
-      firelensConfiguration = {
-        type = "fluentbit"
-        options = {
-          "enable-ecs-log-metadata" = "true"
-        }
-      }
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "/ecs/log-router"
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "log-router"
-        }
-      }
     }
   ])
 
   depends_on = [
     aws_cloudwatch_log_group.ecs_api,
-    aws_cloudwatch_log_group.datadog_agent,
-    aws_cloudwatch_log_group.log_router
+    aws_cloudwatch_log_group.datadog_agent
   ]
 }
 

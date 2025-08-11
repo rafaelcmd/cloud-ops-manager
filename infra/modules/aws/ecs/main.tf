@@ -72,15 +72,10 @@ resource "aws_iam_role_policy_attachment" "ecs_task_policy_attachment" {
 
 resource "aws_cloudwatch_log_group" "ecs_api" {
   name              = "/ecs/resource-provisioner-api"
-  retention_in_days = 3
+  retention_in_days = 14
 }
 
 resource "aws_cloudwatch_log_group" "datadog_agent" {
   name              = "/ecs/datadog-agent"
-  retention_in_days = 3
-}
-
-resource "aws_cloudwatch_log_group" "log_router" {
-  name              = "/ecs/log-router"
-  retention_in_days = 3
+  retention_in_days = 7
 }
