@@ -17,7 +17,7 @@ module "ecs" {
   target_group_arn   = module.alb.target_group_arn
   alb_sg_id          = module.alb.alb_sg_id
   lb_listener        = module.alb.lb_listener
-  datadog_api_key    = "e7c019bdf1efdc64e8be56dc188a55e3"
+  datadog_api_key    = "d7c33c222e6c154aa77c9774a0995890"
   aws_region         = "us-east-1"
 }
 
