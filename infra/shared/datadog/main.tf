@@ -15,8 +15,7 @@ resource "datadog_integration_aws_account" "this" {
 
   logs_config {
     lambda_forwarder {
-      lambda_tags = ["env:prod", "project:cloudops"]
-      sources     = ["cloudwatch"]
+      sources = ["cloudwatch"]
     }
   }
 
