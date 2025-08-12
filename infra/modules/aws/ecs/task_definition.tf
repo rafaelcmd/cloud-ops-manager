@@ -24,8 +24,15 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_INJECTION", value = "true" },
         { name = "DD_LOGS_SOURCE", value = "go" },
         { name = "DD_TAGS", value = "project:cloudops,environment:prod" },
-        { name = "DD_TRACE_AGENT_URL", value = "http://127.0.0.1:8126" },
+        { name = "DD_AGENT_HOST", value = "localhost" },
+        { name = "DD_TRACE_AGENT_PORT", value = "8126" },
         { name = "DD_API_KEY", value = var.datadog_api_key }
+      ]
+      dependsOn = [
+        {
+          containerName = "datadog-agent"
+          condition     = "START"
+        }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -40,6 +47,12 @@ resource "aws_ecs_task_definition" "api" {
       name      = "datadog-agent"
       image     = "gcr.io/datadoghq/agent:7.60.0"
       essential = true
+      portMappings = [
+        {
+          containerPort = 8126
+          protocol      = "tcp"
+        }
+      ]
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
         { name = "DD_ENV", value = "prod" },
@@ -52,7 +65,9 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
         { name = "DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION", value = "true" },
         { name = "DD_CONTAINER_INCLUDE", value = "name:resource-provisioner-api" },
-        { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" }
+        { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
+        { name = "DD_APM_ENABLED", value = "true" },
+        { name = "DD_APM_NON_LOCAL_TRAFFIC", value = "true" }
       ]
       logConfiguration = {
         logDriver = "awslogs"

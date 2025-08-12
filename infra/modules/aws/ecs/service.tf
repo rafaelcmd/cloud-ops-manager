@@ -7,6 +7,7 @@ resource "aws_ecs_service" "api_service" {
   deployment_minimum_healthy_percent = 100
   launch_type                        = "FARGATE"
   platform_version                   = "1.4.0"
+  force_new_deployment               = true
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -23,4 +24,8 @@ resource "aws_ecs_service" "api_service" {
   depends_on = [
     var.lb_listener
   ]
+
+  triggers = {
+    task_definition_arn = aws_ecs_task_definition.api.arn
+  }
 }

@@ -18,10 +18,21 @@ resource "datadog_integration_aws_account" "this" {
   }
 
   metrics_config {
-    namespace_filters {}
+    namespace_filters {
+      # Include ECS metrics for cluster monitoring
+      include_only = [
+        "AWS/ECS",
+        "AWS/ApplicationELB",
+        "AWS/Logs"
+      ]
+    }
   }
 
-  resources_config {}
+  resources_config {
+    # Enable resource collection for ECS clusters
+    cloud_security_posture_management_collection = false
+    extended_collection                          = true
+  }
 
   traces_config {
     xray_services {}
@@ -57,15 +68,24 @@ resource "aws_iam_role_policy" "datadog_permissions" {
           "cloudwatch:GetMetricStatistics",
           "cloudwatch:DescribeAlarms",
           "ec2:DescribeInstances",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSubnets",
           "ecs:DescribeClusters",
           "ecs:DescribeServices",
           "ecs:DescribeTaskDefinition",
+          "ecs:DescribeTaskSets",
+          "ecs:DescribeContainerInstances",
+          "ecs:ListClusters",
+          "ecs:ListServices",
           "ecs:ListTasks",
           "ecs:DescribeTasks",
+          "ecs:ListContainerInstances",
+          "ecs:ListTaskDefinitions",
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
           "logs:GetLogEvents",
-          "logs:FilterLogEvents"
+          "logs:FilterLogEvents",
+          "tag:GetResources"
         ]
         Effect   = "Allow"
         Resource = "*"
