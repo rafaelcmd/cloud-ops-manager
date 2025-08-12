@@ -95,14 +95,3 @@ resource "aws_iam_role_policy" "datadog_permissions" {
     ]
   })
 }
-
-# Output the Datadog forwarder ARN for use in other modules
-output "datadog_forwarder_arn" {
-  description = "ARN of the Datadog log forwarder Lambda function"
-  value       = datadog_integration_aws_account.this.logs_config[0].lambda_forwarder[0].arn
-}
-
-output "datadog_integration_role_arn" {
-  description = "ARN of the Datadog integration IAM role"
-  value       = aws_iam_role.datadog_integration_role.arn
-}
