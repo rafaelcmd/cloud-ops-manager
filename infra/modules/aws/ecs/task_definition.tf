@@ -7,6 +7,15 @@ resource "aws_ecs_task_definition" "api" {
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
+  tags = {
+    Datadog                = "monitored"
+    "datadog:service"      = "resource-provisioner-api"
+    "datadog:env"          = "prod"
+    "datadog:version"      = "1.0.0"
+    Project                = "cloudops"
+    Environment            = "prod"
+  }
+
   container_definitions = jsonencode([
     {
       name      = "resource-provisioner-api"
@@ -23,11 +32,17 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_ENABLED", value = "true" },
         { name = "DD_LOGS_INJECTION", value = "true" },
         { name = "DD_LOGS_SOURCE", value = "go" },
-        { name = "DD_TAGS", value = "project:cloudops,environment:prod" },
+        { name = "DD_TAGS", value = "project:cloudops,environment:prod,service:resource-provisioner-api" },
         { name = "DD_AGENT_HOST", value = "localhost" },
         { name = "DD_TRACE_AGENT_PORT", value = "8126" },
         { name = "DD_API_KEY", value = var.datadog_api_key }
       ]
+      dockerLabels = {
+        "com.datadoghq.ad.logs" = "[{\"source\":\"go\",\"service\":\"resource-provisioner-api\",\"tags\":[\"env:prod\",\"project:cloudops\"]}]"
+        "com.datadoghq.tags.service" = "resource-provisioner-api"
+        "com.datadoghq.tags.env" = "prod"
+        "com.datadoghq.tags.version" = "1.0.0"
+      }
       dependsOn = [
         {
           containerName = "datadog-agent"
@@ -56,6 +71,7 @@ resource "aws_ecs_task_definition" "api" {
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
         { name = "DD_ENV", value = "prod" },
+        { name = "DD_SERVICE", value = "datadog-agent" },
         { name = "DD_TAGS", value = "project:cloudops,environment:prod" },
         { name = "ECS_FARGATE", value = "true" },
         { name = "DD_LOGS_ENABLED", value = "true" },
@@ -64,10 +80,13 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_ECS_TASK_COLLECTION_ENABLED", value = "true" },
         { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
         { name = "DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION", value = "true" },
+        { name = "DD_LOGS_CONFIG_DOCKER_LABELS_AS_TAGS", value = "true" },
         { name = "DD_CONTAINER_INCLUDE", value = "name:resource-provisioner-api" },
         { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
         { name = "DD_APM_ENABLED", value = "true" },
-        { name = "DD_APM_NON_LOCAL_TRAFFIC", value = "true" }
+        { name = "DD_APM_NON_LOCAL_TRAFFIC", value = "true" },
+        { name = "DD_DOGSTATSD_NON_LOCAL_TRAFFIC", value = "true" },
+        { name = "DD_CONTAINER_LABELS_AS_TAGS", value = "{\"com.datadoghq.tags.service\":\"service\",\"com.datadoghq.tags.env\":\"env\",\"com.datadoghq.tags.version\":\"version\"}" }
       ]
       logConfiguration = {
         logDriver = "awslogs"

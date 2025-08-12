@@ -1,5 +1,13 @@
 resource "aws_ecs_cluster" "cloudops_cluster" {
   name = "cloudops-manager-cluster"
+
+  tags = {
+    Datadog                = "monitored"
+    "datadog:service"      = "cloudops-manager"
+    "datadog:env"          = "prod"
+    Project                = "cloudops"
+    Environment            = "prod"
+  }
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
