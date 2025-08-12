@@ -14,9 +14,7 @@ resource "datadog_integration_aws_account" "this" {
   }
 
   logs_config {
-    lambda_forwarder {
-      sources = ["cloudwatch"]
-    }
+    lambda_forwarder {}
   }
 
   metrics_config {
@@ -94,4 +92,14 @@ resource "aws_iam_role_policy" "datadog_permissions" {
       }
     ]
   })
+}
+
+output "datadog_integration_role_arn" {
+  description = "ARN of the Datadog integration IAM role"
+  value       = aws_iam_role.datadog_integration_role.arn
+}
+
+output "datadog_integration_external_id" {
+  description = "External ID for the Datadog integration"
+  value       = var.aws_account_id
 }
