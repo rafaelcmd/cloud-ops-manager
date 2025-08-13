@@ -31,11 +31,11 @@ resource "aws_ecs_service" "api_service" {
   }
 
   tags = {
-    Datadog                = "monitored"
-    "datadog:service"      = "resource-provisioner-api"
-    "datadog:env"          = "prod"
-    "datadog:version"      = "1.0.0"
-    Project                = "cloudops"
-    Environment            = "prod"
+    Datadog           = "monitored"
+    "datadog:service" = "resource-provisioner-api"
+    "datadog:env"     = "prod"
+    "datadog:version" = "1.0.0"
+    Project           = "cloudops"
+    Environment       = "prod"
   }
 }

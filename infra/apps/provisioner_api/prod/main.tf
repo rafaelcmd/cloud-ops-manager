@@ -12,13 +12,14 @@ data "terraform_remote_state" "shared_vpc" {
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/ecs?ref=main"
 
-  vpc_id             = data.terraform_remote_state.shared_vpc.outputs.vpc_id
-  private_subnet_ids = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
-  target_group_arn   = module.alb.target_group_arn
-  alb_sg_id          = module.alb.alb_sg_id
-  lb_listener        = module.alb.lb_listener
-  datadog_api_key    = "d7c33c222e6c154aa77c9774a0995890"
-  aws_region         = "us-east-1"
+  vpc_id                = data.terraform_remote_state.shared_vpc.outputs.vpc_id
+  private_subnet_ids    = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
+  target_group_arn      = module.alb.target_group_arn
+  alb_sg_id             = module.alb.alb_sg_id
+  lb_listener           = module.alb.lb_listener
+  datadog_api_key       = var.datadog_api_key
+  aws_region            = "us-east-1"
+  datadog_forwarder_arn = module.datadog_forwarder.function_arn
 }
 
 module "alb" {
@@ -55,4 +56,76 @@ module "alb" {
 
 module "sqs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/sqs?ref=main"
+}
+
+# Datadog Lambda Forwarder for collecting application logs
+module "datadog_forwarder" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/lambda?ref=main"
+
+  function_name = "provisioner-api-datadog-forwarder"
+  source_dir    = "${path.module}/lambda-src"
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.9"
+  timeout       = 120
+  memory_size   = 1024
+
+  environment_variables = {
+    DD_API_KEY = var.datadog_api_key
+    DD_SITE    = "datadoghq.com"
+    DD_SOURCE  = "aws"
+    DD_TAGS    = "env:${var.environment},project:${var.project},service:provisioner-api"
+  }
+
+  reserved_concurrent_executions = 100
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project
+    Service     = "provisioner-api"
+  }
+
+  log_retention_days = 7
+
+  # Enable CloudWatch Logs invocation
+  allow_cloudwatch_logs_invocation = true
+
+  # Additional IAM policy for Datadog forwarder
+  additional_inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::*/*",
+          "arn:aws:s3:::*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }

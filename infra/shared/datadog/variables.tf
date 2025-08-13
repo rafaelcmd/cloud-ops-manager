@@ -1,6 +1,7 @@
 variable "aws_region" {
-  description = "AWS region to create resources in"
+  description = "AWS region"
   type        = string
+  default     = "us-east-1"
 }
 
 variable "datadog_api_key" {
@@ -10,24 +11,37 @@ variable "datadog_api_key" {
 }
 
 variable "datadog_app_key" {
-  description = "Datadog APP key"
+  description = "Datadog application key"
   type        = string
   sensitive   = true
 }
 
-variable "aws_account_id" {
-  description = "The AWS Account ID where the Datadog integration is created"
-  type        = string
-}
-
 variable "role_name" {
-  description = "The IAM role name for the Datadog integration"
+  description = "Name of the IAM role for Datadog integration"
   type        = string
   default     = "DatadogIntegrationRole"
 }
 
-variable "aws_partition" {
-  description = "The AWS partition (aws, aws-cn, aws-us-gov)"
+variable "external_id" {
+  description = "External ID for Datadog integration role"
   type        = string
-  default     = "aws"
+  default     = "datadog-integration-external-id"
+}
+
+variable "forwarder_name" {
+  description = "Name of the Datadog log forwarder"
+  type        = string
+  default     = "datadog-log-forwarder"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "prod"
+}
+
+variable "project" {
+  description = "Project name"
+  type        = string
+  default     = "cloudops"
 }

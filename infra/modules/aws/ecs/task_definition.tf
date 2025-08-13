@@ -8,12 +8,12 @@ resource "aws_ecs_task_definition" "api" {
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
   tags = {
-    Datadog                = "monitored"
-    "datadog:service"      = "resource-provisioner-api"
-    "datadog:env"          = "prod"
-    "datadog:version"      = "1.0.0"
-    Project                = "cloudops"
-    Environment            = "prod"
+    Datadog           = "monitored"
+    "datadog:service" = "resource-provisioner-api"
+    "datadog:env"     = "prod"
+    "datadog:version" = "1.0.0"
+    Project           = "cloudops"
+    Environment       = "prod"
   }
 
   container_definitions = jsonencode([
@@ -38,9 +38,9 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_API_KEY", value = var.datadog_api_key }
       ]
       dockerLabels = {
-        "com.datadoghq.ad.logs" = "[{\"source\":\"go\",\"service\":\"resource-provisioner-api\",\"tags\":[\"env:prod\",\"project:cloudops\"]}]"
+        "com.datadoghq.ad.logs"      = "[{\"source\":\"go\",\"service\":\"resource-provisioner-api\",\"tags\":[\"env:prod\",\"project:cloudops\"]}]"
         "com.datadoghq.tags.service" = "resource-provisioner-api"
-        "com.datadoghq.tags.env" = "prod"
+        "com.datadoghq.tags.env"     = "prod"
         "com.datadoghq.tags.version" = "1.0.0"
       }
       dependsOn = [

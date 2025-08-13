@@ -26,10 +26,40 @@ variable "lb_listener" {
 variable "datadog_api_key" {
   description = "Datadog API key for monitoring"
   type        = string
+  sensitive   = true
 }
 
 variable "aws_region" {
   description = "AWS region where the ECS service will be deployed"
   type        = string
   default     = "us-east-1"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "prod"
+}
+
+variable "project" {
+  description = "Project name"
+  type        = string
+  default     = "cloudops"
+}
+
+variable "service_name" {
+  description = "Service name for tagging"
+  type        = string
+  default     = "resource-provisioner-api"
+}
+
+variable "app_version" {
+  description = "Application version"
+  type        = string
+  default     = "1.0.0"
+}
+
+variable "datadog_forwarder_arn" {
+  description = "ARN of the Datadog Lambda forwarder"
+  type        = string
 }

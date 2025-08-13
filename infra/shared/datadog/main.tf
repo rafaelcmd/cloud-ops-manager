@@ -1,44 +1,10 @@
-resource "datadog_integration_aws_account" "this" {
-  aws_account_id = var.aws_account_id
-  aws_partition  = var.aws_partition
-  account_tags   = ["env:prod"]
+# Get current AWS account ID
+data "aws_caller_identity" "current" {}
 
-  aws_regions {
-    include_all = true
-  }
+# Get current AWS partition
+data "aws_partition" "current" {}
 
-  auth_config {
-    aws_auth_config_role {
-      role_name = aws_iam_role.datadog_integration_role.name
-    }
-  }
-
-  logs_config {
-    lambda_forwarder {}
-  }
-
-  metrics_config {
-    namespace_filters {
-      # Include ECS metrics for cluster monitoring
-      include_only = [
-        "AWS/ECS",
-        "AWS/ApplicationELB",
-        "AWS/Logs"
-      ]
-    }
-  }
-
-  resources_config {
-    # Enable resource collection for ECS clusters
-    cloud_security_posture_management_collection = false
-    extended_collection                          = true
-  }
-
-  traces_config {
-    xray_services {}
-  }
-}
-
+# IAM Role for Datadog AWS Integration
 resource "aws_iam_role" "datadog_integration_role" {
   name = var.role_name
 
@@ -48,13 +14,24 @@ resource "aws_iam_role" "datadog_integration_role" {
       Action = "sts:AssumeRole"
       Effect = "Allow"
       Principal = {
-        AWS = "arn:aws:iam::464622532012:root" # Datadog
+        AWS = "arn:aws:iam::464622532012:root"
+      }
+      Condition = {
+        StringEquals = {
+          "sts:ExternalId" = var.external_id
+        }
       }
     }]
   })
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project
+  }
 }
 
-resource "aws_iam_role_policy" "datadog_permissions" {
+# IAM Policy for Datadog Integration
+resource "aws_iam_role_policy" "datadog_integration_policy" {
   name = "DatadogIntegrationPolicy"
   role = aws_iam_role.datadog_integration_role.id
 
@@ -62,44 +39,71 @@ resource "aws_iam_role_policy" "datadog_permissions" {
     Version = "2012-10-17"
     Statement = [
       {
+        Effect = "Allow"
         Action = [
-          "cloudwatch:ListMetrics",
-          "cloudwatch:GetMetricData",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:DescribeAlarms",
-          "ec2:DescribeInstances",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeSubnets",
-          "ecs:DescribeClusters",
-          "ecs:DescribeServices",
-          "ecs:DescribeTaskDefinition",
-          "ecs:DescribeTaskSets",
-          "ecs:DescribeContainerInstances",
-          "ecs:ListClusters",
-          "ecs:ListServices",
-          "ecs:ListTasks",
-          "ecs:DescribeTasks",
-          "ecs:ListContainerInstances",
-          "ecs:ListTaskDefinitions",
+          "autoscaling:Describe*",
+          "cloudwatch:Describe*",
+          "cloudwatch:Get*",
+          "cloudwatch:List*",
+          "ec2:Describe*",
+          "ecs:Describe*",
+          "ecs:List*",
+          "elasticloadbalancing:Describe*",
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
-          "logs:GetLogEvents",
           "logs:FilterLogEvents",
-          "tag:GetResources"
+          "rds:Describe*",
+          "rds:List*",
+          "s3:GetBucketLocation",
+          "s3:GetBucketTagging",
+          "s3:ListAllMyBuckets",
+          "tag:GetResources",
+          "tag:GetTagKeys",
+          "tag:GetTagValues"
         ]
-        Effect   = "Allow"
         Resource = "*"
       }
     ]
   })
 }
 
-output "datadog_integration_role_arn" {
-  description = "ARN of the Datadog integration IAM role"
-  value       = aws_iam_role.datadog_integration_role.arn
-}
+# Datadog AWS Integration
+resource "datadog_integration_aws_account" "this" {
+  aws_account_id = data.aws_caller_identity.current.account_id
+  aws_partition  = data.aws_partition.current.partition
 
-output "datadog_integration_external_id" {
-  description = "External ID for the Datadog integration"
-  value       = var.aws_account_id
+  aws_regions {
+
+  }
+
+  auth_config {
+    aws_auth_config_role {
+      role_name   = aws_iam_role.datadog_integration_role.name
+      external_id = var.external_id
+    }
+  }
+
+  logs_config {
+    lambda_forwarder {
+      lambdas = [var.forwarder_name]
+    }
+  }
+
+  metrics_config {
+    namespace_filters {
+
+    }
+  }
+
+  traces_config {
+    xray_services {
+
+    }
+  }
+
+  resources_config {
+
+  }
+
+  depends_on = [aws_iam_role_policy.datadog_integration_policy]
 }
