@@ -76,8 +76,6 @@ module "datadog_forwarder" {
     DD_TAGS    = "env:${var.environment},project:${var.project},service:provisioner-api"
   }
 
-  reserved_concurrent_executions = 10
-
   tags = {
     Environment = var.environment
     Project     = var.project
