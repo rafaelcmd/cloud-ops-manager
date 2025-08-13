@@ -41,7 +41,6 @@ variable "environment_variables" {
 variable "reserved_concurrent_executions" {
   description = "Reserved concurrent executions for the Lambda function"
   type        = number
-  default     = -1
 }
 
 variable "tags" {
