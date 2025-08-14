@@ -2,8 +2,8 @@ resource "aws_ecs_task_definition" "api" {
   family                   = "resource-provisioner-api"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"  # Increased for Datadog Agent
+  memory                   = "1024" # Increased for Datadog Agent
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -34,8 +34,7 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_SOURCE", value = "go" },
         { name = "DD_TAGS", value = "project:cloudops,environment:prod,service:resource-provisioner-api" },
         { name = "DD_AGENT_HOST", value = "localhost" },
-        { name = "DD_TRACE_AGENT_PORT", value = "8126" },
-        { name = "DD_API_KEY", value = var.datadog_api_key }
+        { name = "DD_TRACE_AGENT_PORT", value = "8126" }
       ]
       dockerLabels = {
         "com.datadoghq.ad.logs"      = "[{\"source\":\"go\",\"service\":\"resource-provisioner-api\",\"tags\":[\"env:prod\",\"project:cloudops\"]}]"
@@ -53,16 +52,20 @@ resource "aws_ecs_task_definition" "api" {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = "/ecs/resource-provisioner-api"
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "api"
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "ecs"
         }
       }
     },
     {
       name      = "datadog-agent"
-      image     = "gcr.io/datadoghq/agent:7.60.0"
-      essential = true
+      image     = "public.ecr.aws/datadog/agent:7.60.0"
+      essential = false
       portMappings = [
+        {
+          containerPort = 8125
+          protocol      = "udp"
+        },
         {
           containerPort = 8126
           protocol      = "tcp"
@@ -70,30 +73,23 @@ resource "aws_ecs_task_definition" "api" {
       ]
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
-        { name = "DD_ENV", value = "prod" },
-        { name = "DD_SERVICE", value = "datadog-agent" },
-        { name = "DD_TAGS", value = "project:cloudops,environment:prod" },
+        { name = "DD_SITE", value = "datadoghq.com" },
         { name = "ECS_FARGATE", value = "true" },
-        { name = "DD_LOGS_ENABLED", value = "true" },
-        { name = "DD_PROCESS_AGENT_ENABLED", value = "true" },
-        { name = "DD_ENABLE_METADATA_COLLECTION", value = "true" },
-        { name = "DD_ECS_TASK_COLLECTION_ENABLED", value = "true" },
-        { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
-        { name = "DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION", value = "true" },
-        { name = "DD_LOGS_CONFIG_DOCKER_LABELS_AS_TAGS", value = "true" },
-        { name = "DD_CONTAINER_INCLUDE", value = "name:resource-provisioner-api" },
-        { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
+        { name = "DD_DOCKER_LABELS_AS_TAGS", value = "true" },
+        { name = "DD_DOGSTATSD_NON_LOCAL_TRAFFIC", value = "true" },
         { name = "DD_APM_ENABLED", value = "true" },
         { name = "DD_APM_NON_LOCAL_TRAFFIC", value = "true" },
-        { name = "DD_DOGSTATSD_NON_LOCAL_TRAFFIC", value = "true" },
-        { name = "DD_CONTAINER_LABELS_AS_TAGS", value = "{\"com.datadoghq.tags.service\":\"service\",\"com.datadoghq.tags.env\":\"env\",\"com.datadoghq.tags.version\":\"version\"}" }
+        { name = "DD_LOGS_ENABLED", value = "true" },
+        { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
+        { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
+        { name = "DD_TAGS", value = "project:cloudops,environment:prod" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = "/ecs/datadog-agent"
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "agent"
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "ecs"
         }
       }
     }

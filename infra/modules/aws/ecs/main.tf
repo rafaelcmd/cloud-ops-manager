@@ -84,9 +84,8 @@ resource "aws_cloudwatch_log_group" "ecs_api" {
   retention_in_days = 7
 
   tags = {
-    Environment = var.environment
-    Project     = var.project
-    Service     = "resource-provisioner-api"
+    Project     = "cloudops"
+    Environment = "prod"
   }
 }
 
@@ -95,9 +94,8 @@ resource "aws_cloudwatch_log_group" "datadog_agent" {
   retention_in_days = 7
 
   tags = {
-    Environment = var.environment
-    Project     = var.project
-    Service     = "datadog-agent"
+    Project     = "cloudops"
+    Environment = "prod"
   }
 }
 
