@@ -24,15 +24,16 @@ resource "aws_lambda_function" "this" {
     }
   }
 
-  # Only set reserved_concurrent_executions if it's not -1
-  reserved_concurrent_executions = var.reserved_concurrent_executions != -1 ? var.reserved_concurrent_executions : null
-
   depends_on = [
     aws_iam_role_policy_attachment.lambda_logs,
     aws_cloudwatch_log_group.lambda_logs,
   ]
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [reserved_concurrent_executions]
+  }
 }
 
 # IAM role for Lambda
