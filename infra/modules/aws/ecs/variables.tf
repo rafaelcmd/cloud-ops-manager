@@ -59,7 +59,7 @@ variable "app_version" {
   default     = "1.0.0"
 }
 
-variable "datadog_forwarder_arn" {
+variable "forwarder_arn" {
   description = "ARN of the Datadog Lambda forwarder"
   type        = string
 }

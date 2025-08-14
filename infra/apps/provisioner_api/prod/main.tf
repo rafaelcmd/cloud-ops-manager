@@ -12,14 +12,14 @@ data "terraform_remote_state" "shared_vpc" {
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/ecs?ref=main"
 
-  vpc_id                = data.terraform_remote_state.shared_vpc.outputs.vpc_id
-  private_subnet_ids    = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
-  target_group_arn      = module.alb.target_group_arn
-  alb_sg_id             = module.alb.alb_sg_id
-  lb_listener           = module.alb.lb_listener
-  datadog_api_key       = var.datadog_api_key
-  aws_region            = "us-east-1"
-  datadog_forwarder_arn = module.datadog_forwarder.function_arn
+  vpc_id             = data.terraform_remote_state.shared_vpc.outputs.vpc_id
+  private_subnet_ids = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
+  target_group_arn   = module.alb.target_group_arn
+  alb_sg_id          = module.alb.alb_sg_id
+  lb_listener        = module.alb.lb_listener
+  datadog_api_key    = var.datadog_api_key
+  aws_region         = "us-east-1"
+  forwarder_arn      = module.datadog_forwarder.forwarder_arn
 }
 
 module "alb" {
