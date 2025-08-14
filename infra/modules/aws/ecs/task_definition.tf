@@ -114,23 +114,63 @@ resource "aws_security_group" "api_ecs_task_sg" {
     security_groups = [var.alb_sg_id]
   }
 
+  # Datadog Agent APM traces (TCP)
   ingress {
-    description = "Allow Datadog agent trace injection"
+    description = "Allow Datadog agent APM traces"
     from_port   = 8126
     to_port     = 8126
     protocol    = "tcp"
     self        = true
   }
 
+  # Datadog Agent DogStatsD metrics (UDP)
+  ingress {
+    description = "Allow Datadog agent DogStatsD metrics"
+    from_port   = 8125
+    to_port     = 8125
+    protocol    = "udp"
+    self        = true
+  }
+
+  # HTTPS outbound for Datadog agent communication
   egress {
-    description = "Restrict outbound traffic to HTTPS only"
+    description = "Allow HTTPS outbound for Datadog agent"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # HTTP outbound for package updates and health checks
+  egress {
+    description = "Allow HTTP outbound for updates"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # DNS resolution (UDP)
+  egress {
+    description = "Allow DNS resolution UDP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # DNS resolution (TCP)
+  egress {
+    description = "Allow DNS resolution TCP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
     Name = "cloudops-api-ecs-sg"
+    Project = "cloudops"
+    Environment = "prod"
   }
 }
