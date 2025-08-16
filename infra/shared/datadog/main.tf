@@ -87,9 +87,6 @@ resource "datadog_integration_aws_account" "this" {
     lambda_forwarder {
       lambdas = [var.forwarder_name] //Change to arn
     }
-
-    //2025/08/13 23:41:07 Datadog Tracer v1.65.1 ERROR: Loading features: Get "http://localhost:8126/info":
-    // dial tcp 127.0.0.1:8126: connect: connection refused (occurred: 13 Aug 25 23:40 UTC)
   }
 
   metrics_config {

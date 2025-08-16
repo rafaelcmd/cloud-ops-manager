@@ -9,6 +9,12 @@ variable "internal" {
   default     = false
 }
 
+variable "load_balancer_type" {
+  description = "The type of load balancer to create (application, gateway, network)"
+  type        = string
+  default     = "application"
+}
+
 variable "subnets" {
   description = "List of subnet IDs for the ALB"
   type        = list(string)

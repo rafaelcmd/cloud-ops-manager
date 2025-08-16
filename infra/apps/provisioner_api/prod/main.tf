@@ -25,9 +25,10 @@ module "ecs" {
 module "alb" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/alb?ref=main"
 
-  alb_name = "resource-provisioner-alb"
-  internal = false
-  subnets  = data.terraform_remote_state.shared_vpc.outputs.public_subnet_ids
+  alb_name           = "resource-provisioner-alb"
+  internal           = false
+  load_balancer_type = "application"
+  subnets            = data.terraform_remote_state.shared_vpc.outputs.public_subnet_ids
 
   target_group_name     = "resource-provisioner-tg"
   target_group_port     = 5000
