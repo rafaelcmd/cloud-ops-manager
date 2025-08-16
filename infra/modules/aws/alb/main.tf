@@ -51,16 +51,18 @@ resource "aws_security_group" "this" {
   description = "Security group for CloudOps Manager ECS ALB"
   vpc_id      = var.vpc_id
 
+  # Allow HTTP traffic from internet
   ingress {
-    description = "Allow HTTP access from API Gateway"
+    description = "Allow HTTP access from internet"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow outbound traffic to ECS tasks in private subnets
   egress {
-    description = "Allow outbound traffic to ECS tasks on port 5000"
+    description = "Allow outbound traffic to ECS tasks"
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
