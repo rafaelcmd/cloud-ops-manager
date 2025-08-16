@@ -23,12 +23,25 @@ func main() {
 	log.SetFormatter(&logrus.JSONFormatter{})
 	log.SetLevel(logrus.InfoLevel)
 
+	// Debug: Log Datadog environment variables
+	log.WithFields(logrus.Fields{
+		"DD_AGENT_HOST":       os.Getenv("DD_AGENT_HOST"),
+		"DD_TRACE_AGENT_PORT": os.Getenv("DD_TRACE_AGENT_PORT"),
+		"DD_ENV":              os.Getenv("DD_ENV"),
+		"DD_SERVICE":          os.Getenv("DD_SERVICE"),
+		"DD_VERSION":          os.Getenv("DD_VERSION"),
+	}).Info("Datadog configuration")
+
+	// Calculate agent address
+	agentAddr := os.Getenv("DD_AGENT_HOST") + ":" + os.Getenv("DD_TRACE_AGENT_PORT")
+	log.WithField("agent_addr", agentAddr).Info("Configuring Datadog tracer")
+
 	// Initialize Datadog tracer
 	tracer.Start(
 		tracer.WithEnv(os.Getenv("DD_ENV")),
 		tracer.WithService(os.Getenv("DD_SERVICE")),
 		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
-		tracer.WithAgentAddr(os.Getenv("DD_AGENT_HOST")+":"+os.Getenv("DD_TRACE_AGENT_PORT")),
+		tracer.WithAgentAddr(agentAddr),
 	)
 	defer tracer.Stop()
 

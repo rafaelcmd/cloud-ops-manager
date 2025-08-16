@@ -88,6 +88,12 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
+  traces_config {
+    xray_services {
+
+    }
+  }
+
   metrics_config {
     automute_enabled                = true
     collect_cloudwatch_alarms       = true
