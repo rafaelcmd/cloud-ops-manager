@@ -33,7 +33,7 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_INJECTION", value = "true" },
         { name = "DD_LOGS_SOURCE", value = "go" },
         { name = "DD_TAGS", value = "project:cloudops,environment:prod,service:resource-provisioner-api" },
-        { name = "DD_AGENT_HOST", value = "localhost" },
+        { name = "DD_AGENT_HOST", value = "datadog-agent" },
         { name = "DD_TRACE_AGENT_PORT", value = "8126" }
       ]
       dockerLabels = {
@@ -45,7 +45,7 @@ resource "aws_ecs_task_definition" "api" {
       dependsOn = [
         {
           containerName = "datadog-agent"
-          condition     = "START"
+          condition     = "HEALTHY"
         }
       ]
       logConfiguration = {
@@ -71,6 +71,13 @@ resource "aws_ecs_task_definition" "api" {
           protocol      = "tcp"
         }
       ]
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost:8126/info || exit 1"]
+        interval     = 30
+        timeout      = 5
+        retries      = 3
+        startPeriod  = 60
+      }
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
         { name = "DD_SITE", value = "datadoghq.com" },
@@ -79,6 +86,8 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_DOGSTATSD_NON_LOCAL_TRAFFIC", value = "true" },
         { name = "DD_APM_ENABLED", value = "true" },
         { name = "DD_APM_NON_LOCAL_TRAFFIC", value = "true" },
+        { name = "DD_APM_RECEIVER_SOCKET", value = "/var/run/datadog/apm.socket" },
+        { name = "DD_BIND_HOST", value = "0.0.0.0" },
         { name = "DD_LOGS_ENABLED", value = "true" },
         { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
         { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
