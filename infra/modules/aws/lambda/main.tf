@@ -7,12 +7,13 @@ data "archive_file" "lambda_code" {
 
 # Lambda function
 resource "aws_lambda_function" "this" {
-  function_name = var.function_name
-  role          = aws_iam_role.lambda_role.arn
-  handler       = var.handler
-  runtime       = var.runtime
-  timeout       = var.timeout
-  memory_size   = var.memory_size
+  function_name                  = var.function_name
+  role                           = aws_iam_role.lambda_role.arn
+  handler                        = var.handler
+  runtime                        = var.runtime
+  timeout                        = var.timeout
+  memory_size                    = var.memory_size
+  reserved_concurrent_executions = var.reserved_concurrent_executions
 
   filename         = data.archive_file.lambda_code.output_path
   source_code_hash = data.archive_file.lambda_code.output_base64sha256
