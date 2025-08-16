@@ -28,6 +28,7 @@ func main() {
 		tracer.WithEnv(os.Getenv("DD_ENV")),
 		tracer.WithService(os.Getenv("DD_SERVICE")),
 		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
+		tracer.WithAgentAddr(os.Getenv("DD_AGENT_HOST")+":"+os.Getenv("DD_TRACE_AGENT_PORT")),
 	)
 	defer tracer.Stop()
 

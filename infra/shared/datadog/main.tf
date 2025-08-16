@@ -73,36 +73,35 @@ resource "datadog_integration_aws_account" "this" {
   aws_partition  = data.aws_partition.current.partition
 
   aws_regions {
-
+    include_all = true
   }
 
   auth_config {
     aws_auth_config_role {
       role_name   = aws_iam_role.datadog_integration_role.name
-      external_id = var.external_id
     }
   }
 
   logs_config {
     lambda_forwarder {
-      lambdas = [var.forwarder_name] //Change to arn
+      lambdas = ["arn:aws:lambda:us-east-1:471112701237:function:provisioner-api-datadog-forwarder"]
     }
   }
 
   metrics_config {
+    automute_enabled                = true
+    collect_cloudwatch_alarms       = true
+    collect_custom_metrics          = true
+    enabled                         = true
+
     namespace_filters {
-
-    }
-  }
-
-  traces_config {
-    xray_services {
-
+      include_only = ["AWS/ApplicationELB", "AWS/ECS", "AWS/Lambda", "AWS/SQS"]
     }
   }
 
   resources_config {
-
+    cloud_security_posture_management_collection = false
+    extended_collection                          = false
   }
 
   depends_on = [aws_iam_role_policy.datadog_integration_policy]
