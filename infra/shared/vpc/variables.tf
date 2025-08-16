@@ -38,3 +38,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "nat_gateway_name_prefix" {
+  description = "Name prefix for NAT Gateway EIP tags"
+  type        = string
+  default     = "nat-gateway"
+}

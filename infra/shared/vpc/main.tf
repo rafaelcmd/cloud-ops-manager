@@ -61,9 +61,9 @@ resource "aws_route_table_association" "public_subnets" {
 
 resource "aws_eip" "nat" {
   count = length(aws_subnet.public)
-  tags = {
-    Name = "cloud_ops_manager_nat_${count.index + 1}"
-  }
+  tags = merge(var.tags, {
+    Name = "${var.project}-${var.environment}-${var.nat_gateway_name_prefix}-${count.index + 1}"
+  })
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
