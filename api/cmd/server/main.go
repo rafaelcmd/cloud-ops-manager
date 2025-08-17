@@ -23,6 +23,21 @@ func main() {
 	log.SetFormatter(&logrus.JSONFormatter{})
 	log.SetLevel(logrus.InfoLevel)
 
+	// Override Datadog environment variables for consistent localhost usage
+	os.Setenv("DD_AGENT_HOST", "localhost")
+	os.Setenv("DD_DOGSTATSD_HOST", "localhost")
+
+	// Debug: Log Datadog environment variables
+	log.WithFields(logrus.Fields{
+		"DD_AGENT_HOST":       os.Getenv("DD_AGENT_HOST"),
+		"DD_TRACE_AGENT_PORT": os.Getenv("DD_TRACE_AGENT_PORT"),
+		"DD_DOGSTATSD_HOST":   os.Getenv("DD_DOGSTATSD_HOST"),
+		"DD_DOGSTATSD_PORT":   os.Getenv("DD_DOGSTATSD_PORT"),
+		"DD_ENV":              os.Getenv("DD_ENV"),
+		"DD_SERVICE":          os.Getenv("DD_SERVICE"),
+		"DD_VERSION":          os.Getenv("DD_VERSION"),
+	}).Info("Datadog configuration")
+
 	// Calculate agent address - override DD_AGENT_HOST to localhost for same-task communication
 	agentAddr := "localhost:" + os.Getenv("DD_TRACE_AGENT_PORT")
 	log.WithField("agent_addr", agentAddr).Info("Configuring Datadog tracer")
