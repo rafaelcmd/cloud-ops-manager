@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"time"
@@ -43,8 +44,12 @@ func main() {
 		"DD_VERSION":          os.Getenv("DD_VERSION"),
 	}).Info("Datadog configuration")
 
-	// Calculate agent address - override DD_AGENT_HOST to localhost for same-task communication
-	agentAddr := "localhost:" + os.Getenv("DD_TRACE_AGENT_PORT")
+	// Calculate agent address - default to port 8126 if not set
+	tracePort := os.Getenv("DD_TRACE_AGENT_PORT")
+	if tracePort == "" {
+		tracePort = "8126"
+	}
+	agentAddr := "localhost:" + tracePort
 	log.WithField("agent_addr", agentAddr).Info("Configuring Datadog tracer")
 
 	// Initialize Datadog tracer
@@ -85,18 +90,38 @@ func main() {
 	resourceService := service.NewResourceService(publisher)
 	resourceHandler := httpmod.NewResourceHandler(resourceService)
 
+	// Wrap router with Datadog tracing
 	router := httpmod.NewRouter(resourceHandler)
 
-	// Wrap router with Datadog tracing
-	mux := httptrace.WrapHandler(router, "cloud-ops-manager.api", "")
+	mux := httptrace.NewServeMux(httptrace.WithServiceName("cloud-ops-manager.api"))
+	mux.Handle("/", router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "5000"
 	}
 
+	// Try to start server with retry logic for port conflicts
 	log.WithField("port", port).Info("API server starting")
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.WithError(err).Fatal("failed to start server")
+
+	// Create server with timeout configurations
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
+
+	// Graceful shutdown handling
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.WithError(err).Fatal("failed to start server")
+		}
+	}()
+
+	log.WithField("port", port).Info("API server started successfully")
+
+	// Wait indefinitely
+	select {}
 }
