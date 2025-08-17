@@ -43,12 +43,6 @@ resource "aws_ecs_task_definition" "api" {
         "com.datadoghq.tags.env"     = "prod"
         "com.datadoghq.tags.version" = "1.0.0"
       }
-      dependsOn = [
-        {
-          containerName = "datadog-agent"
-          condition     = "START"
-        }
-      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -72,13 +66,6 @@ resource "aws_ecs_task_definition" "api" {
           protocol      = "tcp"
         }
       ]
-      healthCheck = {
-        command     = ["CMD-SHELL", "datadog-agent status || exit 1"]
-        interval    = 30
-        timeout     = 10
-        retries     = 3
-        startPeriod = 90
-      }
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
         { name = "DD_SITE", value = "datadoghq.com" },
