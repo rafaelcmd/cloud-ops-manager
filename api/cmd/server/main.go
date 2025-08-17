@@ -23,7 +23,8 @@ func main() {
 	log.SetFormatter(&logrus.JSONFormatter{})
 	log.SetLevel(logrus.InfoLevel)
 
-	agentAddr := "datadog-agent:" + os.Getenv("DD_TRACE_AGENT_PORT")
+	// Calculate agent address - override DD_AGENT_HOST to localhost for same-task communication
+	agentAddr := "localhost:" + os.Getenv("DD_TRACE_AGENT_PORT")
 	log.WithField("agent_addr", agentAddr).Info("Configuring Datadog tracer")
 
 	// Initialize Datadog tracer
@@ -32,6 +33,7 @@ func main() {
 		tracer.WithService(os.Getenv("DD_SERVICE")),
 		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
 		tracer.WithAgentAddr(agentAddr),
+		tracer.WithDebugMode(true), // Enable debug mode for troubleshooting
 	)
 	defer tracer.Stop()
 
