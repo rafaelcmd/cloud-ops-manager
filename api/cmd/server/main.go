@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -22,6 +23,10 @@ func main() {
 	log := logrus.New()
 	log.SetFormatter(&logrus.JSONFormatter{})
 	log.SetLevel(logrus.InfoLevel)
+
+	// Add a brief delay to allow Datadog agent to start
+	log.Info("Waiting for Datadog agent to initialize...")
+	time.Sleep(15 * time.Second)
 
 	// Override Datadog environment variables for consistent localhost usage
 	os.Setenv("DD_AGENT_HOST", "localhost")
@@ -48,7 +53,6 @@ func main() {
 		tracer.WithService(os.Getenv("DD_SERVICE")),
 		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
 		tracer.WithAgentAddr(agentAddr),
-		tracer.WithDebugMode(true), // Enable debug mode for troubleshooting
 	)
 	defer tracer.Stop()
 
