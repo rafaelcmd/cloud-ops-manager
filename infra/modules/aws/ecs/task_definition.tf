@@ -45,7 +45,7 @@ resource "aws_ecs_task_definition" "api" {
       dependsOn = [
         {
           containerName = "datadog-agent"
-          condition     = "HEALTHY"
+          condition     = "START"
         }
       ]
       logConfiguration = {
@@ -72,11 +72,11 @@ resource "aws_ecs_task_definition" "api" {
         }
       ]
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8126/info || exit 1"]
-        interval     = 30
-        timeout      = 5
-        retries      = 3
-        startPeriod  = 60
+        command     = ["CMD-SHELL", "datadog-agent status || exit 1"]
+        interval    = 30
+        timeout     = 10
+        retries     = 3
+        startPeriod = 90
       }
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
