@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -25,86 +28,40 @@ func main() {
 	log.SetFormatter(&logrus.JSONFormatter{})
 	log.SetLevel(logrus.InfoLevel)
 
-	// Add a brief delay to allow Datadog agent to start
-	log.Info("Waiting for Datadog agent to initialize...")
-	time.Sleep(15 * time.Second)
-
-	// Override Datadog environment variables for consistent localhost usage
-	os.Setenv("DD_AGENT_HOST", "localhost")
-	os.Setenv("DD_DOGSTATSD_HOST", "localhost")
-
-	// Debug: Log Datadog environment variables
-	log.WithFields(logrus.Fields{
-		"DD_AGENT_HOST":       os.Getenv("DD_AGENT_HOST"),
-		"DD_TRACE_AGENT_PORT": os.Getenv("DD_TRACE_AGENT_PORT"),
-		"DD_DOGSTATSD_HOST":   os.Getenv("DD_DOGSTATSD_HOST"),
-		"DD_DOGSTATSD_PORT":   os.Getenv("DD_DOGSTATSD_PORT"),
-		"DD_ENV":              os.Getenv("DD_ENV"),
-		"DD_SERVICE":          os.Getenv("DD_SERVICE"),
-		"DD_VERSION":          os.Getenv("DD_VERSION"),
-	}).Info("Datadog configuration")
-
-	// Calculate agent address - default to port 8126 if not set
-	tracePort := os.Getenv("DD_TRACE_AGENT_PORT")
-	if tracePort == "" {
-		tracePort = "8126"
-	}
-	agentAddr := "localhost:" + tracePort
-	log.WithField("agent_addr", agentAddr).Info("Configuring Datadog tracer")
-
-	// Initialize Datadog tracer
-	tracer.Start(
-		tracer.WithEnv(os.Getenv("DD_ENV")),
-		tracer.WithService(os.Getenv("DD_SERVICE")),
-		tracer.WithServiceVersion(os.Getenv("DD_VERSION")),
-		tracer.WithAgentAddr(agentAddr),
-	)
-	defer tracer.Stop()
-
 	ctx := context.Background()
+
+	// Initialize Datadog tracer with environment variables
+	tracer.Start()
+	defer tracer.Stop()
 
 	log.Info("Starting Cloud Ops Manager API")
 
+	// Load AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		log.WithError(err).Fatal("failed to load AWS config")
 	}
 
-	provisionerQueueParamName := "/CLOUD_OPS_MANAGER/PROVISIONER_QUEUE_URL"
-	ssmClient := ssm.NewFromConfig(cfg)
-	provisionerQueueParamOutput, err := ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
-		Name: &provisionerQueueParamName,
-	})
+	// Get SQS queue URL from Parameter Store
+	provisionerQueueURL, err := getQueueURL(ctx, cfg)
 	if err != nil {
-		log.WithError(err).Fatal("failed to get SQS queue URL from parameter store")
-	}
-	provisionerQueueURL := *provisionerQueueParamOutput.Parameter.Value
-	if provisionerQueueURL == "" {
-		log.Fatal("SQS queue URL parameter must be set")
+		log.WithError(err).Fatal("failed to get SQS queue URL")
 	}
 
 	log.WithField("queue_url", provisionerQueueURL).Info("Retrieved SQS queue URL")
 
+	// Initialize dependencies
 	sqsClient := sqs.NewFromConfig(cfg)
 	publisher := sqsmod.NewResourcePublisher(sqsClient, provisionerQueueURL)
 	resourceService := service.NewResourceService(publisher)
 	resourceHandler := httpmod.NewResourceHandler(resourceService)
 
-	// Wrap router with Datadog tracing
+	// Setup HTTP server with Datadog tracing
 	router := httpmod.NewRouter(resourceHandler)
-
 	mux := httptrace.NewServeMux(httptrace.WithServiceName("cloud-ops-manager.api"))
 	mux.Handle("/", router)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "5000"
-	}
-
-	// Try to start server with retry logic for port conflicts
-	log.WithField("port", port).Info("API server starting")
-
-	// Create server with timeout configurations
+	port := getPort()
 	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      mux,
@@ -113,15 +70,57 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown handling
+	// Start server in a goroutine
 	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.WithField("port", port).Info("Starting API server")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.WithError(err).Fatal("failed to start server")
 		}
 	}()
 
 	log.WithField("port", port).Info("API server started successfully")
 
-	// Wait indefinitely
-	select {}
+	// Wait for interrupt signal to gracefully shut down the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("Shutting down server...")
+
+	// Create a deadline to wait for
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown
+	if err := server.Shutdown(ctx); err != nil {
+		log.WithError(err).Error("Server forced to shutdown")
+	}
+
+	log.Info("Server exited")
+}
+
+func getQueueURL(ctx context.Context, cfg aws.Config) (string, error) {
+	ssmClient := ssm.NewFromConfig(cfg)
+	provisionerQueueParamName := "/CLOUD_OPS_MANAGER/PROVISIONER_QUEUE_URL"
+
+	result, err := ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
+		Name: &provisionerQueueParamName,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if result.Parameter == nil || result.Parameter.Value == nil {
+		return "", fmt.Errorf("parameter %s not found or empty", provisionerQueueParamName)
+	}
+
+	return *result.Parameter.Value, nil
+}
+
+func getPort() string {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "5000"
+	}
+	return port
 }
