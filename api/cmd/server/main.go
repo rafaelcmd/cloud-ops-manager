@@ -30,10 +30,7 @@ func main() {
 
 	ctx := context.Background()
 
-	// Initialize Datadog tracer with agent readiness check
-	log.Info("Initializing Datadog tracer...")
-	waitForDatadogAgent(log)
-
+	// Initialize Datadog tracer with environment variables
 	tracer.Start()
 	defer tracer.Stop()
 
@@ -126,40 +123,4 @@ func getPort() string {
 		port = "5000"
 	}
 	return port
-}
-
-// waitForDatadogAgent waits for the Datadog agent to be ready before proceeding
-func waitForDatadogAgent(log *logrus.Logger) {
-	maxRetries := 15
-	retryDelay := 3 * time.Second
-
-	agentHost := os.Getenv("DD_AGENT_HOST")
-	if agentHost == "" {
-		agentHost = "127.0.0.1"
-	}
-
-	agentPort := os.Getenv("DD_TRACE_AGENT_PORT")
-	if agentPort == "" {
-		agentPort = "8126"
-	}
-
-	testURL := fmt.Sprintf("http://%s:%s/info", agentHost, agentPort)
-	client := &http.Client{Timeout: 2 * time.Second}
-
-	for i := 0; i < maxRetries; i++ {
-		resp, err := client.Get(testURL)
-		if err == nil {
-			resp.Body.Close()
-			log.Info("Datadog agent is ready")
-			return
-		}
-
-		if i == maxRetries-1 {
-			log.WithError(err).Warn("Could not connect to Datadog agent, starting without tracing")
-			return
-		}
-
-		log.WithError(err).WithField("retry", i+1).Info("Waiting for Datadog agent to be ready...")
-		time.Sleep(retryDelay)
-	}
 }
