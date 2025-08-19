@@ -1,7 +1,7 @@
 data "terraform_remote_state" "shared_vpc" {
   backend = "remote"
   config = {
-    organization = "cloudops-manager"
+    organization = "cloudops-manager-org"
     workspaces = {
       name = "cloudops-shared-vpc"
     }
@@ -11,7 +11,7 @@ data "terraform_remote_state" "shared_vpc" {
 data "terraform_remote_state" "cloudops_manager_ecr_repository" {
   backend = "remote"
   config = {
-    organization = "cloudops-manager"
+    organization = "cloudops-manager-org"
     workspaces = {
       name = "cloudops-shared-ecr"
     }
