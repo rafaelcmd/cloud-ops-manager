@@ -10,9 +10,9 @@ data "terraform_remote_state" "shared_vpc" {
 data "terraform_remote_state" "cloudops_manager_ecr_repository" {
   backend = "s3"
   config = {
-    bucket = "cloudops-shared-terraform-state"
-    key    = "shared/ecr/terraform.tfstate"
-    region = "us-east-1"
+    bucket               = "cloudops-shared-terraform-state"
+    key                  = "shared/ecr/terraform.tfstate"
+    region               = "us-east-1"
     workspace_key_prefix = "env:"
   }
   workspace = "default"
@@ -42,36 +42,36 @@ module "ecs" {
   app_version     = var.app_version
 
   # ECS-specific configuration
-  cluster_name                         = var.cluster_name
-  task_family                          = var.task_family
-  task_cpu                             = var.task_cpu
-  task_memory                          = var.task_memory
-  desired_count                        = var.desired_count
-  container_port                       = var.container_port
-  app_container_name                   = var.service_name
-  datadog_agent_image                  = var.datadog_agent_image
-  datadog_site                         = "datadoghq.com"
+  cluster_name        = var.cluster_name
+  task_family         = var.task_family
+  task_cpu            = var.task_cpu
+  task_memory         = var.task_memory
+  desired_count       = var.desired_count
+  container_port      = var.container_port
+  app_container_name  = var.service_name
+  datadog_agent_image = var.datadog_agent_image
+  datadog_site        = "datadoghq.com"
 
   # IAM role names
-  task_execution_role_name             = "${var.project}-${var.environment}-ecsTaskExecutionRole"
-  task_role_name                       = "${var.project}-${var.environment}-ecsTaskRole"
-  task_policy_name                     = "${var.project}-${var.environment}-ecsAppPolicy"
+  task_execution_role_name = "${var.project}-${var.environment}-ecsTaskExecutionRole"
+  task_role_name           = "${var.project}-${var.environment}-ecsTaskRole"
+  task_policy_name         = "${var.project}-${var.environment}-ecsAppPolicy"
 
   # Deployment configuration
-  deployment_maximum_percent           = 150
-  deployment_minimum_healthy_percent   = 50
-  platform_version                     = "1.4.0"
-  force_new_deployment                 = true
-  assign_public_ip                     = false
+  deployment_maximum_percent         = 150
+  deployment_minimum_healthy_percent = 50
+  platform_version                   = "1.4.0"
+  force_new_deployment               = true
+  assign_public_ip                   = false
 
   # Logging configuration
-  log_retention_days                   = 7
-  app_log_group_name                   = "/ecs/${var.service_name}"
-  datadog_log_group_name               = "/ecs/datadog-agent"
+  log_retention_days     = 7
+  app_log_group_name     = "/ecs/${var.service_name}"
+  datadog_log_group_name = "/ecs/datadog-agent"
 
   # Security group configuration
-  security_group_name                  = "${var.project}-${var.environment}-api-ecs-sg"
-  security_group_description           = "Security group for ${var.project} ECS API"
+  security_group_name        = "${var.project}-${var.environment}-api-ecs-sg"
+  security_group_description = "Security group for ${var.project} ECS API"
 
   # Application image configuration
   app_image_uri = "${data.terraform_remote_state.cloudops_manager_ecr_repository.outputs.repository_url}:${var.app_image_tag}"

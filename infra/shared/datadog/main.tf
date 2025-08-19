@@ -78,7 +78,7 @@ resource "datadog_integration_aws_account" "this" {
 
   auth_config {
     aws_auth_config_role {
-      role_name   = aws_iam_role.datadog_integration_role.name
+      role_name = aws_iam_role.datadog_integration_role.name
     }
   }
 
@@ -95,10 +95,10 @@ resource "datadog_integration_aws_account" "this" {
   }
 
   metrics_config {
-    automute_enabled                = true
-    collect_cloudwatch_alarms       = true
-    collect_custom_metrics          = true
-    enabled                         = true
+    automute_enabled          = true
+    collect_cloudwatch_alarms = true
+    collect_custom_metrics    = true
+    enabled                   = true
 
     namespace_filters {
       include_only = ["AWS/ApplicationELB", "AWS/ECS", "AWS/Lambda", "AWS/SQS"]
