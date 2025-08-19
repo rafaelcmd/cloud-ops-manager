@@ -1,21 +1,21 @@
 data "terraform_remote_state" "shared_vpc" {
-  backend = "s3"
+  backend = "remote"
   config = {
-    bucket = "cloudops-manager-terraform-state"
-    key    = "shared/vpc/terraform.tfstate"
-    region = "us-east-1"
+    organization = "cloudops-manager"
+    workspaces = {
+      name = "cloudops-shared-vpc"
+    }
   }
 }
 
 data "terraform_remote_state" "cloudops_manager_ecr_repository" {
-  backend = "s3"
+  backend = "remote"
   config = {
-    bucket               = "cloudops-shared-terraform-state"
-    key                  = "shared/ecr/terraform.tfstate"
-    region               = "us-east-1"
-    workspace_key_prefix = "env:"
+    organization = "cloudops-manager"
+    workspaces = {
+      name = "cloudops-shared-ecr"
+    }
   }
-  workspace = "default"
 
   defaults = {
     repository_url = "471112701237.dkr.ecr.us-east-1.amazonaws.com/cloudops-manager"
