@@ -1,17 +1,17 @@
 resource "aws_ecs_cluster" "cloudops_cluster" {
-  name = "cloudops-manager-cluster"
+  name = var.cluster_name
 
-  tags = {
+  tags = merge(var.tags, {
     Datadog           = "monitored"
-    "datadog:service" = "cloudops-manager"
-    "datadog:env"     = "prod"
-    Project           = "cloudops"
-    Environment       = "prod"
-  }
+    "datadog:service" = var.service_name
+    "datadog:env"     = var.environment
+    Project           = var.project
+    Environment       = var.environment
+  })
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecsTaskExecutionRole"
+  name = var.task_execution_role_name
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -24,6 +24,8 @@ resource "aws_iam_role" "ecs_task_execution_role" {
         }
     }]
   })
+
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
@@ -32,7 +34,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
 }
 
 resource "aws_iam_role" "ecs_task_role" {
-  name = "ecsAppTaskRole"
+  name = var.task_role_name
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -44,10 +46,12 @@ resource "aws_iam_role" "ecs_task_role" {
       }
     }]
   })
+
+  tags = var.tags
 }
 
 resource "aws_iam_policy" "ecs_task_policy" {
-  name = "ecsAppPolicy"
+  name = var.task_policy_name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -71,6 +75,8 @@ resource "aws_iam_policy" "ecs_task_policy" {
       }
     ]
   })
+
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_policy_attachment" {
@@ -80,23 +86,23 @@ resource "aws_iam_role_policy_attachment" "ecs_task_policy_attachment" {
 
 # CloudWatch Log Groups for ECS tasks
 resource "aws_cloudwatch_log_group" "ecs_api" {
-  name              = "/ecs/resource-provisioner-api"
-  retention_in_days = 7
+  name              = var.app_log_group_name
+  retention_in_days = var.log_retention_days
 
-  tags = {
-    Project     = "cloudops"
-    Environment = "prod"
-  }
+  tags = merge(var.tags, {
+    Project     = var.project
+    Environment = var.environment
+  })
 }
 
 resource "aws_cloudwatch_log_group" "datadog_agent" {
-  name              = "/ecs/datadog-agent"
-  retention_in_days = 7
+  name              = var.datadog_log_group_name
+  retention_in_days = var.log_retention_days
 
-  tags = {
-    Project     = "cloudops"
-    Environment = "prod"
-  }
+  tags = merge(var.tags, {
+    Project     = var.project
+    Environment = var.environment
+  })
 }
 
 # CloudWatch Log Subscription Filters to forward logs to Datadog

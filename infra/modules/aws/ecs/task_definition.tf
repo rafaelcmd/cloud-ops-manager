@@ -1,60 +1,60 @@
 resource "aws_ecs_task_definition" "api" {
-  family                   = "resource-provisioner-api"
+  family                   = var.task_family
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "512"  # Increased for Datadog Agent
-  memory                   = "1024" # Increased for Datadog Agent
+  cpu                      = var.task_cpu
+  memory                   = var.task_memory
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
-  tags = {
+  tags = merge(var.tags, {
     Datadog           = "monitored"
-    "datadog:service" = "resource-provisioner-api"
-    "datadog:env"     = "prod"
-    "datadog:version" = "1.0.0"
-    Project           = "cloudops"
-    Environment       = "prod"
-  }
+    "datadog:service" = var.service_name
+    "datadog:env"     = var.environment
+    "datadog:version" = var.app_version
+    Project           = var.project
+    Environment       = var.environment
+  })
 
   container_definitions = jsonencode([
     {
-      name      = "resource-provisioner-api"
-      image     = "${data.terraform_remote_state.cloudops_manager_ecr_repository.outputs.repository_url}:latest"
+      name      = var.app_container_name
+      image     = var.app_image_uri
       essential = true
       portMappings = [{
-        containerPort = 5000
+        containerPort = var.container_port
         protocol      = "tcp"
       }]
       environment = [
-        { name = "DD_SERVICE", value = "resource-provisioner-api" },
-        { name = "DD_ENV", value = "prod" },
-        { name = "DD_VERSION", value = "1.0.0" },
+        { name = "DD_SERVICE", value = var.service_name },
+        { name = "DD_ENV", value = var.environment },
+        { name = "DD_VERSION", value = var.app_version },
         { name = "DD_LOGS_ENABLED", value = "true" },
         { name = "DD_LOGS_INJECTION", value = "true" },
         { name = "DD_LOGS_SOURCE", value = "go" },
-        { name = "DD_TAGS", value = "project:cloudops,environment:prod,service:resource-provisioner-api" },
+        { name = "DD_TAGS", value = "project:${var.project},environment:${var.environment},service:${var.service_name}" },
         { name = "DD_AGENT_HOST", value = "127.0.0.1" },
         { name = "DD_TRACE_AGENT_PORT", value = "8126" },
         { name = "DD_DOGSTATSD_PORT", value = "8125" }
       ]
       dockerLabels = {
-        "com.datadoghq.ad.logs"      = "[{\"source\":\"go\",\"service\":\"resource-provisioner-api\",\"tags\":[\"env:prod\",\"project:cloudops\"]}]"
-        "com.datadoghq.tags.service" = "resource-provisioner-api"
-        "com.datadoghq.tags.env"     = "prod"
-        "com.datadoghq.tags.version" = "1.0.0"
+        "com.datadoghq.ad.logs"      = "[{\"source\":\"go\",\"service\":\"${var.service_name}\",\"tags\":[\"env:${var.environment}\",\"project:${var.project}\"]}]"
+        "com.datadoghq.tags.service" = var.service_name
+        "com.datadoghq.tags.env"     = var.environment
+        "com.datadoghq.tags.version" = var.app_version
       }
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/resource-provisioner-api"
-          "awslogs-region"        = "us-east-1"
+          "awslogs-group"         = var.app_log_group_name
+          "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "ecs"
         }
       }
     },
     {
       name      = "datadog-agent"
-      image     = "public.ecr.aws/datadog/agent:7.60.0"
+      image     = var.datadog_agent_image
       essential = true
       portMappings = [
         {
@@ -68,7 +68,7 @@ resource "aws_ecs_task_definition" "api" {
       ]
       environment = [
         { name = "DD_API_KEY", value = var.datadog_api_key },
-        { name = "DD_SITE", value = "datadoghq.com" },
+        { name = "DD_SITE", value = var.datadog_site },
         { name = "ECS_FARGATE", value = "true" },
         { name = "DD_DOCKER_LABELS_AS_TAGS", value = "true" },
         { name = "DD_DOGSTATSD_NON_LOCAL_TRAFFIC", value = "true" },
@@ -78,13 +78,13 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_ENABLED", value = "true" },
         { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
         { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
-        { name = "DD_TAGS", value = "project:cloudops,environment:prod" }
+        { name = "DD_TAGS", value = "project:${var.project},environment:${var.environment}" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/datadog-agent"
-          "awslogs-region"        = "us-east-1"
+          "awslogs-group"         = var.datadog_log_group_name
+          "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "ecs"
         }
       }
@@ -98,15 +98,15 @@ resource "aws_ecs_task_definition" "api" {
 }
 
 resource "aws_security_group" "api_ecs_task_sg" {
-  name        = "cloud-ops-manager-api-ecs-sg"
-  description = "Security group for CloudOps Manager ECS API"
+  name        = var.security_group_name
+  description = var.security_group_description
   vpc_id      = var.vpc_id
 
   # Allow inbound traffic from ALB to application
   ingress {
     description     = "Allow inbound traffic from ALB"
-    from_port       = 5000
-    to_port         = 5000
+    from_port       = var.container_port
+    to_port         = var.container_port
     protocol        = "tcp"
     security_groups = [var.alb_sg_id]
   }
@@ -120,9 +120,9 @@ resource "aws_security_group" "api_ecs_task_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
+  tags = merge(var.tags, {
     Name        = "cloudops-api-ecs-sg"
-    Project     = "cloudops"
-    Environment = "prod"
-  }
+    Project     = var.project
+    Environment = var.environment
+  })
 }
