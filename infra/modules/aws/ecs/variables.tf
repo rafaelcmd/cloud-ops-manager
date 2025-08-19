@@ -92,7 +92,12 @@ variable "task_cpu" {
 
 variable "task_memory" {
   description = "Memory (in MiB) for the ECS task"
-  type        = string
+  type        = number
+}
+
+variable "task_memory" {
+  description = "Memory (in MiB) for the ECS task"
+  type        = number
 }
 
 variable "container_port" {
