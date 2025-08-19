@@ -95,11 +95,6 @@ variable "task_memory" {
   type        = number
 }
 
-variable "task_memory" {
-  description = "Memory (in MiB) for the ECS task"
-  type        = number
-}
-
 variable "container_port" {
   description = "Port that the application container listens on"
   type        = number
