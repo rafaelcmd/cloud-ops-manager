@@ -28,12 +28,6 @@ variable "external_id" {
   default     = "datadog-integration-external-id"
 }
 
-variable "forwarder_name" {
-  description = "Name of the Datadog log forwarder"
-  type        = string
-  default     = "datadog-log-forwarder"
-}
-
 variable "environment" {
   description = "Environment name"
   type        = string
@@ -44,4 +38,9 @@ variable "project" {
   description = "Project name"
   type        = string
   default     = "cloudops"
+}
+
+variable "datadog_forwarder_arn" {
+  description = "ARN of the Datadog Lambda forwarder"
+  type        = string
 }

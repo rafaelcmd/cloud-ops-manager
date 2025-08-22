@@ -3,26 +3,82 @@ name: Destroy Infra - AWS
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  terraform-destroy:
+  destroy-infrastructure:
+    name: Destroy AWS Infrastructure
     runs-on: ubuntu-latest
 
     defaults:
       run:
         working-directory: infra/apps/provisioner_api/prod
+        shell: bash
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Terraform Init
         run: terraform init
-        env:
-          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Plan Destroy
+        run: terraform plan -destroy -input=false
 
       - name: Terraform Destroy
-        run: terraform destroy -auto-approve
-        env:
-          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+        run: terraform destroy -auto-approve -input=false
+
+  aws-datadog-integration-destroy:
+    name: Destroy Datadog Integration
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infra/shared/datadog
+        shell: bash
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan Destroy
+        run: |
+          terraform plan -destroy -input=false \
+            -var="datadog_api_key=${{ secrets.DATADOG_API_KEY }}" \
+            -var="datadog_app_key=${{ secrets.DATADOG_APP_KEY_PROV_API }}" \
+            -var="aws_region=${{ secrets.AWS_REGION }}"
+
+      - name: Terraform Destroy
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -var="datadog_api_key=${{ secrets.DATADOG_API_KEY }}" \
+            -var="datadog_app_key=${{ secrets.DATADOG_APP_KEY_PROV_API }}" \
+            -var="aws_region=${{ secrets.AWS_REGION }}"
