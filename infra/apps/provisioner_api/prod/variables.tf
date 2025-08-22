@@ -29,33 +29,33 @@ variable "app_version" {
 }
 
 # =============================================================================
-# MONITORING AND OBSERVABILITY
-# Variables related to monitoring, logging, and observability tools
+# DATADOG CONFIGURATION
+# Variables for Datadog integration and monitoring
 # =============================================================================
 
 variable "datadog_api_key" {
-  description = "Datadog API key for monitoring and log forwarding"
+  description = "Datadog API key for Lambda forwarder"
   type        = string
   sensitive   = true
 }
 
 # =============================================================================
-# ECS CLUSTER CONFIGURATION
-# Variables specific to Amazon ECS cluster and service configuration
+# ECS CONFIGURATION
+# Variables for ECS cluster, service, and task configuration
 # =============================================================================
 
 variable "cluster_name" {
-  description = "Name of the ECS cluster where the service will be deployed"
+  description = "Name of the ECS cluster"
   type        = string
 }
 
 variable "task_family" {
-  description = "Family name for the ECS task definition"
+  description = "ECS task definition family name"
   type        = string
 }
 
 variable "task_cpu" {
-  description = "CPU units for the ECS task (256, 512, 1024, 2048, 4096)"
+  description = "CPU units for the ECS task"
   type        = number
 }
 
@@ -65,7 +65,7 @@ variable "task_memory" {
 }
 
 variable "desired_count" {
-  description = "Number of desired running tasks for the ECS service"
+  description = "Desired number of running tasks"
   type        = number
 }
 
@@ -75,27 +75,27 @@ variable "container_port" {
 }
 
 variable "datadog_agent_image" {
-  description = "Docker image for the Datadog agent sidecar container"
+  description = "Datadog agent Docker image"
   type        = string
 }
 
 variable "app_image_tag" {
-  description = "Tag for the application Docker image"
+  description = "Tag of the application Docker image"
   type        = string
 }
 
 # =============================================================================
-# APPLICATION LOAD BALANCER CONFIGURATION
-# Variables for configuring the Application Load Balancer and target groups
+# LOAD BALANCER CONFIGURATION
+# Variables for Application Load Balancer setup
 # =============================================================================
 
 variable "alb_name" {
-  description = "Name for the Application Load Balancer"
+  description = "Name of the Application Load Balancer"
   type        = string
 }
 
 variable "target_group_name" {
-  description = "Name for the ALB target group"
+  description = "Name of the ALB target group"
   type        = string
 }
 
@@ -105,26 +105,26 @@ variable "health_check_path" {
 }
 
 # =============================================================================
-# LAMBDA FUNCTION CONFIGURATION
-# Variables for the Datadog log forwarder Lambda function
+# LAMBDA CONFIGURATION
+# Variables for Lambda function (Datadog forwarder) configuration
 # =============================================================================
 
 variable "lambda_function_name" {
-  description = "Name for the Datadog log forwarder Lambda function"
+  description = "Name of the Lambda function"
   type        = string
 }
 
 variable "lambda_runtime" {
-  description = "Runtime environment for the Lambda function"
+  description = "Runtime for the Lambda function"
   type        = string
 }
 
 variable "lambda_timeout" {
-  description = "Timeout (in seconds) for the Lambda function execution"
+  description = "Timeout for the Lambda function in seconds"
   type        = number
 }
 
 variable "lambda_memory_size" {
-  description = "Memory allocation (in MB) for the Lambda function"
+  description = "Memory size for the Lambda function in MB"
   type        = number
 }
