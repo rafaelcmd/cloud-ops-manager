@@ -44,10 +44,10 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -input=false
+        run: terraform plan -input=false -var="datadog_api_key=${{ secrets.DATADOG_API_KEY }}"
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false -var="datadog_api_key=${{ secrets.DATADOG_API_KEY }}"
 
       - name: Get Terraform Outputs
         id: terraform_output
