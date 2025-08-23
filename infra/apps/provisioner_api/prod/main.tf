@@ -13,7 +13,7 @@ data "terraform_remote_state" "cloudops_manager_ecr_repository" {
   config = {
     organization = "cloudops-manager-org"
     workspaces = {
-      name = "cloudops-shared-ecr"
+      name = "cloudops-manager-ecr-repository"
     }
   }
 
