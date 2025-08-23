@@ -104,22 +104,3 @@ resource "aws_cloudwatch_log_group" "datadog_agent" {
     Environment = var.environment
   })
 }
-
-# CloudWatch Log Subscription Filters to forward logs to Datadog
-resource "aws_cloudwatch_log_subscription_filter" "api_logs_to_datadog" {
-  name            = "api-logs-to-datadog"
-  log_group_name  = aws_cloudwatch_log_group.ecs_api.name
-  filter_pattern  = ""
-  destination_arn = var.forwarder_arn
-
-  depends_on = [aws_cloudwatch_log_group.ecs_api]
-}
-
-resource "aws_cloudwatch_log_subscription_filter" "agent_logs_to_datadog" {
-  name            = "agent-logs-to-datadog"
-  log_group_name  = aws_cloudwatch_log_group.datadog_agent.name
-  filter_pattern  = ""
-  destination_arn = var.forwarder_arn
-
-  depends_on = [aws_cloudwatch_log_group.datadog_agent]
-}
