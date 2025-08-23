@@ -100,8 +100,6 @@ resource "datadog_integration_aws_account" "this" {
         "AWS/ECS",
         "AWS/ApplicationELB",
         "AWS/Lambda",
-        "AWS/CloudWatch",
-        "AWS/CloudWatchLogs",
         "AWS/EC2",
         "AWS/RDS",
         "AWS/S3",
@@ -109,8 +107,7 @@ resource "datadog_integration_aws_account" "this" {
         "AWS/SNS",
         "AWS/DynamoDB",
         "AWS/ELB",
-        "AWS/AutoScaling",
-        "AWS/VPC"
+        "AWS/AutoScaling"
       ]
     }
   }
