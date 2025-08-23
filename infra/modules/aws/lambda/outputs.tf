@@ -1,6 +1,6 @@
 output "datadog_forwarder_arn" {
   description = "The ARN of the Lambda function"
-  value       = aws_lambda_function.this.invoke_arn
+  value       = aws_lambda_function.this.arn
 }
 
 output "function_name" {
