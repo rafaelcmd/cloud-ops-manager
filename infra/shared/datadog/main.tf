@@ -92,6 +92,7 @@ resource "datadog_integration_aws_account" "this" {
     content {
       lambda_forwarder {
         lambdas = [var.datadog_forwarder_arn]
+        sources = ["s3", "elb", "elbv2", "cloudfront", "redshift", "lambda"]
       }
     }
   }
