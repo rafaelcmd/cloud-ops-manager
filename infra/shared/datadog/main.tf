@@ -73,7 +73,7 @@ resource "datadog_integration_aws_account" "this" {
   aws_partition  = data.aws_partition.current.partition
 
   aws_regions {
-    include_only = ["*"]
+    include_only = [var.aws_region]
   }
 
   auth_config {
