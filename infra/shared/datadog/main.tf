@@ -90,7 +90,7 @@ resource "datadog_integration_aws_account" "this" {
 
   traces_config {
     xray_services {
-      include_only = ["*"]
+      include_all = true
     }
   }
 
