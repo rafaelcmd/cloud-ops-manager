@@ -4,6 +4,11 @@ data "aws_caller_identity" "current" {}
 # Get current AWS partition
 data "aws_partition" "current" {}
 
+# Local values for better organization and validation
+locals {
+  enable_log_forwarder = var.datadog_forwarder_arn != null && var.datadog_forwarder_arn != ""
+}
+
 # IAM Role for Datadog AWS Integration
 resource "aws_iam_role" "datadog_integration_role" {
   name = var.role_name
@@ -82,9 +87,12 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
-  logs_config {
-    lambda_forwarder {
-      lambdas = [var.datadog_forwarder_arn]
+  dynamic "logs_config" {
+    for_each = local.enable_log_forwarder ? [1] : []
+    content {
+      lambda_forwarder {
+        lambdas = [var.datadog_forwarder_arn]
+      }
     }
   }
 
