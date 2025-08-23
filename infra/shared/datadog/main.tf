@@ -87,13 +87,10 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
-  dynamic "logs_config" {
-    for_each = local.enable_log_forwarder ? [1] : []
-    content {
-      lambda_forwarder {
-        lambdas = [var.datadog_forwarder_arn]
-        sources = ["s3", "elb", "elbv2", "cloudfront", "redshift", "lambda"]
-      }
+  logs_config {
+    lambda_forwarder {
+      lambdas = local.enable_log_forwarder ? [var.datadog_forwarder_arn] : []
+      sources = ["s3", "elb", "elbv2", "cloudfront", "redshift", "lambda"]
     }
   }
 
