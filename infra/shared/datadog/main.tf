@@ -84,7 +84,7 @@ resource "datadog_integration_aws_account" "this" {
 
   logs_config {
     lambda_forwarder {
-      lambdas = []
+      lambdas = [var.datadog_forwarder_arn]
     }
   }
 

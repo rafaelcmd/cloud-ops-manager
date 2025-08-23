@@ -76,14 +76,13 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_APM_NON_LOCAL_TRAFFIC", value = "true" },
         { name = "DD_BIND_HOST", value = "0.0.0.0" },
         { name = "DD_LOGS_ENABLED", value = "true" },
-        { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
-        { name = "DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE", value = "false" },
-        { name = "DD_LOGS_CONFIG_DOCKER_CONTAINER_FORCE_USE_FILE", value = "false" },
-        { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
-        { name = "DD_CONTAINER_INCLUDE", value = "name:${var.app_container_name}" },
-        { name = "DD_TAGS", value = "project:${var.project},environment:${var.environment}" },
-        { name = "DD_AC_EXCLUDE", value = "name:datadog-agent" },
-        { name = "DD_PROCESS_AGENT_ENABLED", value = "false" }
+        { name = "DD_LOGS_CONFIG_USE_HTTP", value = "true" },
+        { name = "DD_LOGS_CONFIG_USE_COMPRESSION", value = "true" },
+        { name = "DD_HOSTNAME", value = "${var.service_name}-${var.environment}" },
+        { name = "DD_CLUSTER_NAME", value = var.cluster_name },
+        { name = "DD_TAGS", value = "project:${var.project},environment:${var.environment},cluster:${var.cluster_name}" },
+        { name = "DD_ECS_TASK_COLLECTION_ENABLED", value = "true" },
+        { name = "DD_CONTAINER_LABELS_AS_TAGS", value = "{\"com.datadoghq.tags.service\":\"service\",\"com.datadoghq.tags.env\":\"env\",\"com.datadoghq.tags.version\":\"version\"}" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
