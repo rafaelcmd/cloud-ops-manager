@@ -31,7 +31,7 @@ module "ecs" {
   target_group_arn   = module.alb.target_group_arn
   alb_sg_id          = module.alb.alb_sg_id
   lb_listener        = module.alb.lb_listener
-  forwarder_arn      = module.datadog_forwarder.function_arn
+  forwarder_arn      = module.datadog_forwarder.datadog_forwarder_arn
 
   # Basic configuration
   datadog_api_key = var.datadog_api_key
