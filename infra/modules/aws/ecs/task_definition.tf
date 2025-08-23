@@ -33,7 +33,7 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_LOGS_INJECTION", value = "true" },
         { name = "DD_LOGS_SOURCE", value = "go" },
         { name = "DD_TAGS", value = "project:${var.project},environment:${var.environment},service:${var.service_name}" },
-        { name = "DD_AGENT_HOST", value = "127.0.0.1" },
+        { name = "DD_AGENT_HOST", value = "localhost" },
         { name = "DD_TRACE_AGENT_PORT", value = "8126" },
         { name = "DD_DOGSTATSD_PORT", value = "8125" }
       ]
@@ -77,8 +77,13 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DD_BIND_HOST", value = "0.0.0.0" },
         { name = "DD_LOGS_ENABLED", value = "true" },
         { name = "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", value = "true" },
+        { name = "DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE", value = "false" },
+        { name = "DD_LOGS_CONFIG_DOCKER_CONTAINER_FORCE_USE_FILE", value = "false" },
         { name = "DD_CONTAINER_EXCLUDE", value = "name:datadog-agent" },
-        { name = "DD_TAGS", value = "project:${var.project},environment:${var.environment}" }
+        { name = "DD_CONTAINER_INCLUDE", value = "name:${var.app_container_name}" },
+        { name = "DD_TAGS", value = "project:${var.project},environment:${var.environment}" },
+        { name = "DD_AC_EXCLUDE", value = "name:datadog-agent" },
+        { name = "DD_PROCESS_AGENT_ENABLED", value = "false" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
