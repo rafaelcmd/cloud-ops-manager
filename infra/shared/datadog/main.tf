@@ -96,7 +96,22 @@ resource "datadog_integration_aws_account" "this" {
 
   metrics_config {
     namespace_filters {
-      include_only = ["*"]
+      include_only = [
+        "AWS/ECS",
+        "AWS/ApplicationELB",
+        "AWS/Lambda",
+        "AWS/CloudWatch",
+        "AWS/CloudWatchLogs",
+        "AWS/EC2",
+        "AWS/RDS",
+        "AWS/S3",
+        "AWS/SQS",
+        "AWS/SNS",
+        "AWS/DynamoDB",
+        "AWS/ELB",
+        "AWS/AutoScaling",
+        "AWS/VPC"
+      ]
     }
   }
 
