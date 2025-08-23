@@ -73,7 +73,7 @@ resource "datadog_integration_aws_account" "this" {
   aws_partition  = data.aws_partition.current.partition
 
   aws_regions {
-    include_all = true
+    include_only = ["*"]
   }
 
   auth_config {
@@ -82,15 +82,21 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
+  logs_config {
+    lambda_forwarder {
+      lambdas = []
+    }
+  }
+
   traces_config {
     xray_services {
-      include_all = true
+      include_only = ["*"]
     }
   }
 
   metrics_config {
     namespace_filters {
-      include_all = true
+      include_only = ["*"]
     }
   }
 
