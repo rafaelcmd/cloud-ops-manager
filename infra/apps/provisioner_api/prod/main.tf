@@ -31,7 +31,6 @@ module "ecs" {
   target_group_arn   = module.alb.target_group_arn
   alb_sg_id          = module.alb.alb_sg_id
   lb_listener        = module.alb.lb_listener
-  forwarder_arn      = module.datadog_forwarder.datadog_forwarder_arn
 
   # Basic configuration
   datadog_api_key = var.datadog_api_key
@@ -125,77 +124,4 @@ module "alb" {
 
 module "sqs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/sqs?ref=main"
-}
-
-# Datadog Lambda Forwarder for collecting application logs
-module "datadog_forwarder" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/lambda?ref=main"
-
-  function_name = var.lambda_function_name
-  source_dir    = "${path.module}/lambda-src"
-  handler       = "lambda_function.lambda_handler"
-  runtime       = var.lambda_runtime
-  timeout       = var.lambda_timeout
-  memory_size   = var.lambda_memory_size
-
-  environment_variables = {
-    DD_API_KEY = var.datadog_api_key
-    DD_SITE    = "datadoghq.com"
-    DD_SOURCE  = "aws"
-    DD_TAGS    = "env:${var.environment},project:${var.project},service:${var.service_name}"
-  }
-
-  # Explicitly set to -1 to not reserve any concurrency
-  reserved_concurrent_executions = -1
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project
-    Service     = var.service_name
-  }
-
-  log_retention_days = 7
-
-  # Enable CloudWatch Logs invocation
-  allow_cloudwatch_logs_invocation = true
-
-  # Additional IAM policy for Datadog forwarder
-  additional_inline_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams"
-        ]
-        Resource = "arn:aws:logs:*:*:*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          "arn:aws:s3:::*/*",
-          "arn:aws:s3:::*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
 }

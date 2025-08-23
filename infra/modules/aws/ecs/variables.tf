@@ -54,11 +54,6 @@ variable "app_version" {
   type        = string
 }
 
-variable "forwarder_arn" {
-  description = "ARN of the Datadog Lambda forwarder"
-  type        = string
-}
-
 # Variables for parameterization - no defaults, must be provided by caller
 variable "cluster_name" {
   description = "Name of the ECS cluster"

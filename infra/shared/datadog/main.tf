@@ -82,26 +82,15 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
-  logs_config {
-    lambda_forwarder {
-      lambdas = [var.datadog_forwarder_arn]
-    }
-  }
-
   traces_config {
     xray_services {
-
+      include_all = true
     }
   }
 
   metrics_config {
-    automute_enabled          = true
-    collect_cloudwatch_alarms = true
-    collect_custom_metrics    = true
-    enabled                   = true
-
     namespace_filters {
-      include_only = ["AWS/ApplicationELB", "AWS/ECS", "AWS/Lambda", "AWS/SQS"]
+      include_all = true
     }
   }
 

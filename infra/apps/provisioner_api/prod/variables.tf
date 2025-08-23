@@ -119,32 +119,3 @@ variable "health_check_path" {
   type        = string
   default     = "/health"
 }
-
-# =============================================================================
-# LAMBDA CONFIGURATION
-# Variables for Lambda function (Datadog forwarder) configuration
-# =============================================================================
-
-variable "lambda_function_name" {
-  description = "Name of the Lambda function"
-  type        = string
-  default     = "provisioner-api-datadog-forwarder"
-}
-
-variable "lambda_runtime" {
-  description = "Runtime for the Lambda function"
-  type        = string
-  default     = "python3.9"
-}
-
-variable "lambda_timeout" {
-  description = "Timeout for the Lambda function in seconds"
-  type        = number
-  default     = 120
-}
-
-variable "lambda_memory_size" {
-  description = "Memory size for the Lambda function in MB"
-  type        = number
-  default     = 128
-}

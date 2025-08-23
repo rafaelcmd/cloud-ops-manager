@@ -39,8 +39,3 @@ variable "project" {
   type        = string
   default     = "cloudops"
 }
-
-variable "datadog_forwarder_arn" {
-  description = "ARN of the Datadog Lambda forwarder"
-  type        = string
-}
