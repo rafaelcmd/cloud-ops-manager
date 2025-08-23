@@ -36,10 +36,10 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan Destroy
-        run: terraform plan -destroy -input=false
+        run: terraform plan -destroy -input=false -var="datadog_api_key=${{ secrets.DATADOG_API_KEY }}"
 
       - name: Terraform Destroy
-        run: terraform destroy -auto-approve -input=false
+        run: terraform destroy -auto-approve -input=false -var="datadog_api_key=${{ secrets.DATADOG_API_KEY }}"
 
   aws-datadog-integration-destroy:
     name: Destroy Datadog Integration

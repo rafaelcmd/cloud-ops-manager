@@ -52,7 +52,13 @@ jobs:
       - name: Get Terraform Outputs
         id: terraform_output
         run: |
-          echo "datadog_forwarder_arn=$(terraform output -raw datadog_forwarder_arn)" >> $GITHUB_OUTPUT
+          FORWARDER_ARN=$(terraform output -raw datadog_forwarder_arn)
+          echo "Extracted ARN: $FORWARDER_ARN"
+          if [ -z "$FORWARDER_ARN" ]; then
+            echo "ERROR: datadog_forwarder_arn is empty!"
+            exit 1
+          fi
+          echo "datadog_forwarder_arn=$FORWARDER_ARN" >> $GITHUB_OUTPUT
 
   aws-datadog-integration:
     name: Create Datadog Integration
