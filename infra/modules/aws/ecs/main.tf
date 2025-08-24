@@ -111,7 +111,6 @@ resource "aws_cloudwatch_log_group" "datadog_agent" {
 
 # CloudWatch Log Subscription Filter to forward application logs to Datadog
 resource "aws_cloudwatch_log_subscription_filter" "api_logs_to_datadog" {
-  count           = var.forwarder_arn != "" ? 1 : 0
   name            = "${var.service_name}-logs-to-datadog"
   log_group_name  = aws_cloudwatch_log_group.ecs_api.name
   filter_pattern  = ""
