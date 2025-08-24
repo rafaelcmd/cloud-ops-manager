@@ -97,6 +97,36 @@ variable "app_image_tag" {
   default     = "latest"
 }
 
+variable "deployment_maximum_percent" {
+  description = "Maximum percentage of tasks that can be running during a deployment"
+  type        = number
+  default     = 150
+}
+
+variable "deployment_minimum_healthy_percent" {
+  description = "Minimum percentage of healthy tasks during a deployment"
+  type        = number
+  default     = 50
+}
+
+variable "platform_version" {
+  description = "Platform version for ECS Fargate tasks"
+  type        = string
+  default     = "1.4.0"
+}
+
+variable "force_new_deployment" {
+  description = "Whether to force a new deployment of the service"
+  type        = bool
+  default     = true
+}
+
+variable "assign_public_ip" {
+  description = "Whether to assign a public IP to ECS tasks"
+  type        = bool
+  default     = false
+}
+
 # =============================================================================
 # LOAD BALANCER CONFIGURATION
 # Variables for Application Load Balancer setup
@@ -108,16 +138,82 @@ variable "alb_name" {
   default     = "cloudops-manager-alb"
 }
 
+variable "internal" {
+  description = "Whether the load balancer is internal (true) or internet-facing (false)"
+  type        = bool
+  default     = false
+}
+
+variable "load_balancer_type" {
+  description = "Type of load balancer to create (application, network, or gateway)"
+  type        = string
+  default     = "application"
+}
+
 variable "target_group_name" {
   description = "Name of the ALB target group"
   type        = string
   default     = "cloudops-manager-tg"
 }
 
+variable "target_group_protocol" {
+  description = "Protocol for the target group (HTTP, HTTPS, TCP, etc.)"
+  type        = string
+  default     = "HTTP"
+}
+
+variable "target_type" {
+  description = "Type of target that you must specify when registering targets (instance, ip, lambda)"
+  type        = string
+  default     = "ip"
+}
+
 variable "health_check_path" {
   description = "Path for ALB health checks"
   type        = string
   default     = "/health"
+}
+
+variable "health_check_interval" {
+  description = "Approximate amount of time, in seconds, between health checks"
+  type        = number
+  default     = 30
+}
+
+variable "health_check_timeout" {
+  description = "Amount of time, in seconds, during which no response means a failed health check"
+  type        = number
+  default     = 5
+}
+
+variable "healthy_threshold" {
+  description = "Number of consecutive health checks successes required before considering an unhealthy target healthy"
+  type        = number
+  default     = 3
+}
+
+variable "unhealthy_threshold" {
+  description = "Number of consecutive health check failures required before considering the target unhealthy"
+  type        = number
+  default     = 2
+}
+
+variable "matcher" {
+  description = "Response codes to use when checking for a healthy response from a target"
+  type        = string
+  default     = "200"
+}
+
+variable "listener_port" {
+  description = "Port on which the load balancer is listening"
+  type        = number
+  default     = 80
+}
+
+variable "listener_protocol" {
+  description = "Protocol for connections from clients to the load balancer"
+  type        = string
+  default     = "HTTP"
 }
 
 # =============================================================================

@@ -1,27 +1,3 @@
-data "terraform_remote_state" "shared_vpc" {
-  backend = "remote"
-  config = {
-    organization = "cloudops-manager-org"
-    workspaces = {
-      name = "cloudops-shared-vpc"
-    }
-  }
-}
-
-data "terraform_remote_state" "cloudops_manager_ecr_repository" {
-  backend = "remote"
-  config = {
-    organization = "cloudops-manager-org"
-    workspaces = {
-      name = "cloudops-manager-ecr-repository"
-    }
-  }
-
-  defaults = {
-    repository_url = "471112701237.dkr.ecr.us-east-1.amazonaws.com/cloudops-manager"
-  }
-}
-
 module "ecs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/ecs?ref=main"
 
@@ -58,11 +34,11 @@ module "ecs" {
   task_policy_name         = "${var.project}-${var.environment}-ecsAppPolicy"
 
   # Deployment configuration
-  deployment_maximum_percent         = 150
-  deployment_minimum_healthy_percent = 50
-  platform_version                   = "1.4.0"
-  force_new_deployment               = true
-  assign_public_ip                   = false
+  deployment_maximum_percent         = var.deployment_maximum_percent
+  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
+  platform_version                   = var.platform_version
+  force_new_deployment               = var.force_new_deployment
+  assign_public_ip                   = var.assign_public_ip
 
   # Logging configuration
   log_retention_days     = 7
@@ -89,28 +65,28 @@ module "alb" {
 
   # ALB configuration
   alb_name           = var.alb_name
-  internal           = false
-  load_balancer_type = "application"
+  internal           = var.internal
+  load_balancer_type = var.load_balancer_type
   subnets            = data.terraform_remote_state.shared_vpc.outputs.public_subnet_ids
 
   # Target group configuration
   target_group_name     = var.target_group_name
   target_group_port     = var.container_port
-  target_group_protocol = "HTTP"
+  target_group_protocol = var.target_group_protocol
   vpc_id                = data.terraform_remote_state.shared_vpc.outputs.vpc_id
-  target_type           = "ip"
+  target_type           = var.target_type
 
   # Health check configuration
   health_check_path     = var.health_check_path
-  health_check_interval = 30
-  health_check_timeout  = 5
-  healthy_threshold     = 3
-  unhealthy_threshold   = 2
-  matcher               = "200"
+  health_check_interval = var.health_check_interval
+  health_check_timeout  = var.health_check_timeout
+  healthy_threshold     = var.healthy_threshold
+  unhealthy_threshold   = var.unhealthy_threshold
+  matcher               = var.matcher
 
   # Listener configuration
-  listener_port     = 80
-  listener_protocol = "HTTP"
+  listener_port     = var.listener_port
+  listener_protocol = var.listener_protocol
 
   # Common configuration
   project     = var.project
