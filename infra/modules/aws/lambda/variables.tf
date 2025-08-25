@@ -105,8 +105,17 @@ variable "iam_role_name_suffix" {
 }
 
 variable "assume_role_policy" {
-  description = "IAM assume role policy document in JSON format"
-  type        = string
+  description = "IAM assume role policy document"
+  type = object({
+    Version = string
+    Statement = list(object({
+      Action = string
+      Effect = string
+      Principal = object({
+        Service = string
+      })
+    }))
+  })
 }
 
 variable "lambda_basic_execution_policy_arn" {

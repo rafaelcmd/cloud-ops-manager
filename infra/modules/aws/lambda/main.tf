@@ -41,7 +41,7 @@ resource "aws_lambda_function" "this" {
 resource "aws_iam_role" "lambda_role" {
   name = "${var.function_name}${var.iam_role_name_suffix}"
 
-  assume_role_policy = var.assume_role_policy
+  assume_role_policy = jsonencode(var.assume_role_policy)
 
   tags = var.tags
 }

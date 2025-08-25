@@ -326,7 +326,7 @@ variable "archive_type" {
 variable "archive_output_path_prefix" {
   description = "Prefix for the archive output path"
   type        = string
-  default     = path.module
+  default     = "."
 }
 
 # IAM Configuration
@@ -337,9 +337,18 @@ variable "iam_role_name_suffix" {
 }
 
 variable "assume_role_policy" {
-  description = "IAM assume role policy document in JSON format"
-  type        = string
-  default = jsonencode({
+  description = "IAM assume role policy document"
+  type = object({
+    Version = string
+    Statement = list(object({
+      Action = string
+      Effect = string
+      Principal = object({
+        Service = string
+      })
+    }))
+  })
+  default = {
     Version = "2012-10-17"
     Statement = [
       {
@@ -350,7 +359,7 @@ variable "assume_role_policy" {
         }
       }
     ]
-  })
+  }
 }
 
 variable "lambda_basic_execution_policy_arn" {
