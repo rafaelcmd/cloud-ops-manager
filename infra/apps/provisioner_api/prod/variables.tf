@@ -350,3 +350,15 @@ variable "receive_wait_time_seconds" {
   type        = number
   default     = 20
 }
+
+variable "ssm_parameter_name" {
+  description = "Name of the SSM parameter for storing the queue URL"
+  type        = string
+  default     = "/CLOUD_OPS_MANAGER/PROVISIONER_QUEUE_URL"
+}
+
+variable "ssm_parameter_type" {
+  description = "Type of the SSM parameter"
+  type        = string
+  default     = "String"
+}

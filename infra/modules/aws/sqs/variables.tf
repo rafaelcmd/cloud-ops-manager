@@ -33,3 +33,18 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# =============================================================================
+# SSM PARAMETER CONFIGURATION
+# Variables for SSM parameter configuration
+# =============================================================================
+
+variable "ssm_parameter_name" {
+  description = "Name of the SSM parameter for storing the queue URL"
+  type        = string
+}
+
+variable "ssm_parameter_type" {
+  description = "Type of the SSM parameter"
+  type        = string
+}

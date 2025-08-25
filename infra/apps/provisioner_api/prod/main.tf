@@ -122,6 +122,10 @@ module "sqs" {
   message_retention_seconds = var.message_retention_seconds
   receive_wait_time_seconds = var.receive_wait_time_seconds
 
+  # SSM parameter configuration
+  ssm_parameter_name = var.ssm_parameter_name
+  ssm_parameter_type = var.ssm_parameter_type
+
   # Common tags
   tags = {
     Environment = var.environment
