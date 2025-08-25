@@ -138,13 +138,36 @@ module "sqs" {
 module "datadog_forwarder" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/lambda?ref=main"
 
-  function_name = var.lambda_function_name
-  source_dir    = "${path.module}/lambda-src"
-  handler       = "lambda_function.lambda_handler"
-  runtime       = var.lambda_runtime
-  timeout       = var.lambda_timeout
-  memory_size   = var.lambda_memory_size
+  # Basic Lambda configuration
+  function_name                  = var.lambda_function_name
+  source_dir                     = "${path.module}/lambda-src"
+  handler                        = "lambda_function.lambda_handler"
+  runtime                        = var.lambda_runtime
+  timeout                        = var.lambda_timeout
+  memory_size                    = var.lambda_memory_size
+  reserved_concurrent_executions = -1
+  log_retention_days             = 7
 
+  # Archive configuration
+  archive_type               = var.archive_type
+  archive_output_path_prefix = var.archive_output_path_prefix
+
+  # IAM configuration
+  iam_role_name_suffix              = var.iam_role_name_suffix
+  assume_role_policy                = var.assume_role_policy
+  lambda_basic_execution_policy_arn = var.lambda_basic_execution_policy_arn
+  additional_policy_name_suffix     = var.additional_policy_name_suffix
+
+  # Lambda permission configuration
+  allow_cloudwatch_logs_invocation = true
+  permission_statement_id          = var.permission_statement_id
+  permission_action                = var.permission_action
+  permission_principal             = var.permission_principal
+
+  # CloudWatch logs configuration
+  log_group_name_prefix = var.log_group_name_prefix
+
+  # Environment variables
   environment_variables = {
     DD_API_KEY = var.datadog_api_key
     DD_SITE    = "datadoghq.com"
@@ -152,19 +175,12 @@ module "datadog_forwarder" {
     DD_TAGS    = "env:${var.environment},project:${var.project},service:${var.service_name}"
   }
 
-  # Explicitly set to -1 to not reserve any concurrency
-  reserved_concurrent_executions = -1
-
+  # Tags
   tags = {
     Environment = var.environment
     Project     = var.project
     Service     = var.service_name
   }
-
-  log_retention_days = 7
-
-  # Enable CloudWatch Logs invocation
-  allow_cloudwatch_logs_invocation = true
 
   # Additional IAM policy for Datadog forwarder
   additional_inline_policy = jsonencode({

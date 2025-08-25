@@ -1,7 +1,7 @@
 # Create archive from source directory
 data "archive_file" "lambda_code" {
-  type        = "zip"
-  output_path = "${path.module}/lambda-${var.function_name}.zip"
+  type        = var.archive_type
+  output_path = "${var.archive_output_path_prefix}/lambda-${var.function_name}.zip"
   source_dir  = var.source_dir
 }
 
@@ -39,20 +39,9 @@ resource "aws_lambda_function" "this" {
 
 # IAM role for Lambda
 resource "aws_iam_role" "lambda_role" {
-  name = "${var.function_name}-role"
+  name = "${var.function_name}${var.iam_role_name_suffix}"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
+  assume_role_policy = var.assume_role_policy
 
   tags = var.tags
 }
@@ -60,7 +49,7 @@ resource "aws_iam_role" "lambda_role" {
 # Basic Lambda execution policy
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  policy_arn = var.lambda_basic_execution_policy_arn
 }
 
 # Attach additional policies if provided
@@ -74,7 +63,7 @@ resource "aws_iam_role_policy_attachment" "additional" {
 resource "aws_iam_role_policy" "lambda_additional_policy" {
   count = var.additional_inline_policy != null ? 1 : 0
 
-  name = "${var.function_name}-additional-policy"
+  name = "${var.function_name}${var.additional_policy_name_suffix}"
   role = aws_iam_role.lambda_role.id
 
   policy = var.additional_inline_policy
@@ -84,10 +73,10 @@ resource "aws_iam_role_policy" "lambda_additional_policy" {
 resource "aws_lambda_permission" "cloudwatch_logs" {
   count = var.allow_cloudwatch_logs_invocation ? 1 : 0
 
-  statement_id  = "AllowExecutionFromCloudWatchLogs"
-  action        = "lambda:InvokeFunction"
+  statement_id  = var.permission_statement_id
+  action        = var.permission_action
   function_name = aws_lambda_function.this.function_name
-  principal     = "logs.amazonaws.com"
+  principal     = var.permission_principal
 
   # Optional source ARN for more specific permissions
   source_arn = var.cloudwatch_logs_source_arn != null ? var.cloudwatch_logs_source_arn : null
@@ -95,7 +84,7 @@ resource "aws_lambda_permission" "cloudwatch_logs" {
 
 # CloudWatch log group for Lambda
 resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/${var.function_name}"
+  name              = "${var.log_group_name_prefix}/${var.function_name}"
   retention_in_days = var.log_retention_days
 
   tags = var.tags

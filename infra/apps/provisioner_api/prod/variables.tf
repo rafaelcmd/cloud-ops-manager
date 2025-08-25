@@ -316,6 +316,81 @@ variable "lambda_memory_size" {
   default     = 1024
 }
 
+# Archive Configuration
+variable "archive_type" {
+  description = "Type of archive to create for Lambda deployment package"
+  type        = string
+  default     = "zip"
+}
+
+variable "archive_output_path_prefix" {
+  description = "Prefix for the archive output path"
+  type        = string
+  default     = path.module
+}
+
+# IAM Configuration
+variable "iam_role_name_suffix" {
+  description = "Suffix for the IAM role name"
+  type        = string
+  default     = "-role"
+}
+
+variable "assume_role_policy" {
+  description = "IAM assume role policy document in JSON format"
+  type        = string
+  default = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+variable "lambda_basic_execution_policy_arn" {
+  description = "ARN of the AWS Lambda basic execution policy"
+  type        = string
+  default     = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+variable "additional_policy_name_suffix" {
+  description = "Suffix for the additional IAM policy name"
+  type        = string
+  default     = "-additional-policy"
+}
+
+# Lambda Permission Configuration
+variable "permission_statement_id" {
+  description = "Statement ID for the Lambda permission"
+  type        = string
+  default     = "AllowExecutionFromCloudWatchLogs"
+}
+
+variable "permission_action" {
+  description = "Action for the Lambda permission"
+  type        = string
+  default     = "lambda:InvokeFunction"
+}
+
+variable "permission_principal" {
+  description = "Principal for the Lambda permission"
+  type        = string
+  default     = "logs.amazonaws.com"
+}
+
+# CloudWatch Logs Configuration
+variable "log_group_name_prefix" {
+  description = "Prefix for the CloudWatch log group name"
+  type        = string
+  default     = "/aws/lambda"
+}
+
 # =============================================================================
 # SQS CONFIGURATION
 # Variables for SQS queue configuration
