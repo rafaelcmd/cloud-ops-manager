@@ -1,3 +1,8 @@
+# =============================================================================
+# ALB MODULE VARIABLES
+# Variables for Application Load Balancer configuration
+# =============================================================================
+
 variable "alb_name" {
   description = "Name of the Application Load Balancer"
   type        = string
@@ -96,4 +101,69 @@ variable "environment" {
 variable "tags" {
   description = "A map of tags to assign to the resources"
   type        = map(string)
+}
+
+# =============================================================================
+# SECURITY GROUP VARIABLES
+# Variables for security group configuration
+# =============================================================================
+
+variable "security_group_name" {
+  description = "Name of the security group for the ALB"
+  type        = string
+}
+
+variable "security_group_description" {
+  description = "Description of the security group for the ALB"
+  type        = string
+}
+
+variable "ingress_from_port" {
+  description = "Starting port for ingress rule"
+  type        = number
+}
+
+variable "ingress_to_port" {
+  description = "Ending port for ingress rule"
+  type        = number
+}
+
+variable "ingress_protocol" {
+  description = "Protocol for ingress rule"
+  type        = string
+}
+
+variable "ingress_cidr_blocks" {
+  description = "CIDR blocks for ingress rule"
+  type        = list(string)
+}
+
+variable "egress_from_port" {
+  description = "Starting port for egress rule"
+  type        = number
+}
+
+variable "egress_to_port" {
+  description = "Ending port for egress rule"
+  type        = number
+}
+
+variable "egress_protocol" {
+  description = "Protocol for egress rule"
+  type        = string
+}
+
+variable "egress_cidr_blocks" {
+  description = "CIDR blocks for egress rule"
+  type        = list(string)
+}
+
+# =============================================================================
+# LISTENER VARIABLES
+# Variables for listener configuration
+# =============================================================================
+
+variable "default_action_type" {
+  description = "Type of action for the default listener rule"
+  type        = string
 }

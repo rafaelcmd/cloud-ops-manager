@@ -217,6 +217,77 @@ variable "listener_protocol" {
 }
 
 # =============================================================================
+# SECURITY GROUP CONFIGURATION
+# Variables for ALB security group configuration
+# =============================================================================
+
+variable "security_group_name" {
+  description = "Name of the security group for the ALB"
+  type        = string
+  default     = "cloudops-manager-alb-sg"
+}
+
+variable "security_group_description" {
+  description = "Description of the security group for the ALB"
+  type        = string
+  default     = "Security group for CloudOps Manager ALB"
+}
+
+variable "ingress_from_port" {
+  description = "Starting port for ALB ingress rule"
+  type        = number
+  default     = 80
+}
+
+variable "ingress_to_port" {
+  description = "Ending port for ALB ingress rule"
+  type        = number
+  default     = 80
+}
+
+variable "ingress_protocol" {
+  description = "Protocol for ALB ingress rule"
+  type        = string
+  default     = "tcp"
+}
+
+variable "ingress_cidr_blocks" {
+  description = "CIDR blocks for ALB ingress rule"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "egress_from_port" {
+  description = "Starting port for ALB egress rule"
+  type        = number
+  default     = 5000
+}
+
+variable "egress_to_port" {
+  description = "Ending port for ALB egress rule"
+  type        = number
+  default     = 5000
+}
+
+variable "egress_protocol" {
+  description = "Protocol for ALB egress rule"
+  type        = string
+  default     = "tcp"
+}
+
+variable "egress_cidr_blocks" {
+  description = "CIDR blocks for ALB egress rule"
+  type        = list(string)
+  default     = ["10.0.0.0/16"]
+}
+
+variable "default_action_type" {
+  description = "Type of action for the default listener rule"
+  type        = string
+  default     = "forward"
+}
+
+# =============================================================================
 # LAMBDA CONFIGURATION
 # Variables for Lambda function (Datadog forwarder) configuration
 # =============================================================================

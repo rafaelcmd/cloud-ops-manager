@@ -37,7 +37,7 @@ resource "aws_lb_listener" "this" {
   protocol          = var.listener_protocol
 
   default_action {
-    type             = "forward"
+    type             = var.default_action_type
     target_group_arn = aws_lb_target_group.this.arn
   }
 
@@ -47,26 +47,26 @@ resource "aws_lb_listener" "this" {
 }
 
 resource "aws_security_group" "this" {
-  name        = "cloud-ops-manager-ecs-alb-sg"
-  description = "Security group for CloudOps Manager ECS ALB"
+  name        = var.security_group_name
+  description = var.security_group_description
   vpc_id      = var.vpc_id
 
   # Allow HTTP traffic from internet
   ingress {
     description = "Allow HTTP access from internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = var.ingress_from_port
+    to_port     = var.ingress_to_port
+    protocol    = var.ingress_protocol
+    cidr_blocks = var.ingress_cidr_blocks
   }
 
   # Allow outbound traffic to ECS tasks in private subnets
   egress {
     description = "Allow outbound traffic to ECS tasks"
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
+    from_port   = var.egress_from_port
+    to_port     = var.egress_to_port
+    protocol    = var.egress_protocol
+    cidr_blocks = var.egress_cidr_blocks
   }
 
   tags = var.tags
