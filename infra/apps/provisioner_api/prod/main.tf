@@ -85,9 +85,9 @@ module "alb" {
   matcher               = var.matcher
 
   # Listener configuration
-  listener_port        = var.listener_port
-  listener_protocol    = var.listener_protocol
-  default_action_type  = var.default_action_type
+  listener_port       = var.listener_port
+  listener_protocol   = var.listener_protocol
+  default_action_type = var.default_action_type
 
   # Security group configuration
   security_group_name        = var.security_group_name
