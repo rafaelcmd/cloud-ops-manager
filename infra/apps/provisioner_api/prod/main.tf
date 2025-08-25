@@ -114,6 +114,20 @@ module "alb" {
 
 module "sqs" {
   source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/sqs?ref=main"
+
+  # SQS configuration
+  queue_name                = var.queue_name
+  delay_seconds             = var.delay_seconds
+  max_message_size          = var.max_message_size
+  message_retention_seconds = var.message_retention_seconds
+  receive_wait_time_seconds = var.receive_wait_time_seconds
+
+  # Common tags
+  tags = {
+    Environment = var.environment
+    Project     = var.project
+    Service     = var.service_name
+  }
 }
 
 # Datadog Lambda Forwarder for collecting application logs (required for ECS Fargate)
