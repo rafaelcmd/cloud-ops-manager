@@ -1,0 +1,128 @@
+basePath: /
+definitions:
+  model.Resource:
+    description: Cloud resource provisioning request
+    properties:
+      cloud_provider:
+        description: Cloud provider where the resource will be provisioned
+        enum:
+        - AWS
+        - Azure
+        - GCP
+        example: AWS
+        type: string
+      id:
+        description: Unique identifier for the resource
+        example: vm-001
+        maxLength: 100
+        minLength: 1
+        type: string
+      requested_by:
+        description: Username or identifier of the person who requested the resource
+        example: rafael
+        maxLength: 100
+        minLength: 1
+        type: string
+      resource_type:
+        description: Type of cloud resource to provision
+        enum:
+        - VM
+        - RDS
+        - S3
+        - Lambda
+        - VPC
+        - ELB
+        example: VM
+        type: string
+      specification:
+        description: Detailed specification of the resource configuration
+        example: t2.micro
+        maxLength: 1000
+        minLength: 1
+        type: string
+      status:
+        description: Current status of the resource provisioning request
+        enum:
+        - pending
+        - in_progress
+        - completed
+        - failed
+        example: pending
+        type: string
+    required:
+    - cloud_provider
+    - id
+    - requested_by
+    - resource_type
+    - specification
+    - status
+    type: object
+host: localhost:5000
+info:
+  contact:
+    email: team@cloudopsmanager.com
+    name: Cloud Ops Manager Team
+  description: The Cloud Ops Manager Provisioner API provides endpoints for managing
+    cloud resource provisioning requests. This API accepts provisioning requests and
+    queues them for asynchronous processing via SQS.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://cloudopsmanager.com/terms/
+  title: Cloud Ops Manager - Provisioner API
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      description: Returns the health status of the API. Used for load balancer health
+        checks and monitoring purposes.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Service is healthy and operational
+          schema:
+            type: string
+      summary: Health check endpoint
+      tags:
+      - health
+  /provision:
+    post:
+      consumes:
+      - application/json
+      description: Submits a new resource provisioning request to be processed asynchronously.
+        The request is validated and queued for processing via SQS.
+      parameters:
+      - description: Resource provisioning request
+        in: body
+        name: resource
+        required: true
+        schema:
+          $ref: '#/definitions/model.Resource'
+      produces:
+      - text/plain
+      responses:
+        "202":
+          description: Request accepted for processing
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Failed to process request
+          schema:
+            type: string
+      summary: Submit a resource provisioning request
+      tags:
+      - resources
+schemes:
+- http
+- https
+swagger: "2.0"
+tags:
+- description: Resource provisioning operations
+  name: resources
+- description: Health check operations
+  name: health

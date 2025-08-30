@@ -1,0 +1,172 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "The Cloud Ops Manager Provisioner API provides endpoints for managing cloud resource provisioning requests. This API accepts provisioning requests and queues them for asynchronous processing via SQS.",
+        "title": "Cloud Ops Manager - Provisioner API",
+        "termsOfService": "https://cloudopsmanager.com/terms/",
+        "contact": {
+            "name": "Cloud Ops Manager Team",
+            "email": "team@cloudopsmanager.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0.0"
+    },
+    "host": "localhost:5000",
+    "basePath": "/",
+    "paths": {
+        "/health": {
+            "get": {
+                "description": "Returns the health status of the API. Used for load balancer health checks and monitoring purposes.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "Service is healthy and operational",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/provision": {
+            "post": {
+                "description": "Submits a new resource provisioning request to be processed asynchronously. The request is validated and queued for processing via SQS.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "resources"
+                ],
+                "summary": "Submit a resource provisioning request",
+                "parameters": [
+                    {
+                        "description": "Resource provisioning request",
+                        "name": "resource",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.Resource"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Request accepted for processing",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to process request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.Resource": {
+            "description": "Cloud resource provisioning request",
+            "type": "object",
+            "required": [
+                "cloud_provider",
+                "id",
+                "requested_by",
+                "resource_type",
+                "specification",
+                "status"
+            ],
+            "properties": {
+                "cloud_provider": {
+                    "description": "Cloud provider where the resource will be provisioned",
+                    "type": "string",
+                    "enum": [
+                        "AWS",
+                        "Azure",
+                        "GCP"
+                    ],
+                    "example": "AWS"
+                },
+                "id": {
+                    "description": "Unique identifier for the resource",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "vm-001"
+                },
+                "requested_by": {
+                    "description": "Username or identifier of the person who requested the resource",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "example": "rafael"
+                },
+                "resource_type": {
+                    "description": "Type of cloud resource to provision",
+                    "type": "string",
+                    "enum": [
+                        "VM",
+                        "RDS",
+                        "S3",
+                        "Lambda",
+                        "VPC",
+                        "ELB"
+                    ],
+                    "example": "VM"
+                },
+                "specification": {
+                    "description": "Detailed specification of the resource configuration",
+                    "type": "string",
+                    "maxLength": 1000,
+                    "minLength": 1,
+                    "example": "t2.micro"
+                },
+                "status": {
+                    "description": "Current status of the resource provisioning request",
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "in_progress",
+                        "completed",
+                        "failed"
+                    ],
+                    "example": "pending"
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "description": "Resource provisioning operations",
+            "name": "resources"
+        },
+        {
+            "description": "Health check operations",
+            "name": "health"
+        }
+    ]
+}
