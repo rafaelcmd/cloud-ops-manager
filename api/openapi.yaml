@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: Cloud Ops Manager - Provisioner API
+  description: |
+    The Cloud Ops Manager Provisioner API provides endpoints for managing cloud resource provisioning requests.
+    This API accepts provisioning requests and queues them for asynchronous processing via SQS.
+  version: 1.0.0
+  contact:
+    name: Cloud Ops Manager Team
+    email: team@cloudopsmanager.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+  - url: https://api.cloudopsmanager.com
+    description: Production server
+
+tags:
+  - name: resources
+    description: Resource provisioning operations
+  - name: health
+    description: Health check operations
+
+paths:
+  /provision:
+    post:
+      tags:
+        - resources
+      summary: Submit a resource provisioning request
+      description: |
+        Submits a new resource provisioning request to be processed asynchronously.
+        The request is validated and queued for processing via SQS.
+      operationId: provisionResource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Resource'
+            examples:
+              aws_vm_provision:
+                summary: AWS VM provisioning request
+                value:
+                  id: "vm-001"
+                  resource_type: "VM"
+                  cloud_provider: "AWS"
+                  specification: "t2.micro"
+                  status: "pending"
+                  requested_by: "rafael"
+              aws_rds_provision:
+                summary: AWS RDS provisioning request
+                value:
+                  id: "db-001"
+                  resource_type: "RDS"
+                  cloud_provider: "AWS"
+                  specification: "db.t3.micro"
+                  status: "pending"
+                  requested_by: "john"
+      responses:
+        '202':
+          description: |
+            Request accepted for processing. The resource provisioning request has been
+            successfully queued and will be processed asynchronously.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ""
+        '400':
+          description: |
+            Bad Request. The request body is malformed or contains invalid JSON.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid request body"
+        '500':
+          description: |
+            Internal Server Error. Failed to process the request due to an internal error,
+            such as inability to publish to the SQS queue.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to process request"
+
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check endpoint
+      description: |
+        Returns the health status of the API. Used for load balancer health checks
+        and monitoring purposes.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy and operational
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+
+components:
+  schemas:
+    Resource:
+      type: object
+      required:
+        - id
+        - resource_type
+        - cloud_provider
+        - specification
+        - status
+        - requested_by
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the resource
+          example: "vm-001"
+          minLength: 1
+          maxLength: 100
+        resource_type:
+          type: string
+          description: Type of cloud resource to provision
+          example: "VM"
+          enum:
+            - "VM"
+            - "RDS"
+            - "S3"
+            - "Lambda"
+            - "VPC"
+            - "ELB"
+          minLength: 1
+          maxLength: 50
+        cloud_provider:
+          type: string
+          description: Cloud provider where the resource will be provisioned
+          example: "AWS"
+          enum:
+            - "AWS"
+            - "Azure"
+            - "GCP"
+          minLength: 1
+          maxLength: 20
+        specification:
+          type: string
+          description: |
+            Detailed specification of the resource configuration.
+            Format depends on the resource type and cloud provider.
+          example: "t2.micro"
+          minLength: 1
+          maxLength: 1000
+        status:
+          type: string
+          description: Current status of the resource provisioning request
+          example: "pending"
+          enum:
+            - "pending"
+            - "in_progress"
+            - "completed"
+            - "failed"
+          minLength: 1
+          maxLength: 20
+        requested_by:
+          type: string
+          description: Username or identifier of the person who requested the resource
+          example: "rafael"
+          minLength: 1
+          maxLength: 100
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid request body"
+        code:
+          type: string
+          description: Error code for programmatic handling
+          example: "INVALID_REQUEST"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the error occurred
+          example: "2025-08-30T12:00:00Z"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token for authentication. Include the token in the Authorization header
+        as "Bearer <token>". Note: Currently not implemented but reserved for future use.
+
+# Global security (currently not enforced but documented for future implementation)
+# security:
+#   - BearerAuth: []
+
+externalDocs:
+  description: Cloud Ops Manager Documentation
+  url: https://docs.cloudopsmanager.com
