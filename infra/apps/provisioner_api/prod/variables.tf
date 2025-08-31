@@ -141,7 +141,7 @@ variable "nlb_name" {
 variable "internal" {
   description = "Whether the load balancer is internal (true) or internet-facing (false)"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "load_balancer_type" {
