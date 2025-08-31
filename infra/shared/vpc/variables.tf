@@ -1,7 +1,17 @@
+# =============================================================================
+# AWS CONFIGURATION
+# Variables for AWS region and basic deployment configuration
+# =============================================================================
+
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
 }
+
+# =============================================================================
+# VPC NETWORK CONFIGURATION
+# Variables for VPC and subnet CIDR block configuration
+# =============================================================================
 
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
@@ -23,6 +33,11 @@ variable "availability_zones" {
   type        = list(string)
 }
 
+# =============================================================================
+# PROJECT AND ENVIRONMENT CONFIGURATION
+# Variables for project identification and environment setup
+# =============================================================================
+
 variable "project" {
   description = "Name of the project"
   type        = string
@@ -33,14 +48,24 @@ variable "environment" {
   type        = string
 }
 
-variable "tags" {
-  description = "Common resource tags"
-  type        = map(string)
-  default     = {}
-}
+# =============================================================================
+# NAT GATEWAY CONFIGURATION
+# Variables for NAT Gateway setup and naming
+# =============================================================================
 
 variable "nat_gateway_name_prefix" {
   description = "Name prefix for NAT Gateway EIP tags"
   type        = string
   default     = "nat-gateway"
+}
+
+# =============================================================================
+# RESOURCE TAGGING
+# Variables for resource tagging and labeling
+# =============================================================================
+
+variable "tags" {
+  description = "Common resource tags"
+  type        = map(string)
+  default     = {}
 }
