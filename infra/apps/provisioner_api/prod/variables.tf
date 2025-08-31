@@ -239,6 +239,150 @@ variable "listener_action_type" {
 }
 
 # =============================================================================
+# API GATEWAY CONFIGURATION
+# Variables for API Gateway setup and configuration
+# =============================================================================
+
+variable "api_gateway_name" {
+  description = "Name of the API Gateway"
+  type        = string
+  default     = "cloudops-manager-api"
+}
+
+variable "api_gateway_description" {
+  description = "Description of the API Gateway"
+  type        = string
+  default     = "Cloud Ops Manager Provisioner API Gateway"
+}
+
+variable "api_gateway_stage_name" {
+  description = "Name of the API Gateway stage"
+  type        = string
+  default     = "prod"
+}
+
+variable "api_gateway_auto_deploy" {
+  description = "Whether to automatically deploy API changes"
+  type        = bool
+  default     = true
+}
+
+# =============================================================================
+# VPC LINK CONFIGURATION
+# Variables for API Gateway VPC Link setup
+# =============================================================================
+
+variable "vpc_link_name" {
+  description = "Name of the VPC Link"
+  type        = string
+  default     = "cloudops-manager-vpc-link"
+}
+
+# =============================================================================
+# API GATEWAY INTEGRATION CONFIGURATION
+# Variables for backend integration and timeout settings
+# =============================================================================
+
+variable "integration_timeout_ms" {
+  description = "Integration timeout in milliseconds"
+  type        = number
+  default     = 29000
+}
+
+# =============================================================================
+# API GATEWAY THROTTLING CONFIGURATION
+# Variables for API Gateway throttling and rate limiting
+# =============================================================================
+
+variable "throttle_rate_limit" {
+  description = "API Gateway throttle rate limit (requests per second)"
+  type        = number
+  default     = 1000
+}
+
+variable "throttle_burst_limit" {
+  description = "API Gateway throttle burst limit"
+  type        = number
+  default     = 2000
+}
+
+# =============================================================================
+# CORS CONFIGURATION
+# Variables for Cross-Origin Resource Sharing configuration
+# =============================================================================
+
+variable "cors_allow_credentials" {
+  description = "Whether to allow credentials in CORS requests"
+  type        = bool
+  default     = false
+}
+
+variable "cors_allow_headers" {
+  description = "List of allowed headers for CORS"
+  type        = list(string)
+  default     = ["content-type", "x-amz-date", "authorization", "x-api-key", "x-amz-security-token"]
+}
+
+variable "cors_allow_methods" {
+  description = "List of allowed HTTP methods for CORS"
+  type        = list(string)
+  default     = ["GET", "POST", "OPTIONS"]
+}
+
+variable "cors_allow_origins" {
+  description = "List of allowed origins for CORS"
+  type        = list(string)
+  default     = ["*"]
+}
+
+variable "cors_expose_headers" {
+  description = "List of headers to expose in CORS responses"
+  type        = list(string)
+  default     = []
+}
+
+variable "cors_max_age" {
+  description = "Maximum age for CORS preflight requests in seconds"
+  type        = number
+  default     = 86400
+}
+
+# =============================================================================
+# API GATEWAY LOGGING AND MONITORING CONFIGURATION
+# Variables for API Gateway CloudWatch logs and monitoring
+# =============================================================================
+
+variable "api_gateway_log_retention_days" {
+  description = "CloudWatch log group retention period in days for API Gateway"
+  type        = number
+  default     = 7
+}
+
+variable "api_gateway_logging_level" {
+  description = "CloudWatch logging level for API Gateway (OFF, ERROR, INFO)"
+  type        = string
+  default     = "INFO"
+}
+
+variable "api_gateway_metrics_enabled" {
+  description = "Whether to enable CloudWatch metrics for API Gateway"
+  type        = bool
+  default     = true
+}
+
+variable "api_gateway_data_trace_enabled" {
+  description = "Whether to enable data trace for API Gateway"
+  type        = bool
+  default     = false
+}
+
+variable "api_gateway_xray_tracing_enabled" {
+  description = "Whether to enable X-Ray tracing for API Gateway"
+  type        = bool
+  default     = true
+}
+
+# =============================================================================
 # LAMBDA CONFIGURATION
 # Variables for Lambda function (Datadog forwarder) configuration
 # =============================================================================

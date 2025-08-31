@@ -1,128 +1,144 @@
-basePath: /
-definitions:
-  model.Resource:
-    description: Cloud resource provisioning request
-    properties:
-      cloud_provider:
-        description: Cloud provider where the resource will be provisioned
-        enum:
-        - AWS
-        - Azure
-        - GCP
-        example: AWS
-        type: string
-      id:
-        description: Unique identifier for the resource
-        example: vm-001
-        maxLength: 100
-        minLength: 1
-        type: string
-      requested_by:
-        description: Username or identifier of the person who requested the resource
-        example: rafael
-        maxLength: 100
-        minLength: 1
-        type: string
-      resource_type:
-        description: Type of cloud resource to provision
-        enum:
-        - VM
-        - RDS
-        - S3
-        - Lambda
-        - VPC
-        - ELB
-        example: VM
-        type: string
-      specification:
-        description: Detailed specification of the resource configuration
-        example: t2.micro
-        maxLength: 1000
-        minLength: 1
-        type: string
-      status:
-        description: Current status of the resource provisioning request
-        enum:
-        - pending
-        - in_progress
-        - completed
-        - failed
-        example: pending
-        type: string
-    required:
-    - cloud_provider
-    - id
-    - requested_by
-    - resource_type
-    - specification
-    - status
-    type: object
-host: localhost:5000
+openapi: 3.0.1
 info:
+  title: Cloud Ops Manager - Provisioner API
+  description: The Cloud Ops Manager Provisioner API provides endpoints for managing cloud resource provisioning requests. This API accepts provisioning requests and queues them for asynchronous processing via SQS.
+  version: 1.0.0
   contact:
-    email: team@cloudopsmanager.com
     name: Cloud Ops Manager Team
-  description: The Cloud Ops Manager Provisioner API provides endpoints for managing
-    cloud resource provisioning requests. This API accepts provisioning requests and
-    queues them for asynchronous processing via SQS.
+    email: team@cloudopsmanager.com
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
   termsOfService: https://cloudopsmanager.com/terms/
-  title: Cloud Ops Manager - Provisioner API
-  version: 1.0.0
+
+servers:
+  - url: https://api.cloudopsmanager.com
+
 paths:
   /health:
     get:
-      description: Returns the health status of the API. Used for load balancer health
-        checks and monitoring purposes.
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: Service is healthy and operational
-          schema:
-            type: string
       summary: Health check endpoint
+      description: Returns the health status of the API. Used for load balancer health checks and monitoring purposes.
       tags:
-      - health
+        - health
+      responses:
+        '200':
+          description: Service is healthy and operational
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: http://${nlb_dns_name}/health
+        connectionType: VPC_LINK
+        connectionId: ${vpc_link_id}
+        timeoutInMillis: ${integration_timeout_ms}
+        payloadFormatVersion: "1.0"
+
   /provision:
     post:
-      consumes:
-      - application/json
-      description: Submits a new resource provisioning request to be processed asynchronously.
-        The request is validated and queued for processing via SQS.
-      parameters:
-      - description: Resource provisioning request
-        in: body
-        name: resource
-        required: true
-        schema:
-          $ref: '#/definitions/model.Resource'
-      produces:
-      - text/plain
-      responses:
-        "202":
-          description: Request accepted for processing
-          schema:
-            type: string
-        "400":
-          description: Invalid request body
-          schema:
-            type: string
-        "500":
-          description: Failed to process request
-          schema:
-            type: string
       summary: Submit a resource provisioning request
+      description: Submits a new resource provisioning request to be processed asynchronously. The request is validated and queued for processing via SQS.
       tags:
-      - resources
-schemes:
-- http
-- https
-swagger: "2.0"
+        - resources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Resource'
+      responses:
+        '202':
+          description: Request accepted for processing
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: Invalid request body
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Failed to process request
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: POST
+        uri: http://${nlb_dns_name}/provision
+        connectionType: VPC_LINK
+        connectionId: ${vpc_link_id}
+        timeoutInMillis: ${integration_timeout_ms}
+        payloadFormatVersion: "1.0"
+
+components:
+  schemas:
+    Resource:
+      type: object
+      description: Cloud resource provisioning request
+      required:
+        - id
+        - cloud_provider
+        - resource_type
+        - specification
+        - requested_by
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the resource
+          example: vm-001
+          minLength: 1
+          maxLength: 100
+        cloud_provider:
+          type: string
+          description: Cloud provider where the resource will be provisioned
+          enum:
+            - AWS
+            - Azure
+            - GCP
+          example: AWS
+        resource_type:
+          type: string
+          description: Type of cloud resource to provision
+          enum:
+            - VM
+            - RDS
+            - S3
+            - Lambda
+            - VPC
+            - ELB
+          example: VM
+        specification:
+          type: string
+          description: Detailed specification of the resource configuration
+          example: t2.micro
+          minLength: 1
+          maxLength: 1000
+        requested_by:
+          type: string
+          description: Username or identifier of the person who requested the resource
+          example: rafael
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          description: Current status of the resource provisioning request
+          enum:
+            - pending
+            - in_progress
+            - completed
+            - failed
+          example: pending
+
 tags:
-- description: Resource provisioning operations
-  name: resources
-- description: Health check operations
-  name: health
+  - name: resources
+    description: Resource provisioning operations
+  - name: health
+    description: Health check operations

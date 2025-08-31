@@ -210,3 +210,50 @@ module "datadog_forwarder" {
     ]
   })
 }
+
+module "api_gateway" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/api_gateway?ref=main"
+
+  # API Gateway configuration
+  api_name        = var.api_gateway_name
+  api_description = var.api_gateway_description
+
+  # VPC Link configuration
+  vpc_link_name       = var.vpc_link_name
+  vpc_id              = data.terraform_remote_state.shared_vpc.outputs.vpc_id
+  vpc_link_subnet_ids = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
+  nlb_arn             = module.nlb.nlb_arn
+  nlb_dns_name        = module.nlb.nlb_dns_name
+
+  # Stage configuration
+  stage_name  = var.api_gateway_stage_name
+  auto_deploy = var.api_gateway_auto_deploy
+
+  # Integration configuration
+  integration_timeout_ms = var.integration_timeout_ms
+
+  # Throttling configuration
+  throttle_rate_limit  = var.throttle_rate_limit
+  throttle_burst_limit = var.throttle_burst_limit
+
+  # CORS configuration
+  cors_allow_credentials = var.cors_allow_credentials
+  cors_allow_headers     = var.cors_allow_headers
+  cors_allow_methods     = var.cors_allow_methods
+  cors_allow_origins     = var.cors_allow_origins
+  cors_expose_headers    = var.cors_expose_headers
+  cors_max_age          = var.cors_max_age
+
+  # Logging configuration
+  log_retention_days = var.api_gateway_log_retention_days
+
+  # Common configuration
+  project     = var.project
+  environment = var.environment
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project
+    Service     = var.service_name
+  }
+}
