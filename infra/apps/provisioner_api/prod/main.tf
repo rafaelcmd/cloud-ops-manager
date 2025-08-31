@@ -76,13 +76,13 @@ module "nlb" {
   target_type           = var.target_type
 
   # Health check configuration
-  health_check_enabled    = var.health_check_enabled
-  health_check_protocol   = var.health_check_protocol
-  health_check_port       = var.health_check_port
-  health_check_interval   = var.health_check_interval
-  health_check_timeout    = var.health_check_timeout
-  healthy_threshold       = var.healthy_threshold
-  unhealthy_threshold     = var.unhealthy_threshold
+  health_check_enabled  = var.health_check_enabled
+  health_check_protocol = var.health_check_protocol
+  health_check_port     = var.health_check_port
+  health_check_interval = var.health_check_interval
+  health_check_timeout  = var.health_check_timeout
+  healthy_threshold     = var.healthy_threshold
+  unhealthy_threshold   = var.unhealthy_threshold
 
   # Listener configuration
   listener_port        = var.listener_port
