@@ -242,7 +242,7 @@ module "api_gateway" {
   cors_allow_methods     = var.cors_allow_methods
   cors_allow_origins     = var.cors_allow_origins
   cors_expose_headers    = var.cors_expose_headers
-  cors_max_age          = var.cors_max_age
+  cors_max_age           = var.cors_max_age
 
   # Logging configuration
   log_retention_days = var.api_gateway_log_retention_days

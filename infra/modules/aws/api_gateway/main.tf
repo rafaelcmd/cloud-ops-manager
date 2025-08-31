@@ -10,7 +10,7 @@ resource "aws_apigatewayv2_api" "this" {
 
   body = templatefile("${path.module}/../../../api/docs/swagger.yaml", {
     nlb_dns_name           = var.nlb_dns_name
-    vpc_link_id           = aws_apigatewayv2_vpc_link.this.id
+    vpc_link_id            = aws_apigatewayv2_vpc_link.this.id
     integration_timeout_ms = var.integration_timeout_ms
   })
 
@@ -20,7 +20,7 @@ resource "aws_apigatewayv2_api" "this" {
     allow_methods     = var.cors_allow_methods
     allow_origins     = var.cors_allow_origins
     expose_headers    = var.cors_expose_headers
-    max_age          = var.cors_max_age
+    max_age           = var.cors_max_age
   }
 
   tags = merge(var.tags, {
