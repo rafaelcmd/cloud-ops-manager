@@ -106,13 +106,13 @@ resource "aws_security_group" "api_ecs_task_sg" {
   description = var.security_group_description
   vpc_id      = var.vpc_id
 
-  # Allow inbound traffic from ALB to application
+  # Allow inbound traffic from VPC to application port (NLB preserves source IP)
   ingress {
-    description     = "Allow inbound traffic from ALB"
-    from_port       = var.container_port
-    to_port         = var.container_port
-    protocol        = "tcp"
-    security_groups = [var.alb_sg_id]
+    description = "Allow inbound traffic from VPC to application"
+    from_port   = var.container_port
+    to_port     = var.container_port
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"] # Allow traffic from VPC CIDR
   }
 
   # Allow all outbound traffic for Datadog agent communication and app functionality

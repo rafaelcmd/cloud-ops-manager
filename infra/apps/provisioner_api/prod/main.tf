@@ -4,9 +4,8 @@ module "ecs" {
   # Infrastructure dependencies
   vpc_id             = data.terraform_remote_state.shared_vpc.outputs.vpc_id
   private_subnet_ids = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
-  target_group_arn   = module.alb.target_group_arn
-  alb_sg_id          = module.alb.alb_sg_id
-  lb_listener        = module.alb.lb_listener
+  target_group_arn   = module.nlb.target_group_arn
+  lb_listener        = module.nlb.lb_listener
   forwarder_arn      = module.datadog_forwarder.datadog_forwarder_arn
 
   # Basic configuration
@@ -60,14 +59,14 @@ module "ecs" {
   }
 }
 
-module "alb" {
-  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/alb?ref=main"
+module "nlb" {
+  source = "git::https://github.com/rafaelcmd/cloud-ops-manager.git//infra/modules/aws/nlb?ref=main"
 
-  # ALB configuration
-  alb_name           = var.alb_name
+  # NLB configuration
+  nlb_name           = var.nlb_name
   internal           = var.internal
   load_balancer_type = var.load_balancer_type
-  subnets            = data.terraform_remote_state.shared_vpc.outputs.public_subnet_ids
+  subnets            = data.terraform_remote_state.shared_vpc.outputs.private_subnet_ids
 
   # Target group configuration
   target_group_name     = var.target_group_name
@@ -77,29 +76,18 @@ module "alb" {
   target_type           = var.target_type
 
   # Health check configuration
-  health_check_path     = var.health_check_path
-  health_check_interval = var.health_check_interval
-  health_check_timeout  = var.health_check_timeout
-  healthy_threshold     = var.healthy_threshold
-  unhealthy_threshold   = var.unhealthy_threshold
-  matcher               = var.matcher
+  health_check_enabled    = var.health_check_enabled
+  health_check_protocol   = var.health_check_protocol
+  health_check_port       = var.health_check_port
+  health_check_interval   = var.health_check_interval
+  health_check_timeout    = var.health_check_timeout
+  healthy_threshold       = var.healthy_threshold
+  unhealthy_threshold     = var.unhealthy_threshold
 
   # Listener configuration
-  listener_port       = var.listener_port
-  listener_protocol   = var.listener_protocol
-  default_action_type = var.default_action_type
-
-  # Security group configuration
-  security_group_name        = var.security_group_name
-  security_group_description = var.security_group_description
-  ingress_from_port          = var.ingress_from_port
-  ingress_to_port            = var.ingress_to_port
-  ingress_protocol           = var.ingress_protocol
-  ingress_cidr_blocks        = var.ingress_cidr_blocks
-  egress_from_port           = var.egress_from_port
-  egress_to_port             = var.egress_to_port
-  egress_protocol            = var.egress_protocol
-  egress_cidr_blocks         = var.egress_cidr_blocks
+  listener_port        = var.listener_port
+  listener_protocol    = var.listener_protocol
+  listener_action_type = var.listener_action_type
 
   # Common configuration
   project     = var.project

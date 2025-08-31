@@ -129,13 +129,13 @@ variable "assign_public_ip" {
 
 # =============================================================================
 # LOAD BALANCER CONFIGURATION
-# Variables for Application Load Balancer setup
+# Variables for Network Load Balancer setup
 # =============================================================================
 
-variable "alb_name" {
-  description = "Name of the Application Load Balancer"
+variable "nlb_name" {
+  description = "Name of the Network Load Balancer"
   type        = string
-  default     = "cloudops-manager-alb"
+  default     = "cloudops-manager-nlb"
 }
 
 variable "internal" {
@@ -145,64 +145,80 @@ variable "internal" {
 }
 
 variable "load_balancer_type" {
-  description = "Type of load balancer to create (application, network, or gateway)"
+  description = "Type of load balancer to create (network for NLB)"
   type        = string
-  default     = "application"
+  default     = "network"
 }
 
 variable "target_group_name" {
-  description = "Name of the ALB target group"
+  description = "Name of the NLB target group"
   type        = string
   default     = "cloudops-manager-tg"
 }
 
 variable "target_group_protocol" {
-  description = "Protocol for the target group (HTTP, HTTPS, TCP, etc.)"
+  description = "Protocol for the target group (TCP, UDP, TCP_UDP for NLB)"
   type        = string
-  default     = "HTTP"
+  default     = "TCP"
 }
 
 variable "target_type" {
-  description = "Type of target that you must specify when registering targets (instance, ip, lambda)"
+  description = "Type of target that you must specify when registering targets (instance, ip)"
   type        = string
   default     = "ip"
 }
 
-variable "health_check_path" {
-  description = "Path for ALB health checks"
+# =============================================================================
+# HEALTH CHECK CONFIGURATION
+# Variables for NLB health check configuration
+# =============================================================================
+
+variable "health_check_enabled" {
+  description = "Whether health checks are enabled for the target group"
+  type        = bool
+  default     = true
+}
+
+variable "health_check_protocol" {
+  description = "Protocol to use for health checks (TCP or HTTP for NLB)"
   type        = string
-  default     = "/health"
+  default     = "TCP"
+}
+
+variable "health_check_port" {
+  description = "Port to use for health checks"
+  type        = string
+  default     = "traffic-port"
 }
 
 variable "health_check_interval" {
-  description = "Approximate amount of time, in seconds, between health checks"
+  description = "Approximate amount of time, in seconds, between health checks (10 or 30 for NLB)"
   type        = number
   default     = 30
 }
 
 variable "health_check_timeout" {
-  description = "Amount of time, in seconds, during which no response means a failed health check"
+  description = "Amount of time, in seconds, during which no response means a failed health check (6 or 10 for NLB)"
   type        = number
-  default     = 5
+  default     = 6
 }
 
 variable "healthy_threshold" {
-  description = "Number of consecutive health checks successes required before considering an unhealthy target healthy"
+  description = "Number of consecutive health checks successes required before considering an unhealthy target healthy (2-10 for NLB)"
   type        = number
   default     = 3
 }
 
 variable "unhealthy_threshold" {
-  description = "Number of consecutive health check failures required before considering the target unhealthy"
+  description = "Number of consecutive health check failures required before considering the target unhealthy (2-10 for NLB)"
   type        = number
-  default     = 2
+  default     = 3
 }
 
-variable "matcher" {
-  description = "Response codes to use when checking for a healthy response from a target"
-  type        = string
-  default     = "200"
-}
+# =============================================================================
+# LISTENER CONFIGURATION
+# Variables for NLB listener configuration
+# =============================================================================
 
 variable "listener_port" {
   description = "Port on which the load balancer is listening"
@@ -211,77 +227,12 @@ variable "listener_port" {
 }
 
 variable "listener_protocol" {
-  description = "Protocol for connections from clients to the load balancer"
+  description = "Protocol for connections from clients to the load balancer (TCP, UDP, TCP_UDP for NLB)"
   type        = string
-  default     = "HTTP"
+  default     = "TCP"
 }
 
-# =============================================================================
-# SECURITY GROUP CONFIGURATION
-# Variables for ALB security group configuration
-# =============================================================================
-
-variable "security_group_name" {
-  description = "Name of the security group for the ALB"
-  type        = string
-  default     = "cloudops-manager-alb-sg"
-}
-
-variable "security_group_description" {
-  description = "Description of the security group for the ALB"
-  type        = string
-  default     = "Security group for CloudOps Manager ALB"
-}
-
-variable "ingress_from_port" {
-  description = "Starting port for ALB ingress rule"
-  type        = number
-  default     = 80
-}
-
-variable "ingress_to_port" {
-  description = "Ending port for ALB ingress rule"
-  type        = number
-  default     = 80
-}
-
-variable "ingress_protocol" {
-  description = "Protocol for ALB ingress rule"
-  type        = string
-  default     = "tcp"
-}
-
-variable "ingress_cidr_blocks" {
-  description = "CIDR blocks for ALB ingress rule"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "egress_from_port" {
-  description = "Starting port for ALB egress rule"
-  type        = number
-  default     = 5000
-}
-
-variable "egress_to_port" {
-  description = "Ending port for ALB egress rule"
-  type        = number
-  default     = 5000
-}
-
-variable "egress_protocol" {
-  description = "Protocol for ALB egress rule"
-  type        = string
-  default     = "tcp"
-}
-
-variable "egress_cidr_blocks" {
-  description = "CIDR blocks for ALB egress rule"
-  type        = list(string)
-  default     = ["10.0.0.0/16"]
-}
-
-variable "default_action_type" {
+variable "listener_action_type" {
   description = "Type of action for the default listener rule"
   type        = string
   default     = "forward"
