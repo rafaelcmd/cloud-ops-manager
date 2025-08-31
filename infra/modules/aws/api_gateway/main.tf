@@ -69,24 +69,6 @@ resource "aws_apigatewayv2_vpc_link" "this" {
 }
 
 # =============================================================================
-# API GATEWAY INTEGRATION
-# Integration configuration for backend services
-# =============================================================================
-
-resource "aws_apigatewayv2_integration" "nlb" {
-  api_id = aws_apigatewayv2_api.this.id
-
-  integration_type   = "HTTP_PROXY"
-  integration_method = "ANY"
-  integration_uri    = var.nlb_arn
-
-  connection_type = "VPC_LINK"
-  connection_id   = aws_apigatewayv2_vpc_link.this.id
-
-  timeout_milliseconds = var.integration_timeout_ms
-}
-
-# =============================================================================
 # API GATEWAY STAGE
 # Stage configuration for API deployment
 # =============================================================================
