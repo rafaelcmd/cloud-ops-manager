@@ -8,7 +8,7 @@ resource "aws_apigatewayv2_api" "this" {
   description   = var.api_description
   protocol_type = "HTTP"
 
-  body = templatefile("${path.module}/../../../api/docs/swagger.yaml", {
+  body = templatefile("${path.module}/../../../../api/docs/swagger.yaml", {
     nlb_dns_name           = var.nlb_dns_name
     vpc_link_id            = aws_apigatewayv2_vpc_link.this.id
     integration_timeout_ms = var.integration_timeout_ms
