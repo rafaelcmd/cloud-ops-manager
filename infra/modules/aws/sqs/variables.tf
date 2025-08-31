@@ -1,6 +1,6 @@
 # =============================================================================
-# SQS MODULE VARIABLES
-# Variables for SQS queue configuration
+# SQS QUEUE CONFIGURATION
+# Variables for basic SQS queue setup and message handling
 # =============================================================================
 
 variable "queue_name" {
@@ -28,15 +28,9 @@ variable "receive_wait_time_seconds" {
   type        = number
 }
 
-variable "tags" {
-  description = "A map of tags to assign to the SQS queue"
-  type        = map(string)
-  default     = {}
-}
-
 # =============================================================================
 # SSM PARAMETER CONFIGURATION
-# Variables for SSM parameter configuration
+# Variables for Systems Manager Parameter Store integration
 # =============================================================================
 
 variable "ssm_parameter_name" {
@@ -47,4 +41,15 @@ variable "ssm_parameter_name" {
 variable "ssm_parameter_type" {
   description = "Type of the SSM parameter"
   type        = string
+}
+
+# =============================================================================
+# RESOURCE TAGGING
+# Variables for resource tagging and labeling
+# =============================================================================
+
+variable "tags" {
+  description = "A map of tags to assign to the SQS queue"
+  type        = map(string)
+  default     = {}
 }

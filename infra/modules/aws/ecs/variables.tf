@@ -1,3 +1,8 @@
+# =============================================================================
+# INFRASTRUCTURE DEPENDENCIES
+# Variables for VPC and networking configuration
+# =============================================================================
+
 variable "vpc_id" {
   description = "The ID of the VPC where the ECS service will be deployed"
   type        = string
@@ -7,6 +12,11 @@ variable "private_subnet_ids" {
   description = "List of private subnet IDs for the ECS service"
   type        = list(string)
 }
+
+# =============================================================================
+# LOAD BALANCER INTEGRATION
+# Variables for NLB integration with ECS service
+# =============================================================================
 
 variable "target_group_arn" {
   description = "ARN of the target group for the ECS service"
@@ -18,11 +28,37 @@ variable "lb_listener" {
   type        = string
 }
 
+# =============================================================================
+# DATADOG INTEGRATION
+# Variables for Datadog monitoring and log forwarding
+# =============================================================================
+
 variable "datadog_api_key" {
   description = "Datadog API key for monitoring"
   type        = string
   sensitive   = true
 }
+
+variable "forwarder_arn" {
+  description = "ARN of the Datadog Lambda forwarder for log collection"
+  type        = string
+  default     = ""
+}
+
+variable "datadog_agent_image" {
+  description = "Docker image for the Datadog agent"
+  type        = string
+}
+
+variable "datadog_site" {
+  description = "Datadog site URL"
+  type        = string
+}
+
+# =============================================================================
+# GENERAL PROJECT CONFIGURATION
+# Variables for project identification and AWS configuration
+# =============================================================================
 
 variable "aws_region" {
   description = "AWS region where the ECS service will be deployed"
@@ -49,65 +85,13 @@ variable "app_version" {
   type        = string
 }
 
-variable "forwarder_arn" {
-  description = "ARN of the Datadog Lambda forwarder for log collection"
-  type        = string
-  default     = ""
-}
+# =============================================================================
+# ECS CLUSTER CONFIGURATION
+# Variables for ECS cluster and service setup
+# =============================================================================
 
-# Variables for parameterization - no defaults, must be provided by caller
 variable "cluster_name" {
   description = "Name of the ECS cluster"
-  type        = string
-}
-
-variable "task_execution_role_name" {
-  description = "Name of the ECS task execution role"
-  type        = string
-}
-
-variable "task_role_name" {
-  description = "Name of the ECS task role"
-  type        = string
-}
-
-variable "task_policy_name" {
-  description = "Name of the ECS task policy"
-  type        = string
-}
-
-variable "task_family" {
-  description = "Family name for the ECS task definition"
-  type        = string
-}
-
-variable "task_cpu" {
-  description = "CPU units for the ECS task"
-  type        = string
-}
-
-variable "task_memory" {
-  description = "Memory (in MiB) for the ECS task"
-  type        = number
-}
-
-variable "container_port" {
-  description = "Port that the application container listens on"
-  type        = number
-}
-
-variable "app_container_name" {
-  description = "Name of the application container"
-  type        = string
-}
-
-variable "datadog_agent_image" {
-  description = "Docker image for the Datadog agent"
-  type        = string
-}
-
-variable "datadog_site" {
-  description = "Datadog site URL"
   type        = string
 }
 
@@ -141,6 +125,66 @@ variable "assign_public_ip" {
   type        = bool
 }
 
+# =============================================================================
+# ECS TASK DEFINITION CONFIGURATION
+# Variables for task definition, containers, and resource allocation
+# =============================================================================
+
+variable "task_family" {
+  description = "Family name for the ECS task definition"
+  type        = string
+}
+
+variable "task_cpu" {
+  description = "CPU units for the ECS task"
+  type        = string
+}
+
+variable "task_memory" {
+  description = "Memory (in MiB) for the ECS task"
+  type        = number
+}
+
+variable "container_port" {
+  description = "Port that the application container listens on"
+  type        = number
+}
+
+variable "app_container_name" {
+  description = "Name of the application container"
+  type        = string
+}
+
+variable "app_image_uri" {
+  description = "URI of the application container image"
+  type        = string
+}
+
+# =============================================================================
+# IAM CONFIGURATION
+# Variables for IAM roles and policies
+# =============================================================================
+
+variable "task_execution_role_name" {
+  description = "Name of the ECS task execution role"
+  type        = string
+}
+
+variable "task_role_name" {
+  description = "Name of the ECS task role"
+  type        = string
+}
+
+variable "task_policy_name" {
+  description = "Name of the ECS task policy"
+  type        = string
+}
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# Variables for CloudWatch logs setup
+# =============================================================================
+
 variable "log_retention_days" {
   description = "Number of days to retain CloudWatch logs"
   type        = number
@@ -156,6 +200,11 @@ variable "datadog_log_group_name" {
   type        = string
 }
 
+# =============================================================================
+# SECURITY GROUP CONFIGURATION
+# Variables for ECS task security group setup
+# =============================================================================
+
 variable "security_group_name" {
   description = "Name of the security group for ECS tasks"
   type        = string
@@ -166,10 +215,10 @@ variable "security_group_description" {
   type        = string
 }
 
-variable "app_image_uri" {
-  description = "URI of the application container image"
-  type        = string
-}
+# =============================================================================
+# RESOURCE TAGGING
+# Variables for resource tagging and labeling
+# =============================================================================
 
 variable "tags" {
   description = "Common tags to apply to all resources"

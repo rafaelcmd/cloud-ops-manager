@@ -1,6 +1,6 @@
 # =============================================================================
-# LAMBDA MODULE VARIABLES
-# Variables for Lambda function configuration
+# LAMBDA FUNCTION CONFIGURATION
+# Variables for basic Lambda function setup and runtime configuration
 # =============================================================================
 
 variable "function_name" {
@@ -44,44 +44,9 @@ variable "environment_variables" {
   default     = {}
 }
 
-variable "tags" {
-  description = "A map of tags to assign to the Lambda function"
-  type        = map(string)
-  default     = {}
-}
-
-variable "additional_policies" {
-  description = "List of additional IAM policy ARNs to attach to the Lambda role"
-  type        = list(string)
-  default     = []
-}
-
-variable "additional_inline_policy" {
-  description = "Additional inline IAM policy for Lambda-specific permissions"
-  type        = string
-  default     = null
-}
-
-variable "allow_cloudwatch_logs_invocation" {
-  description = "Whether to allow CloudWatch Logs to invoke the Lambda function"
-  type        = bool
-  default     = false
-}
-
-variable "cloudwatch_logs_source_arn" {
-  description = "Source ARN for CloudWatch Logs permissions (optional)"
-  type        = string
-  default     = null
-}
-
-variable "log_retention_days" {
-  description = "CloudWatch log group retention period in days"
-  type        = number
-}
-
 # =============================================================================
-# ARCHIVE CONFIGURATION
-# Variables for Lambda deployment package configuration
+# DEPLOYMENT PACKAGE CONFIGURATION
+# Variables for Lambda deployment package and archive configuration
 # =============================================================================
 
 variable "archive_type" {
@@ -95,8 +60,8 @@ variable "archive_output_path_prefix" {
 }
 
 # =============================================================================
-# IAM CONFIGURATION
-# Variables for IAM role and policy configuration
+# IAM ROLE AND POLICY CONFIGURATION
+# Variables for IAM role creation and policy attachment
 # =============================================================================
 
 variable "iam_role_name_suffix" {
@@ -128,10 +93,34 @@ variable "additional_policy_name_suffix" {
   type        = string
 }
 
+variable "additional_policies" {
+  description = "List of additional IAM policy ARNs to attach to the Lambda role"
+  type        = list(string)
+  default     = []
+}
+
+variable "additional_inline_policy" {
+  description = "Additional inline IAM policy for Lambda-specific permissions"
+  type        = string
+  default     = null
+}
+
 # =============================================================================
-# LAMBDA PERMISSION CONFIGURATION
-# Variables for Lambda permission configuration
+# LAMBDA PERMISSIONS CONFIGURATION
+# Variables for Lambda function invocation permissions
 # =============================================================================
+
+variable "allow_cloudwatch_logs_invocation" {
+  description = "Whether to allow CloudWatch Logs to invoke the Lambda function"
+  type        = bool
+  default     = false
+}
+
+variable "cloudwatch_logs_source_arn" {
+  description = "Source ARN for CloudWatch Logs permissions (optional)"
+  type        = string
+  default     = null
+}
 
 variable "permission_statement_id" {
   description = "Statement ID for the Lambda permission"
@@ -149,11 +138,27 @@ variable "permission_principal" {
 }
 
 # =============================================================================
-# CLOUDWATCH LOGS CONFIGURATION
-# Variables for CloudWatch log group configuration
+# LOGGING CONFIGURATION
+# Variables for CloudWatch logs setup and retention
 # =============================================================================
+
+variable "log_retention_days" {
+  description = "CloudWatch log group retention period in days"
+  type        = number
+}
 
 variable "log_group_name_prefix" {
   description = "Prefix for the CloudWatch log group name"
   type        = string
+}
+
+# =============================================================================
+# RESOURCE TAGGING
+# Variables for resource tagging and labeling
+# =============================================================================
+
+variable "tags" {
+  description = "A map of tags to assign to the Lambda function"
+  type        = map(string)
+  default     = {}
 }

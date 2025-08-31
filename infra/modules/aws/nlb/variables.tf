@@ -1,6 +1,6 @@
 # =============================================================================
-# NLB MODULE VARIABLES
-# Variables for Network Load Balancer configuration
+# NETWORK LOAD BALANCER CONFIGURATION
+# Variables for basic NLB setup and configuration
 # =============================================================================
 
 variable "nlb_name" {
@@ -8,10 +8,25 @@ variable "nlb_name" {
   type        = string
 }
 
+variable "internal" {
+  description = "Whether the load balancer is internal"
+  type        = bool
+}
+
+variable "load_balancer_type" {
+  description = "The type of load balancer"
+  type        = string
+}
+
 variable "subnets" {
   description = "List of subnet IDs for the NLB"
   type        = list(string)
 }
+
+# =============================================================================
+# TARGET GROUP CONFIGURATION
+# Variables for NLB target group setup and routing
+# =============================================================================
 
 variable "target_group_name" {
   description = "The name of the target group"
@@ -39,7 +54,7 @@ variable "target_type" {
 }
 
 # =============================================================================
-# HEALTH CHECK VARIABLES
+# HEALTH CHECK CONFIGURATION
 # Variables for target group health check configuration
 # =============================================================================
 
@@ -86,7 +101,7 @@ variable "unhealthy_threshold" {
 }
 
 # =============================================================================
-# LISTENER VARIABLES
+# LISTENER CONFIGURATION
 # Variables for load balancer listener configuration
 # =============================================================================
 
@@ -107,19 +122,9 @@ variable "listener_action_type" {
 }
 
 # =============================================================================
-# GENERAL VARIABLES
-# Variables for common resource configuration
+# PROJECT AND ENVIRONMENT CONFIGURATION
+# Variables for project identification and resource tagging
 # =============================================================================
-
-variable "internal" {
-  description = "Whether the load balancer is internal"
-  type        = bool
-}
-
-variable "load_balancer_type" {
-  description = "The type of load balancer"
-  type        = string
-}
 
 variable "project" {
   description = "The name of the project"
