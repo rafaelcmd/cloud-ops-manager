@@ -1,3 +1,8 @@
+# =============================================================================
+# DATADOG INTEGRATION OUTPUTS
+# Outputs for Datadog Lambda forwarder identification and references
+# =============================================================================
+
 output "datadog_forwarder_arn" {
   description = "The ARN of the Datadog Lambda forwarder"
   value       = module.datadog_forwarder.datadog_forwarder_arn

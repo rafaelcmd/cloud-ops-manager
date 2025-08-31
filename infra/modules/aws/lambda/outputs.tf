@@ -1,3 +1,8 @@
+# =============================================================================
+# LAMBDA FUNCTION OUTPUTS
+# Outputs for Lambda function identification and ARN references
+# =============================================================================
+
 output "datadog_forwarder_arn" {
   description = "The ARN of the Lambda function"
   value       = aws_lambda_function.this.arn
