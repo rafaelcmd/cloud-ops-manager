@@ -49,17 +49,6 @@ variable "environment" {
 }
 
 # =============================================================================
-# NAT GATEWAY CONFIGURATION
-# Variables for NAT Gateway setup and naming
-# =============================================================================
-
-variable "nat_gateway_name_prefix" {
-  description = "Name prefix for NAT Gateway EIP tags"
-  type        = string
-  default     = "nat-gateway"
-}
-
-# =============================================================================
 # RESOURCE TAGGING
 # Variables for resource tagging and labeling
 # =============================================================================
