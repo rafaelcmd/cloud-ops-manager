@@ -68,9 +68,12 @@ jobs:
     secrets: inherit
 
   scaffolder:
-    name: Scaffolder / DynamoDB + task queue + IRSA (destroy)
-    # Before the cluster: this stack owns a ServiceAccount inside it, and the
+    name: Scaffolder / DynamoDB + task queues + secret + IRSA (destroy)
+    # Before the cluster: this stack owns two ServiceAccounts inside it, and the
     # kubernetes provider cannot reach the API server once EKS is gone.
+    # The GitHub App key secret goes with it — dev sets a zero-day recovery
+    # window precisely so the next apply can reuse the name, which means the
+    # PEM has to be put back in by hand after every rebuild.
     needs: [guard]
     uses: ./.github/workflows/_terraform.yml
     with: { component: scaffolder, action: destroy }

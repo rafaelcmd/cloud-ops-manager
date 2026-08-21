@@ -9,7 +9,11 @@
 # root file is what `include:`s this one. Running the fragment alone fails with
 # "undefined service otel-collector".
 COMPOSE := docker compose -f ../../docker-compose.dev.yaml
-QUEUE_URL := http://localhost:4566/000000000000/internal-developer-platform-scaffolder-tasks-local
+
+# Which worker's queue `seed` puts the fixture on. Override for the other one:
+#   make seed W=github E=events/create-repository.json
+W ?= state
+QUEUE_URL = http://localhost:4566/000000000000/internal-developer-platform-scaffolder-$(W)-tasks-local
 
 .PHONY: help restore build test test-unit test-integration coverage format format-check \
         image up down logs seed clean
@@ -27,7 +31,7 @@ help:
 	@echo "  up               - Start the worker and LocalStack"
 	@echo "  down             - Stop them and drop the volumes"
 	@echo "  logs             - Follow the worker's logs"
-	@echo "  seed             - Enqueue a task fixture (E=events/reserve-name.json)"
+	@echo "  seed             - Enqueue a task fixture (E=events/reserve-name.json W=state)"
 	@echo "  clean            - Remove build artifacts"
 
 restore:

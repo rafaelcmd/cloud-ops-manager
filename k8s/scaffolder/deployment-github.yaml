@@ -1,0 +1,110 @@
+# Scaffolder GITHUB worker — creates repositories and, later, pushes scaffolds
+# and wires CI/CD. Consumes Step Functions task tokens off its own SQS queue, so
+# there is no Service/ports/HTTP probes here (the process has no HTTP server;
+# liveness is "the container is running").
+#
+# Same image as deployment.yaml, different trust. This is the only pod whose IAM
+# role can read the GitHub App private key from Secrets Manager, which is why it
+# is a second Deployment rather than another task on the first one: a pod is the
+# smallest thing an IRSA role can be attached to, so separating the credential
+# means separating the pod. ADR-0004 committed to this when the GitHub adapter
+# landed; infra/live/scaffolder/dev/irsa.tf is the other half.
+#
+# It has its own queue for the same reason. Two Deployments polling one queue
+# would each receive the other's tasks, and the role split would show up as
+# random AccessDenied rather than as a boundary.
+#
+# Single replica, and keep it that way until every GitHub task is idempotent.
+# CreateRepository is — it claims the inventory record with a conditional write
+# before it calls GitHub — but "create a repository twice" is a much worse
+# failure than a duplicate DynamoDB write, so the bar here is higher.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: internal-developer-platform-scaffolder-github
+  namespace: default
+  labels:
+    app: internal-developer-platform-scaffolder-github
+    "tags.datadoghq.com/service": scaffolder-github
+    "tags.datadoghq.com/env": dev
+    "tags.datadoghq.com/version": "0.1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: internal-developer-platform-scaffolder-github
+  template:
+    metadata:
+      labels:
+        app: internal-developer-platform-scaffolder-github
+        "tags.datadoghq.com/service": scaffolder-github
+        "tags.datadoghq.com/env": dev
+        "tags.datadoghq.com/version": "0.1.0"
+        # Opts into datadog-agent sidecar injection (live pod status in the
+        # K8s Explorer — see k8s/api/deployment.yaml for the full note). The
+        # SA below is registered for the sidecar's kubelet-read RBAC in
+        # infra/live/scaffolder/dev/irsa.tf.
+        "agent.datadoghq.com/sidecar": fargate
+    spec:
+      serviceAccountName: internal-developer-platform-scaffolder-github
+      # The 20s SQS long poll plus an in-flight task means SIGTERM can arrive
+      # mid-work. The worker stops receiving and lets the current message go
+      # back to the queue rather than half-finishing it, which needs more than
+      # the default 30s grace period.
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: internal-developer-platform-scaffolder-github
+          # Replaced by cd-scaffolder.yml with the immutable
+          # scaffolder-<sha> build — the same image the state worker runs.
+          image: PLACEHOLDER-SCAFFOLDER-IMAGE
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENVIRONMENT
+              value: dev
+            - name: SERVICE_NAME
+              value: scaffolder-github
+            # Feeds the OTel resource (service.version -> Datadog version tag).
+            - name: SERVICE_VERSION
+              value: "0.1.0"
+            # Terraform owns these (infra/live/scaffolder/dev). Names, not ARNs
+            # or URLs: the SDK resolves them, so no account id lands in this file
+            # and the same manifest works in any account.
+            - name: SCAFFOLDER_TABLE_NAME
+              value: internal-developer-platform-scaffolder-dev
+            - name: SCAFFOLDER_TASK_QUEUE_NAME
+              value: internal-developer-platform-scaffolder-github-tasks-dev
+            # The tasks this pod serves. Explicit rather than "everything the
+            # binary knows": a ReserveName message arriving here should be
+            # refused, not quietly handled by the wrong Deployment.
+            - name: SCAFFOLDER_TASKS
+              value: CreateRepository
+            # The throwaway sandbox org. Dev creates and destroys repositories
+            # constantly — never point it at an org anyone depends on.
+            - name: GITHUB_ORG
+              value: idp-scaffolder-sandbox
+            # The App id, not the installation id: the installation is resolved
+            # at runtime from the org, so reinstalling the app needs no change
+            # here.
+            - name: GITHUB_APP_ID
+              value: "4608314"
+            # The ARN of the secret, never the key. This value is safe in git;
+            # reading what it points at needs this pod's role, and only this
+            # pod's role has it. Terraform publishes the ARN to
+            # /idp/scaffolder/dev/github_app_key_secret_arn.
+            - name: GITHUB_APP_KEY_SECRET_ARN
+              value: internal-developer-platform-scaffolder-github-app-key-dev
+            # OTLP egress to the Collector, same seam as the API and the
+            # provisioner. Telemetry is a no-op when this is unset, so it must
+            # be present for traces and metrics to ship — and being able to
+            # reach this endpoint at all is why this service is not on Lambda.
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.observability.svc.cluster.local:4317
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: grpc
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

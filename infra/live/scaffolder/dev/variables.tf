@@ -71,3 +71,21 @@ variable "dlq_message_retention_seconds" {
   type        = number
   default     = 1209600
 }
+
+# =============================================================================
+# GITHUB APP CREDENTIAL
+# The secret holding the App's PEM private key, and the customer-managed key
+# that encrypts it. Terraform owns both; the PEM itself is put in out of band.
+# =============================================================================
+
+variable "secret_recovery_window_in_days" {
+  description = "Secrets Manager recovery window. 0 in dev so a destroy/apply cycle can reuse the name; 7 or more anywhere the secret matters."
+  type        = number
+  default     = 0
+}
+
+variable "kms_deletion_window_in_days" {
+  description = "How long the GitHub App key survives a destroy. AWS enforces a minimum of 7."
+  type        = number
+  default     = 7
+}

@@ -50,6 +50,21 @@ public sealed class DependencyRuleTests
     }
 
     [Fact]
+    public void Github_client_is_confined_to_infrastructure()
+    {
+        // Same rule as the AWS SDK, for the same reason: a use case that reached
+        // for Octokit directly could only be tested against GitHub. The domain
+        // owns IRepositoryHost; Octokit is one implementation of it.
+        var octokitAware = ProjectFiles()
+            .Where(path => ReferencesOf(path).Packages.Contains("Octokit", StringComparer.Ordinal))
+            .Select(path => Path.GetFileNameWithoutExtension(path)!)
+            .Order()
+            .ToArray();
+
+        Assert.Equal(new[] { "Scaffolder.Infrastructure" }, octokitAware);
+    }
+
+    [Fact]
     public void Worker_is_the_only_project_wired_to_the_messaging_runtime()
     {
         // The queue, the callback API and the generic host are details of the

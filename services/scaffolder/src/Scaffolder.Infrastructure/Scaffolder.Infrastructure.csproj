@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Adapters implementing the domain ports. This is the only layer allowed to
-       reference the AWS SDK. -->
+       reference the AWS SDK or Octokit; DependencyRuleTests enforces it. -->
   <ItemGroup>
     <ProjectReference Include="..\Scaffolder.Domain\Scaffolder.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.DynamoDBv2" />
+    <PackageReference Include="AWSSDK.SecretsManager" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Octokit" />
   </ItemGroup>
 
 </Project>

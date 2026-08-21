@@ -96,10 +96,13 @@ jobs:
     secrets: inherit
 
   scaffolder-infra:
-    name: Scaffolder / DynamoDB + task queue + IRSA
+    name: Scaffolder / DynamoDB + task queues + secret + IRSA
     # Reads the cluster's OIDC provider and API-server coordinates from the
-    # SSM parameters the api component publishes, and creates a ServiceAccount
-    # in the cluster — so it cannot run before the cluster exists.
+    # SSM parameters the api component publishes, and creates two
+    # ServiceAccounts in the cluster — so it cannot run before the cluster
+    # exists. It also creates the GitHub App key secret but never its value:
+    # the PEM is put in by hand once (see the component README), and until it
+    # is, the github worker fails every task it takes.
     needs: [provisioner-api]
     uses: ./.github/workflows/_terraform.yml
     with: { component: scaffolder, action: apply }

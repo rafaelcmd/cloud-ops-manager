@@ -1,6 +1,13 @@
-# Scaffolder worker — consumes Step Functions task tokens off SQS, so there is
-# no Service/ports/HTTP probes here (the process has no HTTP server; liveness is
-# "the container is running"). Same shape as the provisioner consumer.
+# Scaffolder STATE worker — name reservations and other tasks that touch nothing
+# but this service's own table. Consumes Step Functions task tokens off SQS, so
+# there is no Service/ports/HTTP probes here (the process has no HTTP server;
+# liveness is "the container is running"). Same shape as the provisioner consumer.
+#
+# This is one of two Deployments running the same image. The other
+# (deployment-github.yaml) does the GitHub work and holds the only role that can
+# read the App private key. Nothing here can: that separation is what ADR-0004
+# promised when this service stopped being per-function Lambdas, and it only
+# works because each Deployment reads its own queue.
 #
 # Single replica. The name reservation is a conditional write and therefore
 # already replay-safe, but the rest of the scaffold tasks are not written yet —
@@ -11,23 +18,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: internal-developer-platform-scaffolder
+  name: internal-developer-platform-scaffolder-state
   namespace: default
   labels:
-    app: internal-developer-platform-scaffolder
-    "tags.datadoghq.com/service": scaffolder
+    app: internal-developer-platform-scaffolder-state
+    "tags.datadoghq.com/service": scaffolder-state
     "tags.datadoghq.com/env": dev
     "tags.datadoghq.com/version": "0.1.0"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: internal-developer-platform-scaffolder
+      app: internal-developer-platform-scaffolder-state
   template:
     metadata:
       labels:
-        app: internal-developer-platform-scaffolder
-        "tags.datadoghq.com/service": scaffolder
+        app: internal-developer-platform-scaffolder-state
+        "tags.datadoghq.com/service": scaffolder-state
         "tags.datadoghq.com/env": dev
         "tags.datadoghq.com/version": "0.1.0"
         # Opts into datadog-agent sidecar injection (live pod status in the
@@ -36,14 +43,14 @@ spec:
         # infra/live/scaffolder/dev/irsa.tf.
         "agent.datadoghq.com/sidecar": fargate
     spec:
-      serviceAccountName: internal-developer-platform-scaffolder
+      serviceAccountName: internal-developer-platform-scaffolder-state
       # The 20s SQS long poll plus an in-flight task means SIGTERM can arrive
       # mid-work. The worker stops receiving and lets the current message go
       # back to the queue rather than half-finishing it, which needs more than
       # the default 30s grace period.
       terminationGracePeriodSeconds: 60
       containers:
-        - name: internal-developer-platform-scaffolder
+        - name: internal-developer-platform-scaffolder-state
           # Replaced by cd-scaffolder.yml with the immutable
           # scaffolder-<sha> build — see the api manifest for the pattern.
           image: PLACEHOLDER-SCAFFOLDER-IMAGE
@@ -52,7 +59,7 @@ spec:
             - name: ENVIRONMENT
               value: dev
             - name: SERVICE_NAME
-              value: scaffolder
+              value: scaffolder-state
             # Feeds the OTel resource (service.version -> Datadog version tag).
             - name: SERVICE_VERSION
               value: "0.1.0"
@@ -62,7 +69,12 @@ spec:
             - name: SCAFFOLDER_TABLE_NAME
               value: internal-developer-platform-scaffolder-dev
             - name: SCAFFOLDER_TASK_QUEUE_NAME
-              value: internal-developer-platform-scaffolder-tasks-dev
+              value: internal-developer-platform-scaffolder-state-tasks-dev
+            # The tasks this pod serves. Explicit rather than "everything the
+            # binary knows": a message for a task this Deployment has no
+            # credentials for must be refused here, not attempted.
+            - name: SCAFFOLDER_TASKS
+              value: ReserveName
             # How long an unfinished scaffold holds a name before DynamoDB TTL
             # releases it. Long enough to outlive a slow Terraform run, short
             # enough that an abandoned request frees the name the same day.

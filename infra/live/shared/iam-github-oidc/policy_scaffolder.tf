@@ -4,6 +4,12 @@
 # that stack authenticates through eks:DescribeCluster, which is why the read
 # statement includes it — the stack reads the cluster but never modifies it.
 # The SSM parameters it publishes are covered by the common policy.
+#
+# It also creates the Secrets Manager secret that holds the GitHub App private
+# key, and the KMS key encrypting it — but is explicitly denied the ability to
+# read that secret's value. The pipeline's job is to create the container; the
+# PEM is put in out of band by a human, so it never passes through a plan, a
+# state file or a workflow log.
 
 resource "aws_iam_policy" "pipeline_scaffolder" {
   name        = "${var.project}-${var.environment}-pipeline-scaffolder-policy"
@@ -21,7 +27,15 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
           "sqs:Get*",
           "eks:DescribeCluster",
           "states:List*",
-          "states:Describe*"
+          "states:Describe*",
+          "secretsmanager:ListSecrets",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetResourcePolicy",
+          "kms:DescribeKey",
+          "kms:GetKeyPolicy",
+          "kms:GetKeyRotationStatus",
+          "kms:ListAliases",
+          "kms:ListResourceTags"
         ]
         Resource = "*"
       },
@@ -86,6 +100,96 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
           "sqs:RemovePermission"
         ]
         Resource = "arn:aws:sqs:*:*:${var.project}-scaffolder-*"
+      },
+      {
+        Sid    = "SecretsManagerCreateTagged"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:CreateSecret",
+          "secretsmanager:TagResource"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:RequestTag/Project" = var.project
+          }
+        }
+      },
+      {
+        Sid    = "SecretsManagerManageProjectSecrets"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:DeleteSecret",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:RestoreSecret",
+          "secretsmanager:UntagResource"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = var.project
+          }
+        }
+      },
+      {
+        # The control that makes the two-role split in the scaffolder stack
+        # meaningful. Terraform must be able to create the secret and never to
+        # read it; an explicit Deny survives someone later widening an Allow
+        # somewhere else in this role.
+        Sid    = "NeverReadSecretValues"
+        Effect = "Deny"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "KMSCreateTagged"
+        Effect = "Allow"
+        Action = [
+          "kms:CreateKey",
+          "kms:TagResource"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:RequestTag/Project" = var.project
+          }
+        }
+      },
+      {
+        # Aliases carry no tags of their own, so they are scoped by name — the
+        # same prefix every resource in this stack is named with.
+        Sid    = "KMSManageScaffolderAliases"
+        Effect = "Allow"
+        Action = [
+          "kms:CreateAlias",
+          "kms:DeleteAlias",
+          "kms:UpdateAlias"
+        ]
+        Resource = [
+          "arn:aws:kms:*:*:alias/${var.project}-scaffolder-*",
+          "arn:aws:kms:*:*:key/*"
+        ]
+      },
+      {
+        Sid    = "KMSManageProjectKeys"
+        Effect = "Allow"
+        Action = [
+          "kms:ScheduleKeyDeletion",
+          "kms:CancelKeyDeletion",
+          "kms:EnableKeyRotation",
+          "kms:DisableKeyRotation",
+          "kms:PutKeyPolicy",
+          "kms:UntagResource"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = var.project
+          }
+        }
       },
       {
         Sid    = "IAMCreateTaggedRolesAndPolicies"

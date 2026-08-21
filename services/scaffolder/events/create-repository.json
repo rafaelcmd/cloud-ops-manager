@@ -1,0 +1,9 @@
+{
+  "Task": "CreateRepository",
+  "TaskToken": "local-fake-token",
+  "Input": {
+    "ApplicationName": "payments-api",
+    "RequestId": "11111111-1111-1111-1111-111111111111",
+    "Template": "dotnet-consumer"
+  }
+}

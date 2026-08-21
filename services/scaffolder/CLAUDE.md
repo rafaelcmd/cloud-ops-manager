@@ -2,12 +2,19 @@
 
 > **Status: partially built.** The solution builds, its tests pass, and the
 > worker runs locally against LocalStack. What is real today: the six projects,
-> the dependency rule (enforced by a test), the `ReserveName` task, the DynamoDB
-> name-reservation adapter, the container image, the Kubernetes Deployment, and
-> the `scaffolder` Terraform component that owns its table, task queue and IRSA
-> role. Nothing is deployed yet. Still design only: every other task, the state
-> machine, the templates, and the GitHub adapter. Sections below describing
-> those are intent, not working code.
+> the dependency rule (enforced by a test), the `ReserveName` and
+> `CreateRepository` tasks, the DynamoDB name-reservation and repository-inventory
+> adapters, the GitHub App adapter, the container image, both Kubernetes
+> Deployments, and the `scaffolder` Terraform component that owns its table, its
+> two task queues, the App key secret and the two IRSA roles. Nothing is deployed
+> yet. Still design only: every task after `CreateRepository`, the state machine,
+> and the templates. Sections below describing those are intent, not working code.
+>
+> **Nothing calls this service yet.** The API's request contract has no
+> application name or template on it, the provisioner still logs its messages and
+> deletes them, and there is no state machine to start. A repository appears on
+> GitHub only when something puts a `CreateRepository` envelope on the github
+> queue — today that is `make seed`, not a developer filling in a form.
 
 .NET service that owns the **repository domain** of the platform: given an
 application request, it creates a GitHub repository, renders a golden-path
@@ -62,10 +69,22 @@ API (Go) ──SQS──▶ Provisioner (Go)          ← orchestrator: owns sag
 ```
 
 Every scaffolder state is a `.waitForTaskToken` task: Step Functions puts a
-message on **one** queue carrying the task name, the payload and the callback
-token, and the worker dispatches on the name. One queue and one Deployment serve
-every task — adding a task is a use case plus a line in `TaskDispatcher`, never
-a new deployment.
+message on a queue carrying the task name, the payload and the callback token,
+and the worker dispatches on the name.
+
+There are **two** Deployments of the one image, and a queue each:
+
+| Deployment | Queue | Tasks | Can read the App key |
+|---|---|---|---|
+| `scaffolder-state` | `...-scaffolder-state-tasks-dev` | `ReserveName` | no |
+| `scaffolder-github` | `...-scaffolder-github-tasks-dev` | `CreateRepository` | yes |
+
+The split is a security boundary, not a scaling one — see **Security** below. It
+decides where a new task goes: anything that only touches this service's own
+table belongs on the state worker, anything that talks to GitHub belongs on the
+github worker. Adding one is a use case, an `IScaffoldTask` registration in
+`Program.cs`, and its name in that Deployment's `SCAFFOLDER_TASKS` — never a
+third Deployment unless it needs a third set of credentials.
 
 `CreateRepository` and `ProvisionInfra` can run in parallel — creating a repo
 does not depend on infrastructure existing. Only `InjectInfraOutputs` needs both,
@@ -91,7 +110,7 @@ tests/
   Scaffolder.IntegrationTests/- adapters against LocalStack / a test GitHub org
 templates/                    - golden paths (dotnet-api, then consumer and console)
 events/                       - task-envelope fixtures for `make seed`
-local/                        - LocalStack init script; creates the table and queue
+local/                        - LocalStack init script; creates the table and both queues
 Directory.Build.props         - TFM, nullable, langversion, warnings-as-errors
 Directory.Packages.props      - every package version, pinned centrally
 Scaffolder.slnx               - the .NET 10 SDK's XML solution format, not .sln
@@ -101,8 +120,8 @@ Makefile
 ```
 
 Infrastructure lives outside this directory, with everything else of its kind:
-`infra/live/scaffolder/dev` (table, task queue, IRSA) and `k8s/scaffolder`
-(Deployment).
+`infra/live/scaffolder/dev` (table, both task queues, the App key secret and its
+KMS key, both IRSA roles) and `k8s/scaffolder` (both Deployments).
 
 Dependency rule mirrors the Go API's hexagonal layout: `Domain` depends on
 nothing, `Application` depends on domain ports, `Infrastructure` implements them,
@@ -114,8 +133,9 @@ logic is testable without a queue. Swapping Lambda for a container touched only
 This is not an honour system:
 `tests/Scaffolder.UnitTests/Architecture/DependencyRuleTests.cs` parses the
 project files and fails the build if a layer grows a reference it should not
-have, if a package version is declared outside `Directory.Packages.props`, or if
-the queue and hosting packages escape `Scaffolder.Worker`.
+have, if a package version is declared outside `Directory.Packages.props`, if the
+queue and hosting packages escape `Scaffolder.Worker`, or if Octokit escapes
+`Scaffolder.Infrastructure`.
 
 ## How the worker runs a task
 
@@ -134,6 +154,20 @@ Error names are ours now. On Lambda the `Catch` clause had to match whatever the
 runtime reported (the short exception type name). The worker chooses, so it sends
 the domain's own `ScaffolderException.Code` — a stable contract that survives
 renaming a class.
+
+Reporting a failure has to survive failing. `SendTaskFailure` is called from
+inside a `catch`, and an exception thrown there is **not** caught by that `try`'s
+other clauses — it escapes `ExecuteAsync` and stops the host. One expired task
+token was enough to crash-loop the pod. `FailAsync` now handles its own errors
+and leaves the message for redelivery; `TaskQueueWorkerTests` is the regression.
+
+**Which failures are domain failures.** A `ScaffolderException` is reported to
+the state machine and the message is deleted. Everything else — a GitHub 5xx, a
+rate limit, an expired installation token, a DynamoDB blip — is left to
+propagate, so the message redelivers. That distinction is why
+`OctokitRepositoryHost` translates only "already exists" and "not found": turning
+a transient fault into a domain error would report a permanent failure for
+something that would have worked thirty seconds later.
 
 Configuration is read and validated in `Program.cs` before the host starts, so a
 missing table name is a CrashLoopBackOff at startup rather than a null reference
@@ -197,6 +231,12 @@ Env vars, set by `k8s/scaffolder/deployment.yaml`. No config file.
   a slow Terraform run, short enough that an abandoned request frees the name the
   same day
 - `TEMPLATE_BUCKET` — not wired yet
+- `SCAFFOLDER_TASKS` — comma-separated allowlist of the tasks this pod serves
+  (`ReserveName` on the state worker, `CreateRepository` on the github worker).
+  Unset means every task the binary knows about **that is configured** — GitHub
+  tasks are skipped rather than fatal when `GITHUB_ORG` is absent, which is what
+  keeps a bare `dotnet run` and the local container working without an App key.
+  Naming `CreateRepository` explicitly without `GITHUB_ORG` is a startup error
 - `GITHUB_APP_ID`, `GITHUB_ORG` — in dev these are `4608314` and the sandbox org
   `idp-scaffolder-sandbox`. The sandbox exists to be filled with disposable
   repositories; never point dev at a real org
@@ -219,13 +259,25 @@ task, which would add a Secrets Manager call to every request.
 
 - **GitHub App, not a PAT.** Short-lived installation tokens, scoped to the org,
   revocable, and auditable per-repository.
-- **One IRSA role today, two soon.** On Lambda each function had its own role, so
-  the handler that reserved a name could not read the GitHub App key. A single
-  pod cannot express that. The role in `infra/live/scaffolder/dev/irsa.tf` is
-  therefore kept to DynamoDB, the task queue and the Step Functions callbacks —
-  and ADR-0004 commits to splitting into two Deployments with two roles (state
-  operations, GitHub operations) when the GitHub adapter lands. Do not widen the
-  single role to cover the secret; add the second Deployment instead.
+- **Two Deployments, two roles.** On Lambda each function had its own role, so
+  the handler that reserved a name could not read the GitHub App key. A pod is
+  the smallest thing an IRSA role attaches to, so restoring that meant a second
+  pod: `scaffolder-state` runs `ReserveName`, `scaffolder-github` runs
+  `CreateRepository` and holds the only role with
+  `secretsmanager:GetSecretValue` on the App key. Both are declared by
+  `local.workers` in `infra/live/scaffolder/dev`, which drives the queues, the
+  roles and the ServiceAccounts together.
+  **Do not widen the state role to reach the secret** — that deletes the whole
+  property. Add the task to the github worker instead.
+- **A queue each, and that is not optional.** Two Deployments polling one queue
+  would each receive the other's tasks, so the role split would surface as random
+  `AccessDenied` rather than as a boundary. `SCAFFOLDER_TASKS` names what a pod
+  serves and the dispatcher refuses anything else, so a misrouted message fails
+  where it is visible.
+- **The pipeline can create the secret and cannot read it.** `policy_scaffolder.tf`
+  carries an explicit `Deny` on `secretsmanager:GetSecretValue` and
+  `PutSecretValue`. The PEM is put in by hand, so it never passes through a plan,
+  a state file or a workflow log.
 - **KMS** for the template bucket and the secret. Customer-managed key so key
   policy and rotation are explicit.
 
@@ -271,6 +323,12 @@ Identical to the Go services, which is the point:
   **not** cover: the fixture's task token is fake, so everything up to the
   callback runs for real and `SendTaskSuccess` is then rejected — see
   `events/README.md`.
+- The **GitHub adapter is the one part no local stub can prove.** The JWT, the
+  installation lookup and the token exchange fail in ways only GitHub can tell
+  you about, so `CreateRepositoryIntegrationTests` runs against the sandbox org
+  for real, creating and deleting a throwaway repository. It is gated on
+  `SCAFFOLDER_INTEGRATION=1` **and** `GITHUB_ORG` being set; xUnit 2 has no
+  runtime skip, so the gate is an early return.
 - The compensation path (`Compensate`) needs tests as much as the happy path. It
   runs rarely, which is exactly why it rots — assert that a failed scaffold
   leaves no repository and no reservation behind.
@@ -285,14 +343,17 @@ make test                         # unit tests: no AWS, no Docker, no network
 make test-integration             # adapters against LocalStack + the sandbox org (opt-in)
 make format-check                 # dotnet format --verify-no-changes
 make up                           # worker + LocalStack via docker compose
-make seed E=events/reserve-name.json   # put one task on the local queue
+make seed E=events/reserve-name.json                # one task on the state queue
+make seed W=github E=events/create-repository.json   # ... on the github queue
 make logs                         # follow the worker
 ```
 
 Integration tests are opt-in via `SCAFFOLDER_INTEGRATION=1` because they need
-Docker and credentials; without it xUnit skips rather than fails them.
+Docker and credentials; without it they return immediately rather than fail. The
+GitHub ones additionally need `GITHUB_ORG`, `GITHUB_APP_ID` and
+`GITHUB_APP_KEY_SECRET_ARN`, and AWS credentials that can read that secret.
 
-Two things that are easy to lose time to:
+Three things that are easy to lose time to:
 
 - **`Amazon.StepFunctions` also defines a `LogLevel`.** It collides with
   `Microsoft.Extensions.Logging.LogLevel` in any file that uses both;
@@ -301,3 +362,8 @@ Two things that are easy to lose time to:
   `ReceiveMessageResponse.Messages` is `null` when a long poll times out, which
   is the common case. `TaskQueueWorker` coalesces it; anything new reading an SDK
   collection must do the same.
+- **A GitHub App private key pasted through JSON or a shell arrives with literal
+  `\n` instead of newlines**, and `RSA.ImportFromPem` then fails with an error
+  that says nothing about why. `GitHubAppClientFactory` normalises it and rejects
+  anything without a `-----BEGIN` header up front, so the message names the
+  actual problem.

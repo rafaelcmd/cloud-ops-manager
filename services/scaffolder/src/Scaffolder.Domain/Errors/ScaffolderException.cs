@@ -27,3 +27,16 @@ public sealed class NameAlreadyReservedException(string name)
 {
     public string ApplicationName { get; } = name;
 }
+
+/// <summary>
+/// A repository with this name already exists and was not created by this
+/// request. Deliberately not raised for our own replay: an at-least-once
+/// redelivery that finds its own repository is a no-op, not a conflict.
+/// </summary>
+public sealed class RepositoryAlreadyExistsException(string owner, string name)
+    : ScaffolderException("REPOSITORY_ALREADY_EXISTS", $"repository '{owner}/{name}' already exists")
+{
+    public string Owner { get; } = owner;
+
+    public string RepositoryName { get; } = name;
+}

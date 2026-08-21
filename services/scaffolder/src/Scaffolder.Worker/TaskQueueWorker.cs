@@ -187,15 +187,41 @@ internal sealed class TaskQueueWorker(
         Activity.Current?.SetStatus(ActivityStatusCode.Error, cause);
         logger.LogWarning(exception, "Task {Task} failed with {Error}", envelope.Task, error);
 
-        await stepFunctions.SendTaskFailureAsync(
-            new SendTaskFailureRequest
-            {
-                TaskToken = envelope.TaskToken,
-                // Error is capped at 256 characters by the API.
-                Error = error.Length <= 256 ? error : error[..256],
-                Cause = cause,
-            },
-            cancellationToken);
+        // This runs inside a catch block in HandleAsync, so it has to handle its
+        // own failures: an exception thrown from a catch is not caught by that
+        // try's other clauses. It would escape ExecuteAsync and stop the host,
+        // which is how one expired task token could take the pod down.
+        try
+        {
+            await stepFunctions.SendTaskFailureAsync(
+                new SendTaskFailureRequest
+                {
+                    TaskToken = envelope.TaskToken,
+                    // Error is capped at 256 characters by the API.
+                    Error = error.Length <= 256 ? error : error[..256],
+                    Cause = cause,
+                },
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception callbackFailure)
+        {
+            // The outcome never reached Step Functions, so by the deletion rule
+            // the message stays on the queue. The execution is stuck either way
+            // — a token we cannot fail against is usually one that already timed
+            // out — but redelivery and the DLQ keep the evidence.
+            logger.LogError(
+                callbackFailure,
+                "Could not report {Error} for task {Task}; leaving message {MessageId} for redelivery",
+                error,
+                envelope.Task,
+                message.MessageId);
+
+            return;
+        }
 
         await DeleteAsync(message, cancellationToken);
     }

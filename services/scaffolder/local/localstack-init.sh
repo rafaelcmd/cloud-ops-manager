@@ -5,7 +5,14 @@
 set -euo pipefail
 
 TABLE=internal-developer-platform-scaffolder-local
-QUEUE=internal-developer-platform-scaffolder-tasks-local
+
+# One queue per worker, as in infra/live/scaffolder/dev. Locally a single
+# container can serve both, but the names have to match the deployed ones or
+# switching SCAFFOLDER_TASK_QUEUE_NAME to try the other worker fails.
+QUEUES=(
+  internal-developer-platform-scaffolder-state-tasks-local
+  internal-developer-platform-scaffolder-github-tasks-local
+)
 
 awslocal dynamodb create-table \
   --table-name "$TABLE" \
@@ -21,6 +28,8 @@ awslocal dynamodb update-time-to-live \
   --table-name "$TABLE" \
   --time-to-live-specification "Enabled=true,AttributeName=ExpiresAt"
 
-awslocal sqs create-queue --queue-name "$QUEUE"
+for queue in "${QUEUES[@]}"; do
+  awslocal sqs create-queue --queue-name "$queue"
+done
 
 echo "scaffolder local resources ready"
