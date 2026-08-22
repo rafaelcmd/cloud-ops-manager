@@ -6,5 +6,5 @@ import (
 )
 
 type ResourceService interface {
-	SendProvisioningRequest(ctx context.Context, r model.Resource) error
+	SendProvisioningRequest(ctx context.Context, r model.ProvisionRequest) error
 }

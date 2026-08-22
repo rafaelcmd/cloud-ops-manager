@@ -5,6 +5,7 @@ package valueobjects
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -84,20 +85,34 @@ func (c CloudProvider) IsValid() bool {
 type ResourceType string
 
 const (
+	// Managed services requested by the golden-path templates.
+	ResourceTypeDynamoDB ResourceType = "DynamoDB"
+	ResourceTypeSQS      ResourceType = "SQS"
+	ResourceTypeSNS      ResourceType = "SNS"
+	ResourceTypeS3       ResourceType = "S3"
+	ResourceTypeRDS      ResourceType = "RDS"
+
+	// Infrastructure primitives. Retained for compatibility; no current template
+	// requests them.
 	ResourceTypeVM     ResourceType = "VM"
-	ResourceTypeRDS    ResourceType = "RDS"
-	ResourceTypeS3     ResourceType = "S3"
 	ResourceTypeLambda ResourceType = "Lambda"
 	ResourceTypeVPC    ResourceType = "VPC"
 	ResourceTypeELB    ResourceType = "ELB"
 )
 
 // ValidResourceTypes returns all valid resource types.
+//
+// This list must match the oneof tag on model.Resource.ResourceType, which is
+// what rejects an incoming request. A type present here but absent there is
+// accepted by this package and refused by the handler.
 func ValidResourceTypes() []ResourceType {
 	return []ResourceType{
-		ResourceTypeVM,
-		ResourceTypeRDS,
+		ResourceTypeDynamoDB,
+		ResourceTypeSQS,
+		ResourceTypeSNS,
 		ResourceTypeS3,
+		ResourceTypeRDS,
+		ResourceTypeVM,
 		ResourceTypeLambda,
 		ResourceTypeVPC,
 		ResourceTypeELB,
@@ -107,12 +122,11 @@ func ValidResourceTypes() []ResourceType {
 // NewResourceType creates a new ResourceType from a string.
 func NewResourceType(value string) (ResourceType, error) {
 	normalized := strings.TrimSpace(value)
-	switch ResourceType(normalized) {
-	case ResourceTypeVM, ResourceTypeRDS, ResourceTypeS3, ResourceTypeLambda, ResourceTypeVPC, ResourceTypeELB:
-		return ResourceType(normalized), nil
-	default:
-		return "", fmt.Errorf("invalid resource type: %s", value)
+	candidate := ResourceType(normalized)
+	if candidate.IsValid() {
+		return candidate, nil
 	}
+	return "", fmt.Errorf("invalid resource type: %s", value)
 }
 
 // String returns the resource type as a string.
@@ -122,12 +136,7 @@ func (r ResourceType) String() string {
 
 // IsValid checks if the resource type is valid.
 func (r ResourceType) IsValid() bool {
-	switch r {
-	case ResourceTypeVM, ResourceTypeRDS, ResourceTypeS3, ResourceTypeLambda, ResourceTypeVPC, ResourceTypeELB:
-		return true
-	default:
-		return false
-	}
+	return slices.Contains(ValidResourceTypes(), r)
 }
 
 // ProvisioningStatus represents the status of a provisioning request.

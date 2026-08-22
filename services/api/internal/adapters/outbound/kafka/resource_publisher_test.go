@@ -18,7 +18,10 @@ func TestPublish_UnreachableBroker_ReturnsError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	err := p.Publish(ctx, model.Resource{ID: "vm-1", ResourceType: "VM"})
+	err := p.Publish(ctx, model.ProvisionRequest{
+		RequestID:   "req-1",
+		Application: model.Application{Name: "payments-api", Template: "dotnet-consumer"},
+	})
 	require.Error(t, err, "publishing to an unreachable broker must error")
 }
 

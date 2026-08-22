@@ -10,11 +10,13 @@
 > yet. Still design only: every task after `CreateRepository`, the state machine,
 > and the templates. Sections below describing those are intent, not working code.
 >
-> **Nothing calls this service yet.** The API's request contract has no
-> application name or template on it, the provisioner still logs its messages and
-> deletes them, and there is no state machine to start. A repository appears on
-> GitHub only when something puts a `CreateRepository` envelope on the github
-> queue — today that is `make seed`, not a developer filling in a form.
+> **Nothing calls this service yet.** The API now accepts an application name and
+> template, and the provisioner splits each request into a scaffold half and an
+> infra half — but there is still no state machine, so the provisioner logs both
+> halves and acknowledges the message. A repository appears on GitHub only when
+> something puts a `CreateRepository` envelope on the github queue: today that is
+> `make seed`, not a developer filling in a form. The missing piece is the state
+> machine and the provisioner's two `StartExecution` calls.
 
 .NET service that owns the **repository domain** of the platform: given an
 application request, it creates a GitHub repository, renders a golden-path

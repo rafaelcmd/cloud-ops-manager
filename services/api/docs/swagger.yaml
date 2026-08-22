@@ -230,7 +230,11 @@ paths:
           integration.request.header.X-Request-Id: context.requestId
   /${api_version}/provision:
     post:
-      description: Submits a new resource provisioning request to be processed asynchronously. The request is validated and queued for processing via SQS.
+      description: |
+        Submits a provision request to be processed asynchronously. One request carries both halves of
+        the intent - the application to scaffold and the cloud resources it needs - because the
+        resources' outputs end up in the application's repository. The provisioner splits them
+        downstream. The request is validated and queued for processing via SQS.
       security:
       - CognitoAuthorizer: []
       parameters:
@@ -245,12 +249,12 @@ paths:
             type: string
             format: uuid
       requestBody:
-        description: Resource provisioning request
+        description: Provision request - an application and the resources it needs
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Resource'
+              $ref: '#/components/schemas/ProvisionRequest'
       responses:
         "202":
           description: Request accepted for processing
@@ -351,7 +355,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-      summary: Submit a resource provisioning request
+      summary: Submit a provision request
       tags:
       - resources
       x-amazon-apigateway-integration:
@@ -454,23 +458,95 @@ components:
           type: string
         token_type:
           type: string
-    Resource:
+    ProvisionRequest:
       type: object
-      description: Cloud resource provisioning request
+      description: |
+        One developer asking the platform for an application: the repository to scaffold and the
+        cloud resources it needs. request_id is assigned by the server and ignored if supplied -
+        it keys the scaffolder's name reservation, so a caller able to choose it could adopt
+        another caller's in-flight repository.
       required:
-        - id
-        - cloud_provider
-        - resource_type
-        - specification
-        - status
+        - application
         - requested_by
       properties:
-        id:
+        application:
+          $ref: '#/components/schemas/Application'
+        resources:
+          type: array
+          description: Cloud resources to provision alongside the application. A service with no datastore is a valid golden path, so this may be omitted.
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Resource'
+        requested_by:
           type: string
-          description: Unique identifier for the resource
-          example: vm-001
+          description: Username or identifier of the person who requested it
+          example: rafael
           minLength: 1
           maxLength: 100
+    Application:
+      type: object
+      description: The repository half of a provision request
+      required:
+        - name
+        - template
+        - owner
+      properties:
+        name:
+          type: string
+          description: |
+            Name of the application. Becomes a GitHub repository name, a Kubernetes object name and a
+            DNS label, so it is validated against the strictest of the three: 3-40 characters,
+            lowercase, starting with a letter, ending with a letter or digit, and containing only
+            letters, digits and single hyphens.
+          pattern: '^[a-z]([a-z0-9]|-[a-z0-9])*$'
+          example: payments-api
+          minLength: 3
+          maxLength: 40
+        template:
+          type: string
+          description: Golden path to scaffold from. The catalogue belongs to the scaffolder, so this is not a closed enum here.
+          example: dotnet-consumer
+          minLength: 1
+          maxLength: 100
+        owner:
+          type: string
+          description: Team or individual that will own the repository. Not the GitHub organization, which the scaffolder takes from its own configuration.
+          example: team-payments
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          description: Optional repository description. The scaffolder supplies a default when omitted.
+          example: Payments processing service
+          maxLength: 350
+    Resource:
+      type: object
+      description: One cloud resource requested alongside an application
+      required:
+        - name
+        - resource_type
+        - cloud_provider
+      properties:
+        name:
+          type: string
+          description: Name of the resource within the application. Scoped to the request, so two applications can each have an "events" queue.
+          example: payments-events
+          minLength: 1
+          maxLength: 100
+        resource_type:
+          type: string
+          description: Type of cloud resource to provision
+          enum:
+            - DynamoDB
+            - SQS
+            - SNS
+            - S3
+            - RDS
+            - VM
+            - Lambda
+            - VPC
+            - ELB
+          example: DynamoDB
         cloud_provider:
           type: string
           description: Cloud provider where the resource will be provisioned
@@ -479,38 +555,17 @@ components:
             - Azure
             - GCP
           example: AWS
-        resource_type:
-          type: string
-          description: Type of cloud resource to provision
-          enum:
-            - VM
-            - RDS
-            - S3
-            - Lambda
-            - VPC
-            - ELB
-          example: VM
         specification:
-          type: string
-          description: Detailed specification of the resource configuration
-          example: t2.micro
-          minLength: 1
-          maxLength: 1000
-        status:
-          type: string
-          description: Current status of the resource provisioning request
-          enum:
-            - pending
-            - in_progress
-            - completed
-            - failed
-          example: pending
-        requested_by:
-          type: string
-          description: Username or identifier of the person who requested the resource
-          example: rafael
-          minLength: 1
-          maxLength: 100
+          type: object
+          description: |
+            Provider-specific configuration, interpreted by the infra worker according to
+            resource_type. A map rather than free text: the worker reads individual settings
+            rather than parsing a sentence.
+          additionalProperties:
+            type: string
+          maxProperties: 30
+          example:
+            billing_mode: PAY_PER_REQUEST
     SignInRequest:
       type: object
       description: User authentication request
@@ -701,8 +756,17 @@ components:
           example: Request accepted for processing
         requestId:
           type: string
-          description: Request tracking ID
+          description: HTTP request identifier, for support and log lookup. Echoes X-Request-Id when the caller sends one.
           example: req-abc123
+        provisionId:
+          type: string
+          format: uuid
+          description: |
+            The platform's correlation id for the queued work, and the only id that follows it
+            downstream: it travels on the message, keys the scaffolder's name reservation, and
+            names the state machine execution. Assigned by the server; a request_id in the body
+            or an X-Request-Id header does not influence it.
+          example: 88557ca2-36be-4296-b7fc-67aba5e07a2c
         status:
           type: string
           description: Request status

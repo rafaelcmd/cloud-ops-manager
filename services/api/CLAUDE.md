@@ -52,9 +52,27 @@ handlers or services.
 
 ## Routes
 
-- `POST /v1/provision` — publish a resource request to the queue (SQS in
+- `POST /v1/provision` — publish a provision request to the queue (SQS in
   dev/prod, Kafka in local mode); deduped by the idempotency middleware when an
   `X-Idempotency-Key` header is sent (Redis-backed).
+
+  One request carries **both halves of the intent** — the `application` to
+  scaffold and the `resources` it needs — because the resources' outputs end up
+  in that application's repository. The provisioner splits them downstream; a
+  split done here would put the control plane's decision in the caller. See
+  `model.ProvisionRequest`.
+
+  Two things about the payload are worth knowing before changing it:
+
+  - `application.name` is validated by the custom `appname` tag in
+    `validation.go`, which **mirrors `ApplicationName.Parse` in the scaffolder**.
+    The scaffolder is the authority — anything that can write to its queue can
+    reach it, so it validates again. This copy exists to turn a failed execution
+    three hops away into a 400 with a usable message. If one changes, change both.
+  - `request_id` is minted by the handler and ignored if supplied, by body or by
+    `X-Request-Id`. It keys the scaffolder's name reservation and repository
+    claim, both conditional writes on "same request id", so a caller able to
+    choose it could adopt another caller's in-flight repository.
 - `POST /v1/auth/signup | signin | confirm` — Cognito flows.
 - `GET /v1/health` — liveness.
 - `GET /metrics` — Prometheus scrape endpoint (unversioned by convention).
@@ -135,7 +153,8 @@ gated on `ENABLE_TRACING` and skipped in local mode (no Collector to receive it)
   volume — failures surface via the probes, not logs). `RecoveryMiddleware` logs any recovered panic with a stack trace.
   Both take the logger threaded through `RouterConfig.Logger`.
   `ResourceService.SendProvisioningRequest` logs the provisioning payload
-  (`resource_id`, `resource_type`, `body`) with the request context attached — the
+  (`request_id`, `application_name`, `template`, `resource_count`, `body`) with
+  the request context attached — the
   request-body counterpart to the provisioner's received-message log, so the same
   body shows on both ends of the queue under one `trace_id`. Bodies are logged only
   on this deliberate provisioning path, not by the global middleware (which would

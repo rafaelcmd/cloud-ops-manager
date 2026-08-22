@@ -1,7 +1,9 @@
 # Provisioner Service
 
-Go SQS consumer: polls the provisioning queue and (eventually) provisions cloud
-resources from the messages the API publishes.
+Go SQS consumer and the platform's **control plane**: it polls the provisioning
+queue, decodes the request the API published, and splits it into the work each
+downstream worker owns — the repository half for the scaffolder, the cloud
+resources half for the (not yet built) infra worker.
 
 Go version: 1.25 (see `go.mod`). Entry point: `cmd/consumer/main.go`.
 
@@ -10,7 +12,9 @@ Go version: 1.25 (see `go.mod`). Entry point: `cmd/consumer/main.go`.
 ```
 cmd/consumer/main.go   - entry point: picks the transport, sets up telemetry
 internal/consumer/      - the consume loops: kafka.go, sqs.go, shared metrics.go,
-                          queue trace-context extraction (propagation.go)
+                          queue trace-context extraction (propagation.go), and
+                          dispatch.go - the split, shared by both loops
+internal/provision/    - the wire contract the API publishes, and Request.Split()
 internal/telemetry/    - OpenTelemetry setup (OTLP traces, metrics, logs)
 internal/logger/       - logrus-backed JSON logger behind a small interface
 db/                    - RDS init
@@ -38,6 +42,32 @@ Store: `PROVISIONER_QUEUE_PARAM_KEY`, default
 Terraform module publishes and the API also reads). Both loops live in `internal/consumer` and share the same spans +
 counters; only the ack differs (Kafka offset commit vs SQS delete). The Kafka
 `KAFKA_TOPIC` (default `resource-provisioning`) must match the API's.
+
+## The split
+
+`provision.Request` is the message the API publishes: one `application` and its
+`resources`, under one `request_id`. `Request.Split()` divides it into
+`ScaffoldWork` and `InfraWork`, and `consumer.Dispatch` is what both consume
+loops call to do it.
+
+The contract is **duplicated** from `services/api/internal/domain/model` rather
+than imported. They are separate modules and separate deployables, and a shared
+struct would make a field rename in one a compile break in the other — the
+coupling a queue exists to remove. The cost is that the two definitions have to
+change together, and the comment on each says so.
+
+Two details that matter downstream:
+
+- `request_id` goes into **both** halves. The scaffolder keys its name
+  reservation and repository claim on it, so dropping it from either side breaks
+  idempotency there with no symptom until a retry.
+- `ScaffoldWork.Owner` is the **team**, not the GitHub organization. The
+  scaffolder takes the org from its own `GITHUB_ORG` config precisely so a queue
+  message cannot choose where it writes.
+
+**Nothing is dispatched yet.** The scaffold state machine does not exist, so
+`Dispatch` logs both halves and the message is acknowledged. The two
+`StartExecution` calls belong exactly where that logging is.
 
 ## Observability
 

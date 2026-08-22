@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -51,11 +52,43 @@ const (
 
 var validate *validator.Validate
 
+// applicationNameRegex constrains an application name to the intersection of
+// the GitHub repository, Kubernetes object and DNS label naming rules.
+//
+// The rule is duplicated from ApplicationName.Parse in the scaffolder
+// (services/scaffolder/src/Scaffolder.Domain/ValueObjects/ApplicationName.cs).
+// The services are separate deployables in different languages, and the
+// scaffolder revalidates because any producer on its queue can reach it.
+// Validating here returns a 400 identifying the broken rule rather than failing
+// later in the workflow. Both definitions must be kept in step.
+var applicationNameRegex = regexp.MustCompile(`^[a-z]([a-z0-9]|-[a-z0-9])*$`)
+
+const (
+	applicationNameMinLength = 3
+	applicationNameMaxLength = 40
+)
+
 func init() {
 	validate = validator.New(validator.WithRequiredStructEnabled())
 
-	// Register custom validation tags if needed
-	// Example: validate.RegisterValidation("custom_tag", customValidationFunc)
+	// Registration fails only on a programming error, such as an empty tag name
+	// or a nil function. An unregistered tag is silently satisfied by every
+	// value, so this must not be tolerated at runtime.
+	if err := validate.RegisterValidation("appname", validateApplicationName); err != nil {
+		panic(fmt.Sprintf("registering the appname validator: %v", err))
+	}
+}
+
+// validateApplicationName reports whether the field satisfies the shared
+// application-name rule described on applicationNameRegex.
+func validateApplicationName(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+
+	if len(value) < applicationNameMinLength || len(value) > applicationNameMaxLength {
+		return false
+	}
+
+	return applicationNameRegex.MatchString(value)
 }
 
 // GetValidator returns the singleton validator instance
@@ -100,6 +133,12 @@ func formatValidationMessage(fe validator.FieldError) string {
 		return fmt.Sprintf("%s must be at most %s characters", field, fe.Param())
 	case "oneof":
 		return fmt.Sprintf("%s must be one of: %s", field, fe.Param())
+	case "appname":
+		return fmt.Sprintf(
+			"%s must be %d-%d characters, lowercase, start with a letter, end with a letter or digit, "+
+				"and contain only letters, digits and single hyphens",
+			field, applicationNameMinLength, applicationNameMaxLength,
+		)
 	case "url":
 		return fmt.Sprintf("%s must be a valid URL", field)
 	case "uuid":
