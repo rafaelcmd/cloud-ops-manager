@@ -174,6 +174,51 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
         ]
       },
       {
+        # Creating a secret encrypted with a customer-managed key is not purely
+        # administrative: Secrets Manager encrypts through a grant it asks the
+        # caller to create on the key. Without these, CreateSecret fails with
+        # "Access to KMS is not allowed" even though the key was created
+        # successfully by the statements above.
+        #
+        # CreateGrant is limited to grants made on behalf of an AWS service, so
+        # it cannot hand this key to an arbitrary principal, and the data-key
+        # operations only work when Secrets Manager is the caller.
+        Sid    = "KMSUseKeyThroughSecretsManager"
+        Effect = "Allow"
+        Action = [
+          "kms:CreateGrant",
+          "kms:ListGrants",
+          "kms:RevokeGrant",
+          "kms:RetireGrant"
+        ]
+        Resource = "*"
+        Condition = {
+          Bool = {
+            "kms:GrantIsForAWSResource" = "true"
+          }
+          StringEquals = {
+            "aws:ResourceTag/Project" = var.project
+          }
+        }
+      },
+      {
+        Sid    = "KMSEncryptThroughSecretsManager"
+        Effect = "Allow"
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = var.project
+            "kms:ViaService"          = "secretsmanager.${var.aws_region}.amazonaws.com"
+          }
+        }
+      },
+      {
         Sid    = "KMSManageProjectKeys"
         Effect = "Allow"
         Action = [
