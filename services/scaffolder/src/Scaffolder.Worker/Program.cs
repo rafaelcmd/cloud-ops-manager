@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Scaffolder.Application.CreateRepository;
 using Scaffolder.Application.ReserveName;
 using Scaffolder.Infrastructure;
 using Scaffolder.Infrastructure.Configuration;
@@ -40,8 +41,59 @@ builder.Services.AddScaffolderInfrastructure(options);
 builder.Services.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient());
 builder.Services.AddSingleton<IAmazonStepFunctions>(_ => new AmazonStepFunctionsClient());
 
-builder.Services.AddSingleton(new ReserveNameOptions(options.ReservationTtl));
-builder.Services.AddSingleton<ReserveNameUseCase>();
+// Every task this build implements, whether or not this pod serves it.
+string[] knownTasks = ["ReserveName", "CreateRepository"];
+
+// An empty allowlist means "everything this build knows about".
+bool Enabled(string task) => options.EnabledTasks.Count == 0 || options.EnabledTasks.Contains(task);
+
+// Which tasks this pod serves. The two Deployments run this same image and
+// differ here: the state worker gets ReserveName, the GitHub worker gets
+// CreateRepository and the IAM role that can read the App key. An empty
+// allowlist means everything, which is only useful for a single local container.
+if (Enabled("ReserveName"))
+{
+    builder.Services.AddSingleton(new ReserveNameOptions(options.ReservationTtl));
+    builder.Services.AddSingleton<ReserveNameUseCase>();
+    builder.Services.AddSingleton<IScaffoldTask>(services => new ScaffoldTask<ReserveNameCommand, ReserveNameResult>(
+        "ReserveName",
+        services.GetRequiredService<ReserveNameUseCase>().ExecuteAsync));
+}
+
+// GitHub tasks are the one place the allowlist is not purely additive. Named
+// explicitly and unconfigured is an error — someone meant this pod to do GitHub
+// work and it cannot. Included only by the empty-means-everything default and
+// unconfigured just means this pod does no GitHub work, which is what keeps a
+// bare `dotnet run` and the local container useful without an App key.
+if (options.EnabledTasks.Contains("CreateRepository")
+    || (options.EnabledTasks.Count == 0 && options.GitHub is not null))
+{
+    // Fail here rather than on the first message. A pod that cannot authenticate
+    // to GitHub would otherwise poll happily, take a task, and dead-letter it.
+    var gitHub = options.GitHub
+        ?? throw new InvalidOperationException(
+            "SCAFFOLDER_TASKS names CreateRepository but GITHUB_ORG is not set; "
+            + "this deployment cannot reach GitHub");
+
+    builder.Services.AddSingleton(new CreateRepositoryOptions(gitHub.Organization));
+    builder.Services.AddSingleton<CreateRepositoryUseCase>();
+    builder.Services.AddSingleton<IScaffoldTask>(services => new ScaffoldTask<CreateRepositoryCommand, CreateRepositoryResult>(
+        "CreateRepository",
+        services.GetRequiredService<CreateRepositoryUseCase>().ExecuteAsync));
+}
+
+// A name in SCAFFOLDER_TASKS that matches nothing above is a typo in a manifest,
+// and a typo that silently narrows what a pod does is the kind that survives to
+// production. Refuse to start instead.
+var unknownTasks = options.EnabledTasks.Except(knownTasks, StringComparer.OrdinalIgnoreCase).ToArray();
+
+if (unknownTasks.Length > 0)
+{
+    throw new InvalidOperationException(
+        $"SCAFFOLDER_TASKS names unknown tasks: {string.Join(", ", unknownTasks)}. "
+        + $"This build knows {string.Join(", ", knownTasks)}");
+}
+
 builder.Services.AddSingleton<TaskDispatcher>();
 builder.Services.AddHostedService<TaskQueueWorker>();
 

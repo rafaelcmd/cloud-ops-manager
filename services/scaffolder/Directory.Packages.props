@@ -9,6 +9,7 @@
 
   <ItemGroup Label="AWS SDK">
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.103.4" />
+    <PackageVersion Include="AWSSDK.SecretsManager" Version="4.0.100.10" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.100.10" />
     <PackageVersion Include="AWSSDK.StepFunctions" Version="4.0.100.10" />
   </ItemGroup>
@@ -29,6 +30,12 @@
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AWS" Version="1.18.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
+  </ItemGroup>
+
+  <!-- The GitHub API client. Pinned here like everything else; Octokit is the
+       only non-AWS, non-Microsoft runtime dependency this service has. -->
+  <ItemGroup Label="GitHub">
+    <PackageVersion Include="Octokit" Version="14.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Testing">

@@ -91,8 +91,19 @@ type CreatedResponse struct {
 
 // AcceptedResponse is returned for async operations (202 Accepted)
 type AcceptedResponse struct {
-	Message   string `json:"message"`
+	Message string `json:"message"`
+
+	// RequestID is the HTTP request identifier, used for log lookup. It echoes
+	// X-Request-Id when the caller supplies one.
 	RequestID string `json:"requestId"`
-	Status    string `json:"status"`
-	TrackURL  string `json:"trackUrl,omitempty"`
+
+	// ProvisionID identifies the queued work and is the only identifier that
+	// follows it downstream: it travels on the message, keys the scaffolder's
+	// name reservation, and names the state machine execution. It is separate
+	// from RequestID because RequestID is client-supplied and so unsuitable as
+	// a key.
+	ProvisionID string `json:"provisionId,omitempty"`
+
+	Status   string `json:"status"`
+	TrackURL string `json:"trackUrl,omitempty"`
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/rafaelcmd/internal-developer-platform/resource-provisioner-service/internal/logger"
@@ -56,7 +57,11 @@ func RunKafka(ctx context.Context, cfg KafkaConfig, tracer trace.Tracer, metrics
 		processCtx, span := tracer.Start(msgCtx, "ProcessMessage")
 		log.WithContext(processCtx).Info("received message", logger.F("body", string(message.Value)))
 
-		// Save message data in RDS
+		// Control-plane step, identical to the SQS path so that local development
+		// exercises the same separation as the deployed environments.
+		if !Dispatch(processCtx, message.Value, tracer, log) {
+			span.SetStatus(codes.Error, "provision request could not be understood")
+		}
 
 		// Commit the offset after processing.
 		if err := reader.CommitMessages(processCtx, message); err != nil {

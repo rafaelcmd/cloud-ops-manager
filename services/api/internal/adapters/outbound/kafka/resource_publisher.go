@@ -38,14 +38,16 @@ func NewResourcePublisher(brokers []string, topic string) *ResourcePublisher {
 	}
 }
 
-// Publish serializes the resource and writes it to Kafka, keyed by resource ID
-// so all messages for a resource land on the same partition (ordering).
-func (p *ResourcePublisher) Publish(ctx context.Context, resource model.Resource) error {
-	body, err := json.Marshal(resource)
+// Publish serializes the request and writes it to Kafka. Messages are keyed by
+// application name so that every message for one application is written to the
+// same partition and consumed in order; keying by request id would distribute
+// them across partitions and lose that guarantee.
+func (p *ResourcePublisher) Publish(ctx context.Context, request model.ProvisionRequest) error {
+	body, err := json.Marshal(request)
 	if err != nil {
 		return errors.NewDomainError(
 			errors.ErrCodeQueueError,
-			"failed to serialize resource for publishing",
+			"failed to serialize provision request for publishing",
 			err,
 		)
 	}
@@ -58,14 +60,14 @@ func (p *ResourcePublisher) Publish(ctx context.Context, resource model.Resource
 	otel.GetTextMapPropagator().Inject(ctx, kafkaHeaderCarrier{headers: &headers})
 
 	err = p.writer.WriteMessages(ctx, kafka.Message{
-		Key:     []byte(resource.ID),
+		Key:     []byte(request.Application.Name),
 		Value:   body,
 		Headers: headers,
 	})
 	if err != nil {
 		return errors.NewDomainError(
 			errors.ErrCodeQueueError,
-			fmt.Sprintf("failed to publish resource %s to kafka", resource.ID),
+			fmt.Sprintf("failed to publish provision request %s to kafka", request.RequestID),
 			err,
 		)
 	}

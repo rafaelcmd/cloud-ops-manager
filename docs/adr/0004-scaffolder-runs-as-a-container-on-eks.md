@@ -102,6 +102,13 @@ when the GitHub adapter lands. Until then the worker holds only DynamoDB and
 Step Functions permissions, so the exposure is theoretical, but it must not be
 forgotten.
 
+> **Done.** The GitHub adapter landed with `CreateRepository`, and the split came
+> with it: `scaffolder-state` and `scaffolder-github` run the same image with
+> separate IRSA roles, and only the latter can read the App private key. It cost
+> a second SQS queue — two Deployments on one queue would each receive the
+> other's tasks, so the routing has to follow the trust boundary. See
+> `local.workers` in `infra/live/scaffolder/dev/locals.tf`.
+
 We also give up scale-to-zero, and the automatic safe-deploy machinery that
 `AutoPublishAlias` plus `DeploymentPreference: Canary10Percent5Minutes` gave for
 two lines of YAML. A Kubernetes rolling update with readiness gating is the

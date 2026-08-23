@@ -1,14 +1,17 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Scaffolder.Application.ReserveName;
 
 namespace Scaffolder.Worker;
 
 /// <summary>
-/// Maps a task name to the use case that implements it, deserializes the
-/// payload and serializes the result. No business logic lives here - exactly the
-/// rule the Lambda handlers followed, which is why the use cases needed no
-/// changes when the runtime did.
+/// Maps a task name to the task that implements it and serializes the result. No
+/// business logic lives here - exactly the rule the Lambda handlers followed,
+/// which is why the use cases needed no changes when the runtime did.
+///
+/// It only knows about the tasks registered on <em>this</em> pod. A message for a
+/// task this deployment does not serve is rejected rather than attempted, so a
+/// misrouted message fails loudly instead of failing later inside an AWS call the
+/// pod has no permission to make.
 /// </summary>
 internal sealed class TaskDispatcher
 {
@@ -23,27 +26,27 @@ internal sealed class TaskDispatcher
         WriteIndented = false,
     };
 
-    private readonly Dictionary<string, Func<JsonElement, CancellationToken, Task<object>>> handlers;
+    private readonly Dictionary<string, IScaffoldTask> handlers;
     private readonly ILogger<TaskDispatcher> logger;
 
-    public TaskDispatcher(ReserveNameUseCase reserveName, ILogger<TaskDispatcher> logger)
+    public TaskDispatcher(IEnumerable<IScaffoldTask> tasks, ILogger<TaskDispatcher> logger)
     {
-        this.logger = logger;
+        ArgumentNullException.ThrowIfNull(tasks);
 
-        // One entry per task state in the machine. Adding a task is adding a
-        // line here plus its use case - never a new deployment.
-        handlers = new Dictionary<string, Func<JsonElement, CancellationToken, Task<object>>>(
-            StringComparer.OrdinalIgnoreCase)
+        this.logger = logger;
+        handlers = tasks.ToDictionary(task => task.Name, StringComparer.OrdinalIgnoreCase);
+
+        if (handlers.Count == 0)
         {
-            ["ReserveName"] = async (input, cancellationToken) =>
-                await reserveName.ExecuteAsync(Bind<ReserveNameCommand>(input), cancellationToken),
-        };
+            throw new InvalidOperationException(
+                "no scaffold tasks are registered; check SCAFFOLDER_TASKS on this deployment");
+        }
     }
 
     public IReadOnlyCollection<string> KnownTasks => handlers.Keys;
 
     /// <summary>Runs one task and returns its result as the JSON the state machine receives.</summary>
-    /// <exception cref="UnknownScaffolderTaskException">No handler is registered for the task name.</exception>
+    /// <exception cref="UnknownScaffolderTaskException">This pod serves no handler for the task name.</exception>
     public async Task<string> DispatchAsync(TaskEnvelope envelope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(envelope);
@@ -51,19 +54,15 @@ internal sealed class TaskDispatcher
         if (!handlers.TryGetValue(envelope.Task, out var handler))
         {
             logger.LogError(
-                "No handler for scaffold task {Task}; known tasks are {KnownTasks}",
+                "No handler for scaffold task {Task} on this deployment; it serves {KnownTasks}",
                 envelope.Task,
                 string.Join(", ", KnownTasks));
 
             throw new UnknownScaffolderTaskException(envelope.Task);
         }
 
-        var result = await handler(envelope.Input, cancellationToken);
+        var result = await handler.RunAsync(envelope.Input, cancellationToken);
 
         return JsonSerializer.Serialize(result, result.GetType(), Json);
     }
-
-    private static T Bind<T>(JsonElement input) =>
-        input.Deserialize<T>(Json)
-        ?? throw new JsonException($"task payload deserialized to null for {typeof(T).Name}");
 }

@@ -33,12 +33,12 @@ func NewResourcePublisher(client *sqs.Client, queueURL string) *ResourcePublishe
 }
 
 // Publish sends a resource provisioning request to the SQS queue.
-func (p *ResourcePublisher) Publish(ctx context.Context, resource model.Resource) error {
-	body, err := json.Marshal(resource)
+func (p *ResourcePublisher) Publish(ctx context.Context, request model.ProvisionRequest) error {
+	body, err := json.Marshal(request)
 	if err != nil {
 		return errors.NewDomainError(
 			errors.ErrCodeQueueError,
-			"failed to serialize resource for publishing",
+			"failed to serialize provision request for publishing",
 			err,
 		)
 	}
@@ -61,7 +61,7 @@ func (p *ResourcePublisher) Publish(ctx context.Context, resource model.Resource
 	if _, err = p.client.SendMessage(ctx, input); err != nil {
 		return errors.NewDomainError(
 			errors.ErrCodeQueueError,
-			fmt.Sprintf("failed to publish resource %s to queue", resource.ID),
+			fmt.Sprintf("failed to publish provision request %s to queue", request.RequestID),
 			err,
 		)
 	}

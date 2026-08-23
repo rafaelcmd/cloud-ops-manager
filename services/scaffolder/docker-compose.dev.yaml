@@ -11,11 +11,21 @@ services:
       # In-cluster these two come from SSM parameters Terraform publishes; here
       # they point at the LocalStack resources created by the init script below.
       - SCAFFOLDER_TABLE_NAME=internal-developer-platform-scaffolder-local
-      - SCAFFOLDER_TASK_QUEUE_NAME=internal-developer-platform-scaffolder-tasks-local
+      - SCAFFOLDER_TASK_QUEUE_NAME=internal-developer-platform-scaffolder-state-tasks-local
       - SCAFFOLDER_RESERVATION_TTL_MINUTES=360
       - SERVICE_NAME=scaffolder
       - SERVICE_VERSION=0.1.0-local
       - ENVIRONMENT=local
+      # Deployed, these are two pods with two IAM roles; locally one container
+      # serves whatever it is configured for. Left unset, GITHUB_ORG absent
+      # means the GitHub tasks are simply not registered, so a local run needs
+      # no App key. To exercise CreateRepository for real, export the three
+      # GITHUB_* values and point SCAFFOLDER_TASK_QUEUE_NAME at the github
+      # queue — it creates actual repositories in the sandbox org.
+      - SCAFFOLDER_TASKS=${SCAFFOLDER_TASKS:-}
+      - GITHUB_ORG=${GITHUB_ORG:-}
+      - GITHUB_APP_ID=${GITHUB_APP_ID:-}
+      - GITHUB_APP_KEY_SECRET_ARN=${GITHUB_APP_KEY_SECRET_ARN:-}
       # One endpoint override for every AWS service, so the SDK talks to
       # LocalStack without any per-client configuration in the code.
       - AWS_ENDPOINT_URL=http://localstack:4566

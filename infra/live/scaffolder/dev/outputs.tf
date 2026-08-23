@@ -8,22 +8,27 @@ output "table_arn" {
   value       = aws_dynamodb_table.scaffolder.arn
 }
 
-output "task_queue_name" {
-  description = "Name of the task queue the worker consumes — the value the Deployment sets as SCAFFOLDER_TASK_QUEUE_NAME"
-  value       = aws_sqs_queue.tasks.name
+output "task_queue_names" {
+  description = "Per-worker queue names — the values each Deployment sets as SCAFFOLDER_TASK_QUEUE_NAME"
+  value       = { for worker, queue in aws_sqs_queue.tasks : worker => queue.name }
 }
 
-output "task_queue_arn" {
-  description = "ARN of the task queue — the target the scaffold state machine's .waitForTaskToken states send to"
-  value       = aws_sqs_queue.tasks.arn
+output "task_queue_arns" {
+  description = "Per-worker queue ARNs — the targets the scaffold state machine's .waitForTaskToken states send to"
+  value       = { for worker, queue in aws_sqs_queue.tasks : worker => queue.arn }
 }
 
-output "task_dlq_arn" {
-  description = "ARN of the task dead-letter queue"
-  value       = aws_sqs_queue.tasks_dlq.arn
+output "task_dlq_arns" {
+  description = "Per-worker dead-letter queue ARNs"
+  value       = { for worker, queue in aws_sqs_queue.tasks_dlq : worker => queue.arn }
 }
 
-output "irsa_role_arn" {
-  description = "ARN of the role the scaffolder pod assumes"
-  value       = aws_iam_role.scaffolder.arn
+output "irsa_role_arns" {
+  description = "Per-worker IRSA role ARNs. Only the github one can read the App private key."
+  value       = { for worker, role in aws_iam_role.worker : worker => role.arn }
+}
+
+output "github_app_key_secret_arn" {
+  description = "ARN of the secret the GitHub App's PEM private key must be put into"
+  value       = aws_secretsmanager_secret.github_app_key.arn
 }

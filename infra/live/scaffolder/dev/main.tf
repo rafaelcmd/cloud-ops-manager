@@ -44,21 +44,26 @@ resource "aws_dynamodb_table" "scaffolder" {
 }
 
 # =============================================================================
-# TASK QUEUE
-# Written as plain resources rather than through modules/aws/sqs: that module is
-# shaped for the provisioner's queue and exposes neither a visibility timeout
-# nor a redrive policy, both of which this queue needs.
+# TASK QUEUES
+# One per worker (see local.workers): the IAM split is only real if the routing
+# matches it. Written as plain resources rather than through modules/aws/sqs —
+# that module is shaped for the provisioner's queue and exposes neither a
+# visibility timeout nor a redrive policy, both of which these queues need.
 # =============================================================================
 
 resource "aws_sqs_queue" "tasks_dlq" {
-  name                      = "${local.name_prefix}-tasks-dlq-${var.environment}"
+  for_each = local.workers
+
+  name                      = "${local.name_prefix}-${each.key}-tasks-dlq-${var.environment}"
   message_retention_seconds = var.dlq_message_retention_seconds
 
   tags = local.tags
 }
 
 resource "aws_sqs_queue" "tasks" {
-  name = "${local.name_prefix}-tasks-${var.environment}"
+  for_each = local.workers
+
+  name = "${local.name_prefix}-${each.key}-tasks-${var.environment}"
 
   # Long enough for the slowest task to finish before SQS hands the same message
   # to a second consumer. Raise this before adding a task that takes longer than
@@ -70,7 +75,7 @@ resource "aws_sqs_queue" "tasks" {
   # an outcome to Step Functions, so this redrive is the backstop for a payload
   # no build of the worker can handle.
   redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.tasks_dlq.arn
+    deadLetterTargetArn = aws_sqs_queue.tasks_dlq[each.key].arn
     maxReceiveCount     = var.task_max_receive_count
   })
 
@@ -80,10 +85,12 @@ resource "aws_sqs_queue" "tasks" {
 # Only Step Functions puts messages here. The consume side is the pod's IRSA
 # role; nothing else in the account has a reason to send.
 data "aws_iam_policy_document" "tasks_queue" {
+  for_each = local.workers
+
   statement {
     sid       = "AllowStatesToSendTasks"
     actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.tasks.arn]
+    resources = [aws_sqs_queue.tasks[each.key].arn]
 
     principals {
       type        = "Service"
@@ -99,15 +106,58 @@ data "aws_iam_policy_document" "tasks_queue" {
 }
 
 resource "aws_sqs_queue_policy" "tasks" {
-  queue_url = aws_sqs_queue.tasks.id
-  policy    = data.aws_iam_policy_document.tasks_queue.json
+  for_each = local.workers
+
+  queue_url = aws_sqs_queue.tasks[each.key].id
+  policy    = data.aws_iam_policy_document.tasks_queue[each.key].json
+}
+
+# =============================================================================
+# GITHUB APP CREDENTIAL
+# The App's PEM private key. Terraform creates the secret and its key; it does
+# NOT create a version — the PEM is put in out of band, so the credential never
+# passes through a plan, a state file or a CI log.
+#
+#   aws secretsmanager put-secret-value \
+#     --secret-id internal-developer-platform-scaffolder-github-app-key-dev \
+#     --secret-string file://idp-scaffolder.private-key.pem
+#
+# Only the github worker's role can read it. That restriction is the entire
+# point of the two-Deployment split above.
+# =============================================================================
+
+resource "aws_kms_key" "github_app" {
+  description             = "Encrypts the scaffolder's GitHub App private key"
+  deletion_window_in_days = var.kms_deletion_window_in_days
+  enable_key_rotation     = true
+
+  tags = local.tags
+}
+
+resource "aws_kms_alias" "github_app" {
+  name          = "alias/${local.name_prefix}-github-app-${var.environment}"
+  target_key_id = aws_kms_key.github_app.key_id
+}
+
+resource "aws_secretsmanager_secret" "github_app_key" {
+  name        = "${local.name_prefix}-github-app-key-${var.environment}"
+  description = "PEM private key for the GitHub App the scaffolder authenticates as"
+  kms_key_id  = aws_kms_key.github_app.arn
+
+  # Dev is torn down and rebuilt by ops-platform-down / ops-platform-up. With a
+  # recovery window the name stays reserved after a destroy and the next apply
+  # fails with "already scheduled for deletion", which is a confusing way to
+  # learn that. A longer-lived environment must set this back to 7+.
+  recovery_window_in_days = var.secret_recovery_window_in_days
+
+  tags = local.tags
 }
 
 # =============================================================================
 # PUBLISHED VALUES
-# The pod resolves the table and queue by name from its own environment, so
-# these exist for other stacks — the scaffold state machine, when it is built,
-# needs the queue ARN to target.
+# The pods resolve the table and their own queue by name from their environment,
+# so these exist for other stacks — the scaffold state machine, when it is built,
+# needs the queue ARNs to target.
 # =============================================================================
 
 resource "aws_ssm_parameter" "table_name" {
@@ -118,15 +168,26 @@ resource "aws_ssm_parameter" "table_name" {
 }
 
 resource "aws_ssm_parameter" "task_queue_arn" {
-  name  = "/idp/${var.service_name}/${var.environment}/task_queue_arn"
+  for_each = local.workers
+
+  name  = "/idp/${var.service_name}/${var.environment}/${each.key}_task_queue_arn"
   type  = "String"
-  value = aws_sqs_queue.tasks.arn
+  value = aws_sqs_queue.tasks[each.key].arn
   tags  = local.tags
 }
 
 resource "aws_ssm_parameter" "task_queue_name" {
-  name  = "/idp/${var.service_name}/${var.environment}/task_queue_name"
+  for_each = local.workers
+
+  name  = "/idp/${var.service_name}/${var.environment}/${each.key}_task_queue_name"
   type  = "String"
-  value = aws_sqs_queue.tasks.name
+  value = aws_sqs_queue.tasks[each.key].name
+  tags  = local.tags
+}
+
+resource "aws_ssm_parameter" "github_app_key_secret_arn" {
+  name  = "/idp/${var.service_name}/${var.environment}/github_app_key_secret_arn"
+  type  = "String"
+  value = aws_secretsmanager_secret.github_app_key.arn
   tags  = local.tags
 }

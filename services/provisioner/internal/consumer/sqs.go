@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/rafaelcmd/internal-developer-platform/resource-provisioner-service/internal/logger"
@@ -47,7 +48,12 @@ func RunSQS(ctx context.Context, client *sqs.Client, queueURL string, tracer tra
 			processCtx, span := tracer.Start(msgCtx, "ProcessMessage")
 			log.WithContext(processCtx).Info("received message", logger.F("body", aws.ToString(message.Body)))
 
-			// Save message data in RDS
+			// Control-plane step: decode the request and separate it into the
+			// scaffold and infrastructure halves. See Dispatch for the point at
+			// which the state machine executions will be started.
+			if !Dispatch(processCtx, []byte(aws.ToString(message.Body)), tracer, log) {
+				span.SetStatus(codes.Error, "provision request could not be understood")
+			}
 
 			// Delete the message after processing.
 			_, err := client.DeleteMessage(processCtx, &sqs.DeleteMessageInput{

@@ -49,12 +49,27 @@ public sealed class TaskDispatcherTests
     }
 
     [Fact]
-    public async Task Unknown_task_names_are_rejected_rather_than_silently_dropped()
+    public async Task Tasks_this_deployment_does_not_serve_are_rejected_rather_than_silently_dropped()
     {
+        // CreateRepository is a real task, but it belongs to the GitHub worker.
+        // Reaching a dispatcher that was not given it must fail here, where the
+        // message stays on the queue, rather than inside an AWS call this pod's
+        // role cannot make.
         var exception = await Assert.ThrowsAsync<UnknownScaffolderTaskException>(
             () => Dispatcher().DispatchAsync(Envelope("CreateRepository", "{}"), CancellationToken.None));
 
         Assert.Equal("CreateRepository", exception.Task);
+    }
+
+    [Fact]
+    public void A_dispatcher_with_no_tasks_refuses_to_be_built()
+    {
+        // An empty allowlist that matched nothing would otherwise produce a pod
+        // that polls its queue forever and dead-letters everything it receives.
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => new TaskDispatcher([], NullLogger<TaskDispatcher>.Instance));
+
+        Assert.Contains("SCAFFOLDER_TASKS", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -71,7 +86,7 @@ public sealed class TaskDispatcherTests
     }
 
     [Fact]
-    public void Every_registered_task_is_a_state_in_the_scaffold_machine()
+    public void A_dispatcher_only_advertises_the_tasks_it_was_given()
     {
         // Guards against a handler being registered under a name no state ever
         // sends, which would look wired up and never run.
@@ -93,6 +108,9 @@ public sealed class TaskDispatcherTests
             ReserveNameOptions.Default,
             NullLogger<ReserveNameUseCase>.Instance);
 
-        return new TaskDispatcher(useCase, NullLogger<TaskDispatcher>.Instance);
+        // Registered exactly as Program.cs registers it for the state worker.
+        var task = new ScaffoldTask<ReserveNameCommand, ReserveNameResult>("ReserveName", useCase.ExecuteAsync);
+
+        return new TaskDispatcher([task], NullLogger<TaskDispatcher>.Instance);
     }
 }

@@ -7,14 +7,14 @@ import (
 )
 
 type FakeResourcePublisher struct {
-	LastSent    model.Resource
+	LastSent    model.ProvisionRequest
 	TimesCalled int
 	ErrToReturn error
 }
 
 var _ outbound.ResourcePublisher = &FakeResourcePublisher{}
 
-func (f *FakeResourcePublisher) Publish(ctx context.Context, resource model.Resource) error {
+func (f *FakeResourcePublisher) Publish(ctx context.Context, resource model.ProvisionRequest) error {
 	f.LastSent = resource
 	f.TimesCalled++
 	return f.ErrToReturn

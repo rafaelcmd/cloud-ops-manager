@@ -20,6 +20,22 @@ public sealed record ScaffolderOptions
 
     public required TimeSpan ReservationTtl { get; init; }
 
+    /// <summary>
+    /// Which tasks this pod is allowed to run, from <c>SCAFFOLDER_TASKS</c>.
+    /// Empty means every task the binary knows about, which is what makes a
+    /// single local container useful; both Deployments set it explicitly.
+    ///
+    /// This is not a security control on its own — the IAM role and the
+    /// per-deployment queue are. It is what turns a misrouted message into a
+    /// loud failure instead of a call the pod has no credentials to make.
+    /// </summary>
+    public required IReadOnlySet<string> EnabledTasks { get; init; }
+
+    /// <summary>
+    /// GitHub App configuration, or null on a pod that runs no GitHub tasks.
+    /// </summary>
+    public GitHubOptions? GitHub { get; init; }
+
     public required string ServiceName { get; init; }
 
     public required string ServiceVersion { get; init; }
@@ -43,6 +59,8 @@ public sealed record ScaffolderOptions
         TableName = Required("SCAFFOLDER_TABLE_NAME"),
         TaskQueueName = Required("SCAFFOLDER_TASK_QUEUE_NAME"),
         ReservationTtl = TimeSpan.FromMinutes(OptionalInt("SCAFFOLDER_RESERVATION_TTL_MINUTES", 360)),
+        EnabledTasks = ParseTasks(System.Environment.GetEnvironmentVariable("SCAFFOLDER_TASKS")),
+        GitHub = GitHubOptions.FromEnvironment(),
         ServiceName = Optional("SERVICE_NAME", "scaffolder"),
         ServiceVersion = Optional("SERVICE_VERSION", "0.0.0-dev"),
         Environment = Optional("ENVIRONMENT", "dev"),
@@ -50,6 +68,17 @@ public sealed record ScaffolderOptions
             ? endpoint
             : null,
     };
+
+    /// <summary>
+    /// Splits the comma-separated allowlist. Case-insensitive because the task
+    /// names come from a state machine definition, where the casing is a
+    /// human's choice rather than a contract.
+    /// </summary>
+    private static IReadOnlySet<string> ParseTasks(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     private static string Required(string key)
     {

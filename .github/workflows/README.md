@@ -32,7 +32,7 @@ at the top level — so the tier is encoded in the filename prefix instead.
 | [`cd-infra-apply.yml`](cd-infra-apply.yml) | push to `main` touching `infra/**` | Re-plans and applies affected components. **Waits for approval.** |
 | [`cd-api.yml`](cd-api.yml) | manual / orchestrated | Builds the API image → ECR → rolling update on EKS. |
 | [`cd-provisioner.yml`](cd-provisioner.yml) | manual / orchestrated | Same, for the SQS consumer. |
-| [`cd-scaffolder.yml`](cd-scaffolder.yml) | manual / orchestrated | Same, for the scaffolder task worker. |
+| [`cd-scaffolder.yml`](cd-scaffolder.yml) | manual / orchestrated | Same, for the scaffolder task workers — one image, both Deployments (state and github). |
 | [`cd-redis.yml`](cd-redis.yml) | manual / orchestrated | Applies the in-cluster Redis manifests. |
 | [`cd-otel-collector.yml`](cd-otel-collector.yml) | manual / orchestrated | Applies the OTel Collector manifests and forces a restart. |
 

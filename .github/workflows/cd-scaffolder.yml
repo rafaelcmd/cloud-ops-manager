@@ -1,11 +1,14 @@
 # =============================================================================
 # PURPOSE   Builds the scaffolder (Step Functions task worker) image, pushes it
-#           to ECR and rolls it out on the same EKS cluster as the API.
+#           to ECR and rolls out the two Deployments that run it on the same EKS
+#           cluster as the API: the state worker and the GitHub worker. One
+#           image, two roles — see ADR-0004 and k8s/scaffolder/.
 # TRIGGER   Manual (workflow_dispatch), or called by ops-platform-up.yml.
 # AUTH      Shared `github-actions-deploy` role, via OIDC.
 # EFFECT    MUTATES the cluster. Replaces the running scaffolder pods.
 # REQUIRES  The `scaffolder` Terraform component, which owns this service's
-#           IRSA ServiceAccount, its DynamoDB table and its task queue.
+#           IRSA ServiceAccounts, its DynamoDB table and both task queues, and
+#           the Secrets Manager secret the GitHub worker reads its App key from.
 #           Telemetry needs the OTel Collector Service in-cluster, so
 #           orchestrated runs deploy the collector first.
 # DOCS      .github/workflows/README.md
@@ -70,7 +73,10 @@ jobs:
       - name: Pin image in deployment manifest
         env:
           ECR_URL: ${{ steps.ecr.outputs.repository-url }}
-        run: sed -i "s|PLACEHOLDER-SCAFFOLDER-IMAGE|${ECR_URL}:scaffolder-${{ github.sha }}|g" k8s/scaffolder/deployment.yaml
+        run: |
+          sed -i "s|PLACEHOLDER-SCAFFOLDER-IMAGE|${ECR_URL}:scaffolder-${{ github.sha }}|g" \
+            k8s/scaffolder/deployment.yaml \
+            k8s/scaffolder/deployment-github.yaml
 
       - name: Configure kubectl
         uses: ./.github/actions/eks-kubeconfig
@@ -79,9 +85,14 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Apply manifests
-        run: kubectl apply -f k8s/scaffolder/deployment.yaml
+        run: kubectl apply -f k8s/scaffolder/
 
-      # The sha-tagged image makes the apply itself start the rollout; this
-      # step only gates the job on it finishing.
-      - name: Wait for rollout
-        run: kubectl rollout status deployment/internal-developer-platform-scaffolder -n default --timeout=10m
+      # The sha-tagged image makes the apply itself start the rollout; these
+      # steps only gate the job on both finishing. Both are waited on: a green
+      # deploy that left the GitHub worker crash-looping would mean scaffold
+      # requests reserve a name and then stall at CreateRepository.
+      - name: Wait for state worker rollout
+        run: kubectl rollout status deployment/internal-developer-platform-scaffolder-state -n default --timeout=10m
+
+      - name: Wait for GitHub worker rollout
+        run: kubectl rollout status deployment/internal-developer-platform-scaffolder-github -n default --timeout=10m
