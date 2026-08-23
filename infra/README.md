@@ -10,9 +10,9 @@ It exists primarily as a study and portfolio artifact: every decision below is o
 
 ## What this demonstrates
 
-- **Stack decomposition** — the platform is split across eight independently appliable Terraform stacks. Each stack owns one well-defined responsibility (network, identity, compute, etc.) and can be destroyed and recreated without touching the others.
+- **Stack decomposition** — the platform is split across nine independently appliable Terraform stacks. Each stack owns one well-defined responsibility (network, identity, compute, etc.) and can be destroyed and recreated without touching the others.
 - **State decoupling via SSM Parameter Store** — producers publish identifiers to `/idp/shared/<stack>/*`; consumers read them via `data.aws_ssm_parameter`. There are zero `terraform_remote_state` reads anywhere in `live/`. A consumer stack does not need TFC API access to a producer's state file, only IAM read on a known SSM path.
-- **OIDC everywhere, no static keys** — GitHub Actions assumes an AWS role via the GitHub OIDC provider, and Terraform Cloud assumes one via the TFC OIDC provider. No `AWS_ACCESS_KEY_ID` lives in repository secrets.
+- **OIDC everywhere, no static keys** — GitHub Actions assumes a per-component AWS role via the GitHub OIDC provider. No `AWS_ACCESS_KEY_ID` lives in repository secrets.
 - **EKS on Fargate** — no node groups, no EC2 patching, no Cluster Autoscaler. Workload IAM is via IRSA, bound to the cluster's OIDC issuer.
 - **One-click create / destroy** — an orchestrator workflow chains the per-stack workflows in dependency order via `workflow_call`, making full-platform tear-up and tear-down a single GitHub Actions click.
 - **Reusable AWS modules** — every resource lives in a module under `modules/aws/*`. Live workspaces are thin compositions: a few `module` blocks, a `data` block or two, a backend.
@@ -91,7 +91,7 @@ Module composition stays inside the repo. Live workspaces reference modules by *
 
 ---
 
-## The eight stacks
+## The nine stacks
 
 | Stack | Workspace | Owns | Reads (SSM) |
 |---|---|---|---|
@@ -103,6 +103,7 @@ Module composition stays inside the repo. Live workspaces reference modules by *
 | `shared/iam-tfc-oidc` | `internal-developer-platform-iam-tfc-oidc` | IAM role assumed by Terraform Cloud via OIDC | — |
 | `provisioner_api/dev` | `internal-developer-platform-provisioner-api-dev` | EKS cluster (Fargate), IRSA scaffolding, AWS Load Balancer Controller, SQS queue, Redis endpoint in SSM, Datadog Lambda forwarder | `/idp/shared/vpc/*`, `/idp/shared/datadog/*` |
 | `provisioner_api_gateway/dev` | `internal-developer-platform-provisioner-api-gateway-dev` | REST API Gateway, VPC Link, Cognito authorizer, WAF Web ACL | `/idp/shared/identity/*`, `data.aws_lb` (NLB by name) |
+| `scaffolder/dev` | `internal-developer-platform-scaffolder-dev` | Scaffolder DynamoDB table, one task queue + DLQ per worker, GitHub App key secret + KMS key, two IRSA roles and ServiceAccounts | `/idp/shared/eks/*` |
 
 The two `iam-*-oidc` stacks are bootstrap; they exist so every other stack can authenticate without long-lived credentials. They are deliberately **not** part of the orchestrator chain — the orchestrator itself depends on them.
 
@@ -224,9 +225,10 @@ AWS authentication is OIDC end-to-end:
 - Each Terraform component assumes its own role, `github-actions-tf-<component>`, carrying only the services that component provisions (`infra/live/shared/iam-github-oidc/policy_*.tf`). Workflows build the ARN from the component name plus the `AWS_ACCOUNT_ID` variable, so a new component needs no new repo configuration.
 - Workload deploys assume `github-actions-deploy` — SSM reads, ECR push, and cluster auth only. It appears in `cluster_admin_principal_arns` so EKS grants it kubectl access through an access entry.
 - Pull-request plans assume `github-actions-oidc-plan-role`, which holds `ReadOnlyAccess`: unmerged code can compute a diff but never mutate AWS.
-- Trust policies allow two subjects — `...:ref:refs/heads/main` and `...:environment:dev` — so write-capable credentials are only issued to jobs on `main` or inside the reviewer-gated environment. Pull requests match neither.
+- Trust policies allow three subjects — `...:ref:refs/heads/main`, `...:environment:dev` and `...:environment:dev-auto` — so write-capable credentials are only issued to jobs on `main` or inside a deployment environment (`dev-auto` replaces `dev` when `DISABLE_DEPLOYMENT_APPROVALS` is set). Pull requests match neither.
 - Component policies authorize creation on the `Project` request tag and mutation on the `Project` resource tag, so a role cannot modify resources outside this project even within its own services.
-- Terraform Cloud uses its own OIDC provider against AWS for remote runs.
+- Terraform Cloud holds state only. Runs execute on the GitHub runner in Local execution mode, so the identity applying a stack is always its `github-actions-tf-<component>` role — never a single shared role across every stack. The `shared/iam-tfc-oidc` stack predates this and is retained for the remote-run path; nothing currently uses it.
+- A stack that manages Kubernetes objects needs an EKS access entry for its own role, granted through `cluster_admin_principal_arns` in `provisioner_api/dev`. Without one the kubernetes provider fails with a bare `Unauthorized`, which says nothing about IAM.
 
 ---
 
@@ -237,7 +239,7 @@ AWS authentication is OIDC end-to-end:
 1. AWS account.
 2. Terraform Cloud organization (`internal-developer-platform-org`).
 3. Apply `shared/iam-tfc-oidc` and `shared/iam-github-oidc` once, locally or by hand, to bootstrap the OIDC trust.
-4. Create each TFC workspace listed in [the eight stacks table](#the-eight-stacks), pointed at this repo with the matching working directory.
+4. Create each TFC workspace listed in [the nine stacks table](#the-nine-stacks), pointed at this repo with the matching working directory. **Set its execution mode to Local.** Terraform runs on the GitHub runner under the per-component `github-actions-tf-<component>` role; a workspace left on Terraform Cloud's default of Remote executes on TFC's infrastructure instead, under a different identity, and fails with *"No valid credential sources found"*. Workspaces are not managed as code, so nothing in this repo enforces this.
 5. Populate GitHub repository secrets: `TF_API_TOKEN`, `DD_API_KEY`. Populate variables: `AWS_REGION`, `AWS_ROLE_ARN`, `AWS_ACCOUNT_ID`.
 
 ### Full platform up
