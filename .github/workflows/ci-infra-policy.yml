@@ -72,7 +72,7 @@ jobs:
       # soft_fail: findings are reported but do not fail the check. Flip it to
       # false (or enforce a subset with --check) once the baseline is clean.
       - name: Run Checkov
-        uses: bridgecrewio/checkov-action@1246d92f57abae29d5db5f9aeeed2a9813e52d7d # v12.3117.0
+        uses: bridgecrewio/checkov-action@5659ddea96102e16d8f221b3d8402453c0b1c150 # v12.3121.0
         with:
           directory: infra
           framework: terraform
@@ -83,7 +83,7 @@ jobs:
           output_format: sarif
 
       - name: Upload findings to Security tab
-        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           sarif_file: results.sarif
 
