@@ -8,10 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup Label="AWS SDK">
-    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.103.4" />
-    <PackageVersion Include="AWSSDK.SecretsManager" Version="4.0.100.10" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.100.10" />
-    <PackageVersion Include="AWSSDK.StepFunctions" Version="4.0.100.10" />
+    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.103.5" />
+    <PackageVersion Include="AWSSDK.SecretsManager" Version="4.0.100.11" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.100.11" />
+    <PackageVersion Include="AWSSDK.StepFunctions" Version="4.0.100.11" />
   </ItemGroup>
 
   <ItemGroup Label="Composition">
