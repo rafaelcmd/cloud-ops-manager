@@ -24,7 +24,7 @@ moment Terraform plans this stack.
   `infra/live/scaffolder/dev` both read those parameters and create their own
   IRSA roles. The API's own IRSA stays here, in `irsa.tf`, because the API is
   this stack's workload.
-- State: Terraform Cloud workspace `internal-developer-platform-provisioner-api-dev`.
+- State: Terraform Cloud workspace `internal-developer-platform-api-dev`.
 
 ## Usage
 ```sh
