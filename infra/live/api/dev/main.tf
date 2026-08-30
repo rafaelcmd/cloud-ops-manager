@@ -167,3 +167,16 @@ resource "aws_ssm_parameter" "redis_endpoint" {
 # The Datadog Lambda forwarder (CloudWatch -> Datadog) was removed: logs now
 # reach Datadog through the OTel Collector's `datadog` exporter over the OTLP
 # seam, so the CloudWatch-based forwarder path is retired (see observability.tf).
+
+# The queue's ARN, for the stacks that write IAM policies against it — the
+# provisioner component's IRSA role today (infra/live/provisioner/dev). The URL
+# published by the sqs module is what the running services resolve at startup;
+# a policy needs the ARN, and deriving one from the other in HCL would mean
+# hard-coding an account id.
+resource "aws_ssm_parameter" "provisioner_queue_arn" {
+  name  = "/idp/shared/provisioner/queue_arn"
+  type  = "String"
+  value = module.sqs.queue_arn
+
+  tags = local.tags
+}

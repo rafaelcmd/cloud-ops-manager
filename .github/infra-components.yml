@@ -30,15 +30,21 @@ identity:
   - "infra/modules/aws/cognito/**"
 
 api:
-  - "infra/live/provisioner_api/**"
+  - "infra/live/api/**"
   - "infra/modules/aws/eks/**"
   - "infra/modules/aws/sqs/**"
   - "infra/modules/aws/nlb/**"
+  - "infra/modules/aws/irsa/**"
+
+provisioner:
+  - "infra/live/provisioner/**"
+  - "infra/modules/aws/irsa/**"
 
 api-gateway:
-  - "infra/live/provisioner_api_gateway/**"
+  - "infra/live/api_gateway/**"
   - "infra/modules/aws/api_gateway/**"
   - "infra/modules/aws/waf/**"
 
 scaffolder:
   - "infra/live/scaffolder/**"
+  - "infra/modules/aws/irsa/**"

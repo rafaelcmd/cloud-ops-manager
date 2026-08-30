@@ -17,7 +17,7 @@ output "github_actions_plan_role_arn" {
 
 # Workflows derive these ARNs from the naming convention rather than reading
 # them, so these outputs exist for verification and for the EKS access-entry
-# list in provisioner_api/dev.tfvars.
+# list in api/dev.tfvars.
 output "component_role_arns" {
   description = "ARNs of the per-component Terraform pipeline roles, keyed by component"
   value       = { for k, m in module.component_roles : k => m.role_arn }

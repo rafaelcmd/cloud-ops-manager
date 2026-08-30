@@ -11,11 +11,11 @@ projects:
     name: datadog
   - path: infra/live/shared/identity
     name: identity
-  - path: infra/live/provisioner_api/dev
+  - path: infra/live/api/dev
     name: api
     terraform_var_files:
       - dev.tfvars
-  - path: infra/live/provisioner_api_gateway/dev
+  - path: infra/live/api_gateway/dev
     name: api-gateway
     terraform_var_files:
       - dev.tfvars

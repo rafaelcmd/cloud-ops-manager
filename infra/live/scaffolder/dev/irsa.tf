@@ -1,14 +1,17 @@
 # =============================================================================
 # SCAFFOLDER IRSA
 # One role and one ServiceAccount per worker (see local.workers), assumed
-# through the cluster OIDC provider. Mirrors provisioner_irsa.tf in the api
-# component; the cluster's OIDC coordinates come from SSM rather than a module
-# reference because the cluster lives in a different workspace.
+# through the cluster OIDC provider. The role, its trust relationship and the
+# annotated ServiceAccount come from modules/aws/irsa; the cluster's OIDC
+# coordinates come from SSM rather than a module reference because the cluster
+# lives in a different workspace.
 #
 # The roles are deliberately not identical. Both need the table and their own
 # queue; only the github worker's may read the App private key. That is the
 # per-function isolation ADR-0004 gave up when this service left Lambda, put
-# back in the form a container platform can express.
+# back in the form a container platform can express — which is why the policy
+# documents stay here, where the difference between the two workers is visible,
+# rather than inside the module.
 # =============================================================================
 
 locals {
@@ -20,42 +23,6 @@ locals {
   }
 
   eks_oidc_provider_url = data.aws_ssm_parameter.eks_oidc_provider_url.value
-}
-
-data "aws_iam_policy_document" "assume_role" {
-  for_each = local.workers
-
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type        = "Federated"
-      identifiers = [data.aws_ssm_parameter.eks_oidc_provider_arn.value]
-    }
-
-    # Scoped to one ServiceAccount, not to the namespace: without this a pod in
-    # `default` running any other ServiceAccount could assume the role.
-    condition {
-      test     = "StringEquals"
-      variable = "${local.eks_oidc_provider_url}:sub"
-      values   = ["system:serviceaccount:${local.service_account_namespace}:${local.service_account_names[each.key]}"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "${local.eks_oidc_provider_url}:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "worker" {
-  for_each = local.workers
-
-  name               = "${local.name_prefix}-${each.key}-${var.environment}"
-  description        = "Scaffolder ${each.key} worker: ${each.value.description}"
-  assume_role_policy = data.aws_iam_policy_document.assume_role[each.key].json
-  tags               = local.tags
 }
 
 data "aws_iam_policy_document" "worker" {
@@ -135,35 +102,24 @@ data "aws_iam_policy_document" "worker" {
   }
 }
 
-resource "aws_iam_policy" "worker" {
+module "worker_irsa" {
+  source   = "../../../modules/aws/irsa"
   for_each = local.workers
 
-  name        = "${local.name_prefix}-${each.key}-${var.environment}-policy"
-  description = "Permissions for the scaffolder ${each.key} worker pod"
-  policy      = data.aws_iam_policy_document.worker[each.key].json
-  tags        = local.tags
-}
+  role_name          = "${local.name_prefix}-${each.key}-${var.environment}"
+  role_description   = "Scaffolder ${each.key} worker: ${each.value.description}"
+  policy_description = "Permissions for the scaffolder ${each.key} worker pod"
+  policy_json        = data.aws_iam_policy_document.worker[each.key].json
 
-resource "aws_iam_role_policy_attachment" "worker" {
-  for_each = local.workers
+  oidc_provider_arn = data.aws_ssm_parameter.eks_oidc_provider_arn.value
+  oidc_provider_url = local.eks_oidc_provider_url
 
-  role       = aws_iam_role.worker[each.key].name
-  policy_arn = aws_iam_policy.worker[each.key].arn
-}
+  namespace            = local.service_account_namespace
+  service_account_name = local.service_account_names[each.key]
 
-resource "kubernetes_service_account" "worker" {
-  for_each = local.workers
-
-  metadata {
-    name      = local.service_account_names[each.key]
-    namespace = local.service_account_namespace
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.worker[each.key].arn
-    }
-    labels = {
-      "app.kubernetes.io/name"       = local.service_account_names[each.key]
-      "app.kubernetes.io/component"  = each.key
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
+  service_account_labels = {
+    "app.kubernetes.io/component" = each.key
   }
+
+  tags = local.tags
 }

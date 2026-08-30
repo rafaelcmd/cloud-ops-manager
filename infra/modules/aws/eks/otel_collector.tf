@@ -32,41 +32,8 @@ resource "kubernetes_namespace" "observability" {
 }
 
 # -----------------------------------------------------------------------------
-# IRSA ROLE
+# IRSA ROLE + SERVICE ACCOUNT
 # -----------------------------------------------------------------------------
-
-data "aws_iam_policy_document" "otel_collector_assume_role" {
-  count = var.install_otel_collector ? 1 : 0
-
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.cluster.arn]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")}:sub"
-      values   = ["system:serviceaccount:${var.otel_collector_namespace}:${var.otel_collector_service_account}"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")}:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "otel_collector" {
-  count = var.install_otel_collector ? 1 : 0
-
-  name               = "${var.cluster_name}-otel-collector"
-  assume_role_policy = data.aws_iam_policy_document.otel_collector_assume_role[0].json
-  tags               = local.common_tags
-}
 
 # Amazon Managed Prometheus remote-write permission — attached only when an AMP
 # workspace ARN is supplied. Until then the Collector role has no policies and
@@ -80,40 +47,31 @@ data "aws_iam_policy_document" "otel_collector_amp" {
   }
 }
 
-resource "aws_iam_policy" "otel_collector_amp" {
-  count = var.install_otel_collector && var.amp_workspace_arn != null ? 1 : 0
+# Role, trust relationship and the annotated ServiceAccount the Collector
+# Deployment binds to. policy_json is null until an AMP workspace exists, which
+# creates the role with no permissions attached — deliberate: the datadog
+# exporter needs no AWS auth, and having the identity in place makes adding AMP
+# a config-only change.
+module "otel_collector_irsa" {
+  count  = var.install_otel_collector ? 1 : 0
+  source = "../irsa"
 
-  name        = "${var.cluster_name}-otel-collector-amp"
-  description = "Allow the OTel Collector to remote-write to Amazon Managed Prometheus"
-  policy      = data.aws_iam_policy_document.otel_collector_amp[0].json
-  tags        = local.common_tags
-}
+  role_name          = "${var.cluster_name}-otel-collector"
+  policy_name        = "${var.cluster_name}-otel-collector-amp"
+  policy_description = "Allow the OTel Collector to remote-write to Amazon Managed Prometheus"
+  policy_json        = one(data.aws_iam_policy_document.otel_collector_amp[*].json)
 
-resource "aws_iam_role_policy_attachment" "otel_collector_amp" {
-  count = var.install_otel_collector && var.amp_workspace_arn != null ? 1 : 0
+  oidc_provider_arn = aws_iam_openid_connect_provider.cluster.arn
+  oidc_provider_url = replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")
 
-  role       = aws_iam_role.otel_collector[0].name
-  policy_arn = aws_iam_policy.otel_collector_amp[0].arn
-}
+  namespace            = kubernetes_namespace.observability[0].metadata[0].name
+  service_account_name = var.otel_collector_service_account
 
-# -----------------------------------------------------------------------------
-# SERVICE ACCOUNT (IRSA-annotated) — referenced by the Collector Deployment
-# -----------------------------------------------------------------------------
-
-resource "kubernetes_service_account" "otel_collector" {
-  count = var.install_otel_collector ? 1 : 0
-
-  metadata {
-    name      = var.otel_collector_service_account
-    namespace = kubernetes_namespace.observability[0].metadata[0].name
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.otel_collector[0].arn
-    }
-    labels = {
-      "app.kubernetes.io/name"       = "otel-collector"
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
+  service_account_labels = {
+    "app.kubernetes.io/name" = "otel-collector"
   }
+
+  tags = local.common_tags
 }
 
 # -----------------------------------------------------------------------------

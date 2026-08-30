@@ -1,4 +1,4 @@
-# api-gateway component — infra/live/provisioner_api_gateway/dev.
+# api-gateway component — infra/live/api_gateway/dev.
 # REST API, its WAF web ACL, and the VPC Link that reaches the NLB the api
 # stack owns. API Gateway has no per-resource tagging model for authorization,
 # so its statements are action-scoped rather than tag-conditioned.
@@ -8,7 +8,7 @@
 
 resource "aws_iam_policy" "pipeline_api_gateway" {
   name        = "${var.project}-${var.environment}-pipeline-api-gateway-policy"
-  description = "Pipeline policy for the provisioner_api_gateway stack (API Gateway, WAF, VPC Link)"
+  description = "Pipeline policy for the api_gateway stack (API Gateway, WAF, VPC Link)"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

@@ -25,7 +25,7 @@ output "task_dlq_arns" {
 
 output "irsa_role_arns" {
   description = "Per-worker IRSA role ARNs. Only the github one can read the App private key."
-  value       = { for worker, role in aws_iam_role.worker : worker => role.arn }
+  value       = { for worker, irsa in module.worker_irsa : worker => irsa.role_arn }
 }
 
 output "github_app_key_secret_arn" {

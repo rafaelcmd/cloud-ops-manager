@@ -13,7 +13,7 @@ for why it is not on Lambda, and `services/scaffolder/CLAUDE.md` for the service
 
 Apply order is `api` → `scaffolder`. This stack reads the cluster's coordinates
 and OIDC provider from SSM (`/idp/shared/eks/*`), published by
-`infra/live/provisioner_api/dev/eks_ssm.tf`. There is no `terraform_remote_state`
+`infra/live/api/dev/eks_ssm.tf`. There is no `terraform_remote_state`
 read, so this workspace needs no access to the api workspace's state.
 
 ## Two workers, two roles

@@ -28,7 +28,9 @@ tagged `provisioner-latest` for convenience — then apply; the sha tag makes th
 apply itself roll the Deployment). AWS access (SQS consume, SSM read) comes
 from the IRSA-annotated
 ServiceAccount `internal-developer-platform-provisioner`
-(`infra/live/provisioner_api/dev/provisioner_irsa.tf`). The Deployment sets
+(`infra/live/provisioner/dev/irsa.tf` — the service owns its own identity
+stack; the queue and cluster it uses belong to the `api` component). The
+Deployment sets
 `OTEL_EXPORTER_OTLP_ENDPOINT` to the in-cluster OTel Collector Service, which
 is what ships logs/traces/metrics to Datadog. (Previously ran on a standalone
 EC2 host with no Collector route, so its telemetry never left the box.)

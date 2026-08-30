@@ -95,6 +95,17 @@ jobs:
     with: { component: api-gateway, action: apply }
     secrets: inherit
 
+  provisioner-infra:
+    name: Provisioner / IRSA
+    # Owns the consumer's IAM role and the ServiceAccount its Deployment binds
+    # to. Reads the cluster's OIDC provider and API-server coordinates, and the
+    # queue ARN, from the SSM parameters the api component publishes — so it
+    # cannot run before the cluster and the queue exist.
+    needs: [provisioner-api]
+    uses: ./.github/workflows/_terraform.yml
+    with: { component: provisioner, action: apply }
+    secrets: inherit
+
   scaffolder-infra:
     name: Scaffolder / DynamoDB + task queues + secret + IRSA
     # Reads the cluster's OIDC provider and API-server coordinates from the
@@ -138,7 +149,9 @@ jobs:
   provisioner:
     name: K8s / Provisioner
     # Same collector-before-consumer ordering as the API above.
-    needs: [provisioner-api, otel-collector, shared-ecr]
+    # provisioner-infra is a hard prerequisite, not just ordering: the pod binds
+    # to the ServiceAccount that stack creates.
+    needs: [provisioner-infra, otel-collector, shared-ecr]
     uses: ./.github/workflows/cd-provisioner.yml
     secrets: inherit
 
