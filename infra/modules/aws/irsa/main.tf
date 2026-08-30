@@ -46,18 +46,32 @@ resource "aws_iam_role" "this" {
 # A role with no policy is a valid outcome, not a mistake: the OTel Collector
 # needs an identity for its ServiceAccount but no AWS permissions until an AMP
 # workspace exists to write to.
+#
+# The count keys off var.create_policy and NOT off `var.policy_json != null`,
+# which is the obvious spelling and does not work. A policy document almost
+# always describes resources built in the same apply — the queue this pod reads,
+# the table it writes — so its `.json` is unknown until those exist, and a count
+# that depends on it fails the plan outright with "Invalid count argument". The
+# boolean is settled before the plan runs; the document's contents are not.
 resource "aws_iam_policy" "this" {
-  count = var.policy_json != null ? 1 : 0
+  count = var.create_policy ? 1 : 0
 
   name        = coalesce(var.policy_name, "${var.role_name}-policy")
   description = var.policy_description
   policy      = var.policy_json
 
   tags = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = var.policy_json != null
+      error_message = "create_policy is true, so policy_json must be set. Pass create_policy = false for a role that needs no permissions of its own."
+    }
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "this" {
-  count = var.policy_json != null ? 1 : 0
+  count = var.create_policy ? 1 : 0
 
   role       = aws_iam_role.this.name
   policy_arn = aws_iam_policy.this[0].arn
