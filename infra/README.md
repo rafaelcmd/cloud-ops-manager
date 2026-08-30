@@ -105,7 +105,7 @@ Module composition stays inside the repo. Live workspaces reference modules by *
 | `shared/iam-tfc-oidc` | `internal-developer-platform-iam-tfc-oidc` | IAM role assumed by Terraform Cloud via OIDC | — |
 | `api/dev` | `internal-developer-platform-api-dev` | EKS cluster (Fargate), IRSA scaffolding, AWS Load Balancer Controller, SQS queue, Redis endpoint in SSM, Datadog Lambda forwarder | `/idp/shared/vpc/*`, `/idp/shared/datadog/*` |
 | `provisioner/dev` | `internal-developer-platform-provisioner-dev` | The provisioner consumer's IRSA role and ServiceAccount. No service of its own: the queue and the cluster belong to `api/dev`, and it reaches both through SSM. | `/idp/shared/eks/*`, `/idp/shared/provisioner/queue_arn` |
-| `api_gateway/dev` | `internal-developer-platform-provisioner-api-gateway-dev` | REST API Gateway, VPC Link, Cognito authorizer, WAF Web ACL | `/idp/shared/identity/*`, `data.aws_lb` (NLB by name) |
+| `api_gateway/dev` | `internal-developer-platform-api-gateway-dev` | REST API Gateway, VPC Link, Cognito authorizer, WAF Web ACL | `/idp/shared/identity/*`, `data.aws_lb` (NLB by name) |
 | `scaffolder/dev` | `internal-developer-platform-scaffolder-dev` | Scaffolder DynamoDB table, one task queue + DLQ per worker, GitHub App key secret + KMS key, two IRSA roles and ServiceAccounts | `/idp/shared/eks/*` |
 
 The two `iam-*-oidc` stacks are bootstrap; they exist so every other stack can authenticate without long-lived credentials. They are deliberately **not** part of the orchestrator chain — the orchestrator itself depends on them.

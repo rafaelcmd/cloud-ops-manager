@@ -41,7 +41,7 @@ terraform apply -var-file=dev.tfvars
 
 ## Layout
 - Stack: `infra/live/api_gateway/dev`, modules from `infra/modules/aws/*`.
-- State: Terraform Cloud workspace `internal-developer-platform-provisioner-api-gateway-dev`.
+- State: Terraform Cloud workspace `internal-developer-platform-api-gateway-dev`.
 
 ## Files
 - backend.tf: Terraform Cloud workspace configuration
