@@ -43,7 +43,7 @@ It exists primarily as a study and portfolio artifact: every decision below is o
                                                               │
                                   ┌───────────────────────────┤
                                   ▼                           ▼
-                       provisioner_api/dev           provisioner_api_gateway/dev
+                            api/dev                     api_gateway/dev
                        (EKS + LBC + SQS +            (API Gateway + WAF +
                         Redis SSM + DD fwd)           Cognito authorizer + VPC Link)
                                   │                           ▲
@@ -83,8 +83,10 @@ infra/
     │   ├── datadog/                 # AWS↔Datadog integration + API key in SSM
     │   ├── iam-github-oidc/         # AWS role assumed by GitHub Actions
     │   └── iam-tfc-oidc/            # AWS role assumed by Terraform Cloud
-    └── provisioner_api/dev/         # EKS + SQS + Redis SSM + Datadog Lambda forwarder
-        provisioner_api_gateway/dev/ # API Gateway + WAF (consumes identity + NLB)
+    ├── api/dev/                     # EKS + SQS + Redis SSM + Datadog Lambda forwarder
+    ├── provisioner/dev/             # the consumer's IRSA role + ServiceAccount
+    ├── scaffolder/dev/              # scaffolder table, task queues, App key, IRSA
+    └── api_gateway/dev/             # API Gateway + WAF (consumes identity + NLB)
 ```
 
 Module composition stays inside the repo. Live workspaces reference modules by **relative path** (`source = "../../../modules/aws/eks"`), not by git URL — there is no push-before-apply trap and no version drift between live and module code.
@@ -101,8 +103,9 @@ Module composition stays inside the repo. Live workspaces reference modules by *
 | `shared/datadog` | `internal-developer-platform-shared-datadog` | AWS↔Datadog integration role, Datadog API key in SSM | — |
 | `shared/iam-github-oidc` | `internal-developer-platform-iam-github-oidc` | IAM role assumed by GitHub Actions via OIDC | — |
 | `shared/iam-tfc-oidc` | `internal-developer-platform-iam-tfc-oidc` | IAM role assumed by Terraform Cloud via OIDC | — |
-| `provisioner_api/dev` | `internal-developer-platform-provisioner-api-dev` | EKS cluster (Fargate), IRSA scaffolding, AWS Load Balancer Controller, SQS queue, Redis endpoint in SSM, Datadog Lambda forwarder | `/idp/shared/vpc/*`, `/idp/shared/datadog/*` |
-| `provisioner_api_gateway/dev` | `internal-developer-platform-provisioner-api-gateway-dev` | REST API Gateway, VPC Link, Cognito authorizer, WAF Web ACL | `/idp/shared/identity/*`, `data.aws_lb` (NLB by name) |
+| `api/dev` | `internal-developer-platform-api-dev` | EKS cluster (Fargate), IRSA scaffolding, AWS Load Balancer Controller, SQS queue, Redis endpoint in SSM, Datadog Lambda forwarder | `/idp/shared/vpc/*`, `/idp/shared/datadog/*` |
+| `provisioner/dev` | `internal-developer-platform-provisioner-dev` | The provisioner consumer's IRSA role and ServiceAccount. No service of its own: the queue and the cluster belong to `api/dev`, and it reaches both through SSM. | `/idp/shared/eks/*`, `/idp/shared/provisioner/queue_arn` |
+| `api_gateway/dev` | `internal-developer-platform-api-gateway-dev` | REST API Gateway, VPC Link, Cognito authorizer, WAF Web ACL | `/idp/shared/identity/*`, `data.aws_lb` (NLB by name) |
 | `scaffolder/dev` | `internal-developer-platform-scaffolder-dev` | Scaffolder DynamoDB table, one task queue + DLQ per worker, GitHub App key secret + KMS key, two IRSA roles and ServiceAccounts | `/idp/shared/eks/*` |
 
 The two `iam-*-oidc` stacks are bootstrap; they exist so every other stack can authenticate without long-lived credentials. They are deliberately **not** part of the orchestrator chain — the orchestrator itself depends on them.
@@ -125,7 +128,7 @@ resource "aws_ssm_parameter" "private_subnet_ids" {
   value = join(",", [for s in aws_subnet.private : s.id])
 }
 
-# Consumer (live/provisioner_api/dev/data.tf)
+# Consumer (live/api/dev/data.tf)
 data "aws_ssm_parameter" "private_subnet_ids" {
   name = "/idp/shared/vpc/private_subnet_ids"
 }
@@ -136,7 +139,7 @@ The contract is just a path. Anything — Terraform, a CI script, a Lambda — c
 
 ### 2. Cognito as a standalone shared stack
 
-Cognito used to live inside the `provisioner_api_gateway` stack because the gateway needed it as the authorizer. But the API workload also needs the user pool ARN for IRSA scoping, and shoving Cognito into `provisioner_api_gateway` made the API stack depend on the gateway stack — which already depended on the API stack via the NLB. Promoting Cognito to its own `shared/identity` stack collapses the cycle into a strict DAG.
+Cognito used to live inside the `api_gateway` stack because the gateway needed it as the authorizer. But the API workload also needs the user pool ARN for IRSA scoping, and shoving Cognito into `api_gateway` made the API stack depend on the gateway stack — which already depended on the API stack via the NLB. Promoting Cognito to its own `shared/identity` stack collapses the cycle into a strict DAG.
 
 ### 3. EKS on Fargate with IRSA, no node groups
 
@@ -160,18 +163,19 @@ Module IAM policies use concrete ARNs (`aws_ecr_repository.this.arn`, `aws_sqs_q
 
 | Path | Type | Producer | Consumers |
 |---|---|---|---|
-| `/idp/shared/vpc/id` | String | `shared/vpc` | `provisioner_api/dev` |
+| `/idp/shared/vpc/id` | String | `shared/vpc` | `api/dev` |
 | `/idp/shared/vpc/cidr_block` | String | `shared/vpc` | — |
 | `/idp/shared/vpc/public_subnet_ids` | StringList | `shared/vpc` | — |
-| `/idp/shared/vpc/private_subnet_ids` | StringList | `shared/vpc` | `provisioner_api/dev` |
+| `/idp/shared/vpc/private_subnet_ids` | StringList | `shared/vpc` | `api/dev` |
 | `/idp/shared/identity/user_pool_id` | String | `shared/identity` | (future workloads) |
-| `/idp/shared/identity/user_pool_arn` | String | `shared/identity` | `provisioner_api_gateway/dev` |
+| `/idp/shared/identity/user_pool_arn` | String | `shared/identity` | `api_gateway/dev` |
 | `/idp/shared/identity/user_pool_client_id` | String | `shared/identity` | (future workloads) |
-| `/idp/<project>/<env>/datadog/api_key` | SecureString | `shared/datadog` | `provisioner_api/dev` |
+| `/idp/<project>/<env>/datadog/api_key` | SecureString | `shared/datadog` | `api/dev` |
 | `/idp/<project>/<env>/ecr/<repo>/repository_url` | String | `shared/ecr` | `cd-api.yml` (CI) |
-| `/INTERNAL_DEVELOPER_PLATFORM/PROVISIONER_QUEUE_URL` | String | `provisioner_api/dev` (SQS module) | Go API runtime |
+| `/idp/shared/provisioner/queue_arn` | String | `api/dev` | `provisioner/dev` |
+| `/INTERNAL_DEVELOPER_PLATFORM/PROVISIONER_QUEUE_URL` | String | `api/dev` (SQS module) | Go API runtime |
 | `/INTERNAL_DEVELOPER_PLATFORM/COGNITO_CLIENT_ID` | String | `shared/identity` (Cognito module) | Go API runtime |
-| `/INTERNAL_DEVELOPER_PLATFORM/REDIS_ADDR` | String | `provisioner_api/dev` | Go API runtime |
+| `/INTERNAL_DEVELOPER_PLATFORM/REDIS_ADDR` | String | `api/dev` | Go API runtime |
 
 The two namespaces reflect a deliberate split:
 
@@ -228,7 +232,7 @@ AWS authentication is OIDC end-to-end:
 - Trust policies allow three subjects — `...:ref:refs/heads/main`, `...:environment:dev` and `...:environment:dev-auto` — so write-capable credentials are only issued to jobs on `main` or inside a deployment environment (`dev-auto` replaces `dev` when `DISABLE_DEPLOYMENT_APPROVALS` is set). Pull requests match neither.
 - Component policies authorize creation on the `Project` request tag and mutation on the `Project` resource tag, so a role cannot modify resources outside this project even within its own services.
 - Terraform Cloud holds state only. Runs execute on the GitHub runner in Local execution mode, so the identity applying a stack is always its `github-actions-tf-<component>` role — never a single shared role across every stack. The `shared/iam-tfc-oidc` stack predates this and is retained for the remote-run path; nothing currently uses it.
-- A stack that manages Kubernetes objects needs an EKS access entry for its own role, granted through `cluster_admin_principal_arns` in `provisioner_api/dev`. Without one the kubernetes provider fails with a bare `Unauthorized`, which says nothing about IAM.
+- A stack that manages Kubernetes objects needs an EKS access entry for its own role, granted through `cluster_admin_principal_arns` in `api/dev`. Without one the kubernetes provider fails with a bare `Unauthorized`, which says nothing about IAM.
 
 ---
 
@@ -279,7 +283,7 @@ Decisions I made for scope, with the trade-off I'd revisit at production scale:
 - **No drift detection cron**. A scheduled `terraform plan` would alert on out-of-band changes; not wired up.
 - **No cost budget alarms / per-stack AWS Budgets**. The whole platform stays under the AWS free-tier ceiling for short-lived study sessions; that wouldn't survive contact with production.
 - **Single AWS account, single region**. No cross-account or DR posture.
-- **The IRSA wiring for the Go API was reverted during the SSM refactor** and will be re-introduced under `live/provisioner_api/dev/` once the SSM-based identity contract has been validated end-to-end.
+- **The IRSA wiring for the Go API was reverted during the SSM refactor** and will be re-introduced under `live/api/dev/` once the SSM-based identity contract has been validated end-to-end.
 
 ---
 

@@ -3,7 +3,7 @@ terraform {
     organization = "internal-developer-platform-org"
 
     workspaces {
-      name = "internal-developer-platform-provisioner-api-dev"
+      name = "internal-developer-platform-api-dev"
     }
   }
 }

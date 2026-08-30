@@ -31,8 +31,9 @@ variable "tfc_allowed_subs" {
     "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-shared-vpc:run_phase:*",
     "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-shared-ecr:run_phase:*",
     "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-shared-datadog:run_phase:*",
-    "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-provisioner-api-dev:run_phase:*",
-    "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-provisioner-api-gateway-dev:run_phase:*"
+    "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-api-dev:run_phase:*",
+    "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-provisioner-dev:run_phase:*",
+    "organization:internal-developer-platform-org:project:Default Project:workspace:internal-developer-platform-api-gateway-dev:run_phase:*"
   ]
 }
 

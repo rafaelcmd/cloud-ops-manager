@@ -5,48 +5,13 @@
 # at Fargate pod IPs. Installed via Helm with an IRSA-backed ServiceAccount.
 # =============================================================================
 
-data "aws_iam_policy_document" "lbc_assume_role" {
-  count = var.install_aws_load_balancer_controller ? 1 : 0
-
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.cluster.arn]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")}:sub"
-      values   = ["system:serviceaccount:${var.aws_load_balancer_controller_namespace}:aws-load-balancer-controller"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")}:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "lbc" {
-  count = var.install_aws_load_balancer_controller ? 1 : 0
-
-  name               = "${var.cluster_name}-aws-lb-controller"
-  assume_role_policy = data.aws_iam_policy_document.lbc_assume_role[0].json
-  tags               = local.common_tags
-}
-
-# Policy mirrors the upstream recommended policy
+# The controller's permissions. Kept in a local rather than inline in the module
+# call because it is the one part of this file worth reading — it mirrors the
+# upstream recommended policy
 # (https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/docs/install/iam_policy.json)
-# trimmed to actions we actually use here (NLB + target-group-binding paths).
-resource "aws_iam_policy" "lbc" {
-  count = var.install_aws_load_balancer_controller ? 1 : 0
-
-  name        = "${var.cluster_name}-aws-lb-controller-policy"
-  description = "Permissions for the AWS Load Balancer Controller"
-  policy = jsonencode({
+# trimmed to the actions this project uses (NLB + target-group-binding paths).
+locals {
+  lbc_policy_json = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -271,31 +236,26 @@ resource "aws_iam_policy" "lbc" {
       }
     ]
   })
+}
+
+# Role, trust relationship and annotated ServiceAccount. The chart is told not
+# to create its own ServiceAccount (serviceAccount.create = false below) so that
+# the IRSA annotation is Terraform's to manage.
+module "lbc_irsa" {
+  count  = var.install_aws_load_balancer_controller ? 1 : 0
+  source = "../irsa"
+
+  role_name          = "${var.cluster_name}-aws-lb-controller"
+  policy_description = "Permissions for the AWS Load Balancer Controller"
+  policy_json        = local.lbc_policy_json
+
+  oidc_provider_arn = aws_iam_openid_connect_provider.cluster.arn
+  oidc_provider_url = replace(aws_iam_openid_connect_provider.cluster.url, "https://", "")
+
+  namespace            = var.aws_load_balancer_controller_namespace
+  service_account_name = "aws-load-balancer-controller"
 
   tags = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "lbc" {
-  count = var.install_aws_load_balancer_controller ? 1 : 0
-
-  role       = aws_iam_role.lbc[0].name
-  policy_arn = aws_iam_policy.lbc[0].arn
-}
-
-resource "kubernetes_service_account" "lbc" {
-  count = var.install_aws_load_balancer_controller ? 1 : 0
-
-  metadata {
-    name      = "aws-load-balancer-controller"
-    namespace = var.aws_load_balancer_controller_namespace
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.lbc[0].arn
-    }
-    labels = {
-      "app.kubernetes.io/name"       = "aws-load-balancer-controller"
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
-  }
 
   depends_on = [aws_eks_fargate_profile.this]
 }
@@ -322,7 +282,7 @@ resource "helm_release" "aws_load_balancer_controller" {
     },
     {
       name  = "serviceAccount.name"
-      value = kubernetes_service_account.lbc[0].metadata[0].name
+      value = module.lbc_irsa[0].service_account_name
     },
     {
       name  = "region"
@@ -345,8 +305,11 @@ resource "helm_release" "aws_load_balancer_controller" {
     },
   ]
 
+  # The chart must not start before the role its ServiceAccount points at can
+  # actually do anything: without the policy attached, the controller comes up
+  # and fails every reconcile with AccessDenied.
   depends_on = [
-    aws_iam_role_policy_attachment.lbc,
+    module.lbc_irsa,
     aws_eks_fargate_profile.this,
   ]
 }

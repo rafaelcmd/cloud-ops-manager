@@ -1,4 +1,4 @@
-# api component — infra/live/provisioner_api/dev.
+# api component — infra/live/api/dev.
 # The largest surface: EKS (cluster, Fargate profiles, addons, access entries),
 # the IRSA plumbing that needs IAM role and OIDC provider management, SQS, the
 # Terraform-managed NLB, cluster log groups, and the SNS/CloudWatch alerting
@@ -7,7 +7,7 @@
 
 resource "aws_iam_policy" "pipeline_api" {
   name        = "${var.project}-${var.environment}-pipeline-api-policy"
-  description = "Pipeline policy for the provisioner_api stack (EKS, SQS, NLB, IRSA, alerting)"
+  description = "Pipeline policy for the api stack (EKS, SQS, NLB, IRSA, alerting)"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

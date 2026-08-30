@@ -31,7 +31,7 @@ variable "api_version" {
 
 # =============================================================================
 # LOAD BALANCER LOOKUP (SSM)
-# NLB attributes are published by the provisioner_api Terraform stack.
+# NLB attributes are published by the api Terraform stack.
 # =============================================================================
 
 variable "api_nlb_arn_ssm_parameter_name" {

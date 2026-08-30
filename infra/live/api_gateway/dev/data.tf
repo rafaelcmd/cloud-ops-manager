@@ -1,6 +1,6 @@
 # =============================================================================
 # NLB LOOKUP (FROM SSM)
-# The API NLB is Terraform-managed in the provisioner_api stack and published
+# The API NLB is Terraform-managed in the api stack and published
 # to SSM so this stack stays decoupled from producer state files.
 # =============================================================================
 

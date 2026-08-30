@@ -4,7 +4,7 @@ aws_region   = "us-east-1"
 service_name = "resource-provisioner-api"
 api_version  = "v1"
 
-# API NLB values published to SSM by the provisioner_api stack.
+# API NLB values published to SSM by the api stack.
 api_nlb_arn_ssm_parameter_name = "/internal-developer-platform/provisioner-api/nlb/arn"
 api_nlb_dns_ssm_parameter_name = "/internal-developer-platform/provisioner-api/nlb/dns_name"
 

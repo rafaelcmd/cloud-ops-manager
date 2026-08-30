@@ -28,7 +28,7 @@ spec:
         # Opts into datadog-agent sidecar injection (live pod status in the
         # K8s Explorer — see k8s/api/deployment.yaml for the full note). The
         # SA below is registered for the sidecar's kubelet-read RBAC in
-        # infra/live/provisioner_api/dev/main.tf.
+        # infra/live/api/dev/main.tf.
         "agent.datadoghq.com/sidecar": fargate
     spec:
       serviceAccountName: internal-developer-platform-provisioner

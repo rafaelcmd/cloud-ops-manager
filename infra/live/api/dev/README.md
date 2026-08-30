@@ -13,16 +13,22 @@ moment Terraform plans this stack.
 ```
 1. terraform apply (here)                       → creates EKS, SQS, Datadog forwarder
 2. kubectl apply -f k8s/redis/  k8s/api/        → LB controller creates the NLB
-3. terraform apply (provisioner_api_gateway/dev)→ wires API Gateway to the NLB
+3. terraform apply (api_gateway/dev)→ wires API Gateway to the NLB
 ```
 
 ## Layout
-- Stack: `infra/live/provisioner_api/dev`, modules from `infra/modules/aws/*`.
-- State: Terraform Cloud workspace `internal-developer-platform-provisioner-api-dev`.
+- Stack: `infra/live/api/dev`, modules from `infra/modules/aws/*`.
+- Owns the cluster and the queue, and publishes their coordinates to SSM
+  (`eks_ssm.tf`, `/idp/shared/provisioner/queue_arn`). The services that run on
+  them own their own identities elsewhere: `infra/live/provisioner/dev` and
+  `infra/live/scaffolder/dev` both read those parameters and create their own
+  IRSA roles. The API's own IRSA stays here, in `irsa.tf`, because the API is
+  this stack's workload.
+- State: Terraform Cloud workspace `internal-developer-platform-api-dev`.
 
 ## Usage
 ```sh
-cd infra/live/provisioner_api/dev
+cd infra/live/api/dev
 terraform init
 terraform plan  -var-file=dev.tfvars
 terraform apply -var-file=dev.tfvars
@@ -42,7 +48,7 @@ kubectl apply -f ../../../../k8s/api/
 kubectl get svc -w
 ```
 
-Then proceed to `infra/live/provisioner_api_gateway/dev`.
+Then proceed to `infra/live/api_gateway/dev`.
 
 ## Files
 - backend.tf: Terraform Cloud workspace configuration

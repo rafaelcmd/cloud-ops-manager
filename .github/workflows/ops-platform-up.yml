@@ -81,18 +81,29 @@ jobs:
 
   # --- Application infrastructure --------------------------------------------
 
-  provisioner-api:
-    name: Provisioner API / EKS + SQS + Redis SSM
+  api-infra:
+    name: API / EKS + SQS + Redis SSM
     needs: [shared-vpc, shared-ecr, shared-datadog]
     uses: ./.github/workflows/_terraform.yml
     with: { component: api, action: apply }
     secrets: inherit
 
-  provisioner-api-gateway:
-    name: Provisioner API Gateway / API Gateway + WAF
-    needs: [provisioner-api, shared-identity]
+  api-gateway:
+    name: API Gateway / REST API + WAF
+    needs: [api-infra, shared-identity]
     uses: ./.github/workflows/_terraform.yml
     with: { component: api-gateway, action: apply }
+    secrets: inherit
+
+  provisioner-infra:
+    name: Provisioner / IRSA
+    # Owns the consumer's IAM role and the ServiceAccount its Deployment binds
+    # to. Reads the cluster's OIDC provider and API-server coordinates, and the
+    # queue ARN, from the SSM parameters the api component publishes — so it
+    # cannot run before the cluster and the queue exist.
+    needs: [api-infra]
+    uses: ./.github/workflows/_terraform.yml
+    with: { component: provisioner, action: apply }
     secrets: inherit
 
   scaffolder-infra:
@@ -103,7 +114,7 @@ jobs:
     # exists. It also creates the GitHub App key secret but never its value:
     # the PEM is put in by hand once (see the component README), and until it
     # is, the github worker fails every task it takes.
-    needs: [provisioner-api]
+    needs: [api-infra]
     uses: ./.github/workflows/_terraform.yml
     with: { component: scaffolder, action: apply }
     secrets: inherit
@@ -112,16 +123,16 @@ jobs:
 
   redis:
     name: K8s / Redis
-    needs: [provisioner-api]
+    needs: [api-infra]
     uses: ./.github/workflows/cd-redis.yml
     secrets: inherit
 
   otel-collector:
     name: K8s / OTel Collector
-    # provisioner-api owns this workload's Terraform prerequisites: the
+    # api-infra owns this workload's Terraform prerequisites: the
     # observability namespace, IRSA ServiceAccount, datadog-api-key secret and
     # the namespace's Fargate profile.
-    needs: [provisioner-api]
+    needs: [api-infra]
     uses: ./.github/workflows/cd-otel-collector.yml
     secrets: inherit
 
@@ -131,14 +142,16 @@ jobs:
     # client id from SSM at startup and exits if it is missing.
     # otel-collector is ordered first so the API does not export OTLP into the
     # void on a fresh environment — the exporter drops silently.
-    needs: [provisioner-api, redis, otel-collector, shared-ecr, shared-identity]
+    needs: [api-infra, redis, otel-collector, shared-ecr, shared-identity]
     uses: ./.github/workflows/cd-api.yml
     secrets: inherit
 
   provisioner:
     name: K8s / Provisioner
     # Same collector-before-consumer ordering as the API above.
-    needs: [provisioner-api, otel-collector, shared-ecr]
+    # provisioner-infra is a hard prerequisite, not just ordering: the pod binds
+    # to the ServiceAccount that stack creates.
+    needs: [provisioner-infra, otel-collector, shared-ecr]
     uses: ./.github/workflows/cd-provisioner.yml
     secrets: inherit
 

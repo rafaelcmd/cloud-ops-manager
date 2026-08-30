@@ -1,6 +1,6 @@
 # =============================================================================
 # EKS OUTPUTS
-# Consumed by the edge stack (infra/live/provisioner_api_gateway/dev) and by
+# Consumed by the edge stack (infra/live/api_gateway/dev) and by
 # operators running kubectl against the cluster.
 # =============================================================================
 

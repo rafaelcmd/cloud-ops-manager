@@ -30,6 +30,7 @@ on:
           - datadog
           - identity
           - api
+          - provisioner
           - api-gateway
           - scaffolder
       action:
