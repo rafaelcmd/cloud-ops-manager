@@ -64,8 +64,19 @@ variable "service_account_annotations" {
 # PERMISSIONS
 # =============================================================================
 
+# Whether the role gets a policy is a separate input from what that policy says,
+# because Terraform decides how many resources to create before it knows any of
+# their contents. A policy document normally describes resources built in the
+# same apply, so it cannot also decide whether the policy exists — see the note
+# on aws_iam_policy.this in main.tf.
+variable "create_policy" {
+  description = "Whether to create and attach a managed policy from policy_json. False leaves the role with no permissions of its own."
+  type        = bool
+  default     = true
+}
+
 variable "policy_json" {
-  description = "IAM policy document for the role's own inline-managed policy. Null creates the role with no policy attached."
+  description = "IAM policy document for the role's own managed policy. Required when create_policy is true."
   type        = string
   default     = null
 }
@@ -82,8 +93,11 @@ variable "policy_description" {
   default     = null
 }
 
+# These become for_each keys, so they must be known at plan time: pass literal
+# ARNs or ones from variables, never an ARN produced by a resource in the same
+# apply. That would fail the plan the same way a computed count does.
 variable "policy_arns" {
-  description = "ARNs of existing policies to attach in addition to policy_json"
+  description = "ARNs of existing policies to attach alongside policy_json. Must be known at plan time."
   type        = list(string)
   default     = []
 }

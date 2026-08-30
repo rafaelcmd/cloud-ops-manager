@@ -48,15 +48,18 @@ data "aws_iam_policy_document" "otel_collector_amp" {
 }
 
 # Role, trust relationship and the annotated ServiceAccount the Collector
-# Deployment binds to. policy_json is null until an AMP workspace exists, which
-# creates the role with no permissions attached — deliberate: the datadog
-# exporter needs no AWS auth, and having the identity in place makes adding AMP
-# a config-only change.
+# Deployment binds to. Without an AMP workspace the role is created with no
+# permissions attached — deliberate: the datadog exporter needs no AWS auth, and
+# having the identity in place makes adding AMP a config-only change.
+#
+# create_policy keys off the variable, not off whether the document came out
+# null: the module decides how many policies to build before it can read one.
 module "otel_collector_irsa" {
   count  = var.install_otel_collector ? 1 : 0
   source = "../irsa"
 
   role_name          = "${var.cluster_name}-otel-collector"
+  create_policy      = var.amp_workspace_arn != null
   policy_name        = "${var.cluster_name}-otel-collector-amp"
   policy_description = "Allow the OTel Collector to remote-write to Amazon Managed Prometheus"
   policy_json        = one(data.aws_iam_policy_document.otel_collector_amp[*].json)
