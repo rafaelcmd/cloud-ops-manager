@@ -60,8 +60,8 @@ jobs:
             exit 1
           fi
 
-  provisioner-api-gateway:
-    name: Provisioner API Gateway (destroy)
+  api-gateway:
+    name: API Gateway (destroy)
     needs: [guard]
     uses: ./.github/workflows/_terraform.yml
     with: { component: api-gateway, action: destroy }
@@ -79,7 +79,7 @@ jobs:
     with: { component: scaffolder, action: destroy }
     secrets: inherit
 
-  provisioner-infra:
+  provisioner:
     name: Provisioner / IRSA (destroy)
     # Before the cluster, for the same reason as the scaffolder: this stack owns
     # a ServiceAccount inside it, and the kubernetes provider cannot reach the
@@ -89,30 +89,30 @@ jobs:
     with: { component: provisioner, action: destroy }
     secrets: inherit
 
-  provisioner-api:
-    name: Provisioner API / EKS (destroy)
-    needs: [provisioner-api-gateway, scaffolder, provisioner-infra]
+  api:
+    name: API / EKS (destroy)
+    needs: [api-gateway, scaffolder, provisioner]
     uses: ./.github/workflows/_terraform.yml
     with: { component: api, action: destroy }
     secrets: inherit
 
   shared-identity:
     name: Shared / Identity (destroy)
-    needs: [provisioner-api]
+    needs: [api]
     uses: ./.github/workflows/_terraform.yml
     with: { component: identity, action: destroy }
     secrets: inherit
 
   shared-datadog:
     name: Shared / Datadog (destroy)
-    needs: [provisioner-api]
+    needs: [api]
     uses: ./.github/workflows/_terraform.yml
     with: { component: datadog, action: destroy }
     secrets: inherit
 
   shared-ecr:
     name: Shared / ECR (destroy)
-    needs: [shared-datadog, provisioner-api]
+    needs: [shared-datadog, api]
     uses: ./.github/workflows/_terraform.yml
     with: { component: ecr, action: destroy }
     secrets: inherit
