@@ -45,71 +45,38 @@ resource "aws_dynamodb_table" "scaffolder" {
 
 # =============================================================================
 # TASK QUEUES
-# One per worker (see local.workers): the IAM split is only real if the routing
-# matches it. Written as plain resources rather than through modules/aws/sqs —
-# that module is shaped for the provisioner's queue and exposes neither a
-# visibility timeout nor a redrive policy, both of which these queues need.
+#
+# One queue and one dead-letter queue per worker in local.workers. The per-queue
+# split is what makes the IAM split in irsa.tf effective: two Deployments
+# polling a shared queue would each receive the other's tasks.
+#
+# Step Functions is the only sender; the consume side is each worker's IRSA
+# role, granted in irsa.tf against the queue it owns. The module's
+# aws:SourceAccount condition on the service principal is what stops another
+# account's state machine from sending here.
 # =============================================================================
 
-resource "aws_sqs_queue" "tasks_dlq" {
+module "task_queue" {
+  source   = "../../../modules/aws/sqs"
   for_each = local.workers
 
-  name                      = "${local.name_prefix}-${each.key}-tasks-dlq-${var.environment}"
-  message_retention_seconds = var.dlq_message_retention_seconds
+  queue_name = "${local.name_prefix}-${each.key}-tasks-${var.environment}"
 
-  tags = local.tags
-}
-
-resource "aws_sqs_queue" "tasks" {
-  for_each = local.workers
-
-  name = "${local.name_prefix}-${each.key}-tasks-${var.environment}"
-
-  # Long enough for the slowest task to finish before SQS hands the same message
-  # to a second consumer. Raise this before adding a task that takes longer than
-  # a template render and a push.
+  # Must exceed the slowest task, or SQS hands the same message to a second
+  # consumer while the first is still working. Raise it before adding a task
+  # that takes longer than a template render and a push.
   visibility_timeout_seconds = var.task_visibility_timeout_seconds
   message_retention_seconds  = var.task_message_retention_seconds
 
   # The worker deliberately leaves a message on the queue when it cannot report
-  # an outcome to Step Functions, so this redrive is the backstop for a payload
-  # no build of the worker can handle.
-  redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.tasks_dlq[each.key].arn
-    maxReceiveCount     = var.task_max_receive_count
-  })
+  # an outcome to Step Functions, so redrive is the backstop for a payload no
+  # build of the worker can handle.
+  max_receive_count             = var.task_max_receive_count
+  dlq_message_retention_seconds = var.dlq_message_retention_seconds
+
+  producer_service_principals = ["states.amazonaws.com"]
 
   tags = local.tags
-}
-
-# Only Step Functions puts messages here. The consume side is the pod's IRSA
-# role; nothing else in the account has a reason to send.
-data "aws_iam_policy_document" "tasks_queue" {
-  for_each = local.workers
-
-  statement {
-    sid       = "AllowStatesToSendTasks"
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.tasks[each.key].arn]
-
-    principals {
-      type        = "Service"
-      identifiers = ["states.amazonaws.com"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceAccount"
-      values   = [data.aws_caller_identity.current.account_id]
-    }
-  }
-}
-
-resource "aws_sqs_queue_policy" "tasks" {
-  for_each = local.workers
-
-  queue_url = aws_sqs_queue.tasks[each.key].id
-  policy    = data.aws_iam_policy_document.tasks_queue[each.key].json
 }
 
 # =============================================================================
@@ -126,28 +93,19 @@ resource "aws_sqs_queue_policy" "tasks" {
 # point of the two-Deployment split above.
 # =============================================================================
 
-resource "aws_kms_key" "github_app" {
-  description             = "Encrypts the scaffolder's GitHub App private key"
-  deletion_window_in_days = var.kms_deletion_window_in_days
-  enable_key_rotation     = true
+module "github_app_key" {
+  source = "../../../modules/aws/secrets_manager"
 
-  tags = local.tags
-}
-
-resource "aws_kms_alias" "github_app" {
-  name          = "alias/${local.name_prefix}-github-app-${var.environment}"
-  target_key_id = aws_kms_key.github_app.key_id
-}
-
-resource "aws_secretsmanager_secret" "github_app_key" {
   name        = "${local.name_prefix}-github-app-key-${var.environment}"
   description = "PEM private key for the GitHub App the scaffolder authenticates as"
-  kms_key_id  = aws_kms_key.github_app.arn
+  alias_name  = "alias/${local.name_prefix}-github-app-${var.environment}"
 
-  # Dev is torn down and rebuilt by ops-platform-down / ops-platform-up. With a
-  # recovery window the name stays reserved after a destroy and the next apply
-  # fails with "already scheduled for deletion", which is a confusing way to
-  # learn that. A longer-lived environment must set this back to 7+.
+  kms_deletion_window_in_days = var.kms_deletion_window_in_days
+
+  # Zero in dev so that ops-platform-down followed by ops-platform-up can reuse
+  # the name. With a recovery window the name stays reserved after a destroy and
+  # the next apply fails with "already scheduled for deletion". Set to 7 or more
+  # in any environment that is not rebuilt from scratch.
   recovery_window_in_days = var.secret_recovery_window_in_days
 
   tags = local.tags
@@ -172,7 +130,7 @@ resource "aws_ssm_parameter" "task_queue_arn" {
 
   name  = "/idp/${var.service_name}/${var.environment}/${each.key}_task_queue_arn"
   type  = "String"
-  value = aws_sqs_queue.tasks[each.key].arn
+  value = module.task_queue[each.key].queue_arn
   tags  = local.tags
 }
 
@@ -181,13 +139,13 @@ resource "aws_ssm_parameter" "task_queue_name" {
 
   name  = "/idp/${var.service_name}/${var.environment}/${each.key}_task_queue_name"
   type  = "String"
-  value = aws_sqs_queue.tasks[each.key].name
+  value = module.task_queue[each.key].queue_name
   tags  = local.tags
 }
 
 resource "aws_ssm_parameter" "github_app_key_secret_arn" {
   name  = "/idp/${var.service_name}/${var.environment}/github_app_key_secret_arn"
   type  = "String"
-  value = aws_secretsmanager_secret.github_app_key.arn
+  value = module.github_app_key.secret_arn
   tags  = local.tags
 }

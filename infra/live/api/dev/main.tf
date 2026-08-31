@@ -70,22 +70,22 @@ module "eks" {
 module "sqs" {
   source = "../../../modules/aws/sqs"
 
-  # SQS configuration
   queue_name                = var.queue_name
   delay_seconds             = var.delay_seconds
   max_message_size          = var.max_message_size
   message_retention_seconds = var.message_retention_seconds
   receive_wait_time_seconds = var.receive_wait_time_seconds
 
-  # SSM parameter configuration
-  ssm_parameter_name = var.ssm_parameter_name
-  ssm_parameter_type = var.ssm_parameter_type
+  # The API sends and the provisioner receives, and the queue policy says so.
+  #
+  # The consumer's ARN is built from its name rather than read from the
+  # provisioner stack, which would be a cycle: that stack already reads this
+  # queue's ARN from SSM to write its own IAM policy. Both roles are named by
+  # convention off cluster_name (see each stack's irsa.tf), so the name is
+  # already a contract between the two stacks.
+  producer_role_arns = [module.irsa.role_arn]
+  consumer_role_arns = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.cluster_name}-provisioner"]
 
-  # Common configuration
-  project     = var.project
-  environment = var.environment
-
-  # Common tags
   tags = local.tags
 }
 
@@ -167,6 +167,18 @@ resource "aws_ssm_parameter" "redis_endpoint" {
 # The Datadog Lambda forwarder (CloudWatch -> Datadog) was removed: logs now
 # reach Datadog through the OTel Collector's `datadog` exporter over the OTLP
 # seam, so the CloudWatch-based forwarder path is retired (see observability.tf).
+
+# The queue's URL, which is what the AWS SDKs take — the API and the provisioner
+# both resolve it at startup. Published here rather than by modules/aws/sqs:
+# publishing a cross-stack contract is the live stack's job, and the module has
+# no business knowing which parameter path its callers agreed on.
+resource "aws_ssm_parameter" "provisioner_queue_url" {
+  name  = var.ssm_parameter_name
+  type  = var.ssm_parameter_type
+  value = module.sqs.queue_url
+
+  tags = local.tags
+}
 
 # The queue's ARN, for the stacks that write IAM policies against it — the
 # provisioner component's IRSA role today (infra/live/provisioner/dev). The URL

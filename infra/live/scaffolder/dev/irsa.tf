@@ -56,7 +56,7 @@ data "aws_iam_policy_document" "worker" {
       "sqs:GetQueueAttributes",
       "sqs:GetQueueUrl",
     ]
-    resources = [aws_sqs_queue.tasks[each.key].arn]
+    resources = [module.task_queue[each.key].queue_arn]
   }
 
   # Step Functions callbacks. These three take a task token, not a resource
@@ -81,7 +81,7 @@ data "aws_iam_policy_document" "worker" {
     content {
       sid       = "GitHubAppPrivateKey"
       actions   = ["secretsmanager:GetSecretValue"]
-      resources = [aws_secretsmanager_secret.github_app_key.arn]
+      resources = [module.github_app_key.secret_arn]
     }
   }
 
@@ -91,7 +91,7 @@ data "aws_iam_policy_document" "worker" {
     content {
       sid       = "GitHubAppPrivateKeyDecrypt"
       actions   = ["kms:Decrypt"]
-      resources = [aws_kms_key.github_app.arn]
+      resources = [module.github_app_key.kms_key_arn]
 
       condition {
         test     = "StringEquals"

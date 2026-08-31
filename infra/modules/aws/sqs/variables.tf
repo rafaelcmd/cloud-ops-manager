@@ -1,65 +1,116 @@
 # =============================================================================
-# SQS QUEUE CONFIGURATION
-# Variables for basic SQS queue setup and message handling
+# QUEUE
 # =============================================================================
 
 variable "queue_name" {
-  description = "Name of the SQS queue"
+  description = "Name of the queue. Consumers resolve queues by name, so this is a contract with the workloads that read it."
   type        = string
 }
 
 variable "delay_seconds" {
-  description = "The time in seconds that the delivery of all messages in the queue will be delayed"
+  description = "Seconds to delay delivery of every message"
   type        = number
+  default     = 0
 }
 
 variable "max_message_size" {
-  description = "The limit of how many bytes a message can contain before Amazon SQS rejects it"
+  description = "Bytes a message may contain before SQS rejects it"
   type        = number
+  default     = 262144 # 256 KiB, the SQS maximum
 }
 
 variable "message_retention_seconds" {
-  description = "The number of seconds Amazon SQS retains a message"
+  description = "Seconds SQS keeps a message that is never deleted"
   type        = number
+  default     = 345600 # 4 days
 }
 
 variable "receive_wait_time_seconds" {
-  description = "The time for which a ReceiveMessage call will wait for a message to arrive"
+  description = "Long-poll duration for ReceiveMessage. Zero means short polling, which costs an API call per empty receive."
   type        = number
+  default     = 20
+
+  validation {
+    condition     = var.receive_wait_time_seconds >= 0 && var.receive_wait_time_seconds <= 20
+    error_message = "receive_wait_time_seconds must be between 0 and 20."
+  }
+}
+
+# Must exceed the slowest task the consumer runs, or SQS hands the same message
+# to a second consumer while the first is still working on it.
+variable "visibility_timeout_seconds" {
+  description = "Seconds a received message stays invisible to other consumers"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.visibility_timeout_seconds >= 0 && var.visibility_timeout_seconds <= 43200
+    error_message = "visibility_timeout_seconds must be between 0 and 43200 (12 hours)."
+  }
+}
+
+variable "sqs_managed_sse_enabled" {
+  description = "Encrypt messages at rest with the SQS-owned key. On by default: API-created queues are unencrypted otherwise, and it costs nothing."
+  type        = bool
+  default     = true
 }
 
 # =============================================================================
-# SSM PARAMETER CONFIGURATION
-# Variables for Systems Manager Parameter Store integration
+# DEAD-LETTER QUEUE
 # =============================================================================
 
-variable "ssm_parameter_name" {
-  description = "Name of the SSM parameter for storing the queue URL"
-  type        = string
+variable "enable_dlq" {
+  description = "Create a dead-letter queue and a redrive policy pointing at it. Off only for a queue whose failures are genuinely not worth keeping."
+  type        = bool
+  default     = true
 }
 
-variable "ssm_parameter_type" {
-  description = "Type of the SSM parameter"
-  type        = string
+variable "max_receive_count" {
+  description = "Deliveries of one message before it is moved to the dead-letter queue"
+  type        = number
+  default     = 5
+
+  validation {
+    condition     = var.max_receive_count >= 1
+    error_message = "max_receive_count must be at least 1."
+  }
+}
+
+variable "dlq_message_retention_seconds" {
+  description = "Seconds the dead-letter queue keeps a message. Longer than the main queue: the DLQ is what someone reads days later to work out what broke."
+  type        = number
+  default     = 1209600 # 14 days, the SQS maximum
 }
 
 # =============================================================================
-# RESOURCE TAGGING
-# Variables for resource tagging and labeling
+# ACCESS
+#
+# All three default to empty, and no queue policy is created when they all are.
+# Passing them is what turns the queue from "reachable by anything in the account
+# with a wide enough identity policy" into a resource that names its
+# counterparties.
 # =============================================================================
+
+variable "producer_role_arns" {
+  description = "Role ARNs allowed to send to the queue"
+  type        = list(string)
+  default     = []
+}
+
+variable "producer_service_principals" {
+  description = "AWS service principals allowed to send (e.g. [\"states.amazonaws.com\"]), scoped to this account by aws:SourceAccount"
+  type        = list(string)
+  default     = []
+}
+
+variable "consumer_role_arns" {
+  description = "Role ARNs allowed to receive from and delete off the queue"
+  type        = list(string)
+  default     = []
+}
 
 variable "tags" {
-  description = "A map of tags to assign to the SQS queue"
+  description = "Tags applied to the queue and its dead-letter queue"
   type        = map(string)
   default     = {}
-}
-
-variable "project" {
-  description = "Project name"
-  type        = string
-}
-
-variable "environment" {
-  description = "Environment name"
-  type        = string
 }
