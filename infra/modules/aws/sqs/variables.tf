@@ -85,14 +85,16 @@ variable "dlq_message_retention_seconds" {
 # =============================================================================
 # ACCESS
 #
-# All three default to empty, and no queue policy is created when they all are.
-# Passing them is what turns the queue from "reachable by anything in the account
-# with a wide enough identity policy" into a resource that names its
-# counterparties.
+# For senders and receivers that cannot carry an identity policy — a service
+# principal, or a principal in another account. A same-account IAM role does not
+# need to be listed here and generally should not be: an SQS policy is an
+# additive allow, so it cannot restrict a principal its identity policy already
+# permits, and SQS rejects the whole policy if a named role does not exist yet.
+# See the note above the queue policy in main.tf.
 # =============================================================================
 
 variable "producer_role_arns" {
-  description = "Role ARNs allowed to send to the queue"
+  description = "Role ARNs allowed to send. Must already exist when this queue is created — SQS validates principals."
   type        = list(string)
   default     = []
 }
@@ -104,7 +106,7 @@ variable "producer_service_principals" {
 }
 
 variable "consumer_role_arns" {
-  description = "Role ARNs allowed to receive from and delete off the queue"
+  description = "Role ARNs allowed to receive and delete. Must already exist when this queue is created — SQS validates principals."
   type        = list(string)
   default     = []
 }
