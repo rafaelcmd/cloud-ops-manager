@@ -76,15 +76,21 @@ module "sqs" {
   message_retention_seconds = var.message_retention_seconds
   receive_wait_time_seconds = var.receive_wait_time_seconds
 
-  # The API sends and the provisioner receives, and the queue policy says so.
+  # No queue policy. Both counterparties are IAM roles in this account, and a
+  # same-account role is authorized by its own identity policy: the API's grant
+  # is in irsa.tf here, the provisioner's in infra/live/provisioner/dev/irsa.tf.
+  # A resource policy would add nothing, because an SQS policy is an additive
+  # allow rather than a restriction -- it cannot stop a principal that an
+  # identity policy already permits.
   #
-  # The consumer's ARN is built from its name rather than read from the
-  # provisioner stack, which would be a cycle: that stack already reads this
-  # queue's ARN from SSM to write its own IAM policy. Both roles are named by
-  # convention off cluster_name (see each stack's irsa.tf), so the name is
-  # already a contract between the two stacks.
-  producer_role_arns = [module.irsa.role_arn]
-  consumer_role_arns = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.cluster_name}-provisioner"]
+  # It also could not name the consumer even if it were useful. SQS validates
+  # principals when the policy is set, and the provisioner's role is created by
+  # a stack that applies after this one, so naming it fails a fresh build with
+  # "InvalidAttributeValue: Invalid value for the parameter Policy".
+  #
+  # The module's queue policy is for principals that cannot carry an identity
+  # policy at all -- see the scaffolder's task queues, which must name
+  # states.amazonaws.com.
 
   tags = local.tags
 }

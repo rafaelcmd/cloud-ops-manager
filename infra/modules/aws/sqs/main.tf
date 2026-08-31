@@ -55,13 +55,27 @@ resource "aws_sqs_queue" "this" {
 # =============================================================================
 # QUEUE POLICY
 #
-# Without one, the queue is reachable by any principal in the account holding a
-# broad enough identity policy. With one, the queue itself states who its
-# counterparties are.
+# For principals that cannot be authorized any other way. An SQS queue policy is
+# an additive allow, not a restriction, so for a role in this account it adds
+# nothing that the role's own identity policy does not already grant. Reach for
+# it when the sender has no identity policy to attach:
 #
-# All three principal lists are empty by default, and no policy is created when
-# they all are — a queue can be adopted by a caller that has not worked out its
-# principals yet, rather than being forced into a policy that locks it.
+#   - an AWS service principal (states.amazonaws.com delivering task tokens)
+#   - a principal in another account
+#
+# TWO THINGS TO KNOW BEFORE PASSING AN ARN HERE:
+#
+# SQS validates principals when the policy is set. Naming a role that does not
+# exist yet fails with "InvalidAttributeValue: Invalid value for the parameter
+# Policy" — so a queue in one stack cannot name a role created by a stack that
+# applies later, however stable that role's name is.
+#
+# aws:SourceAccount is what makes a service principal safe: without it, any
+# account's state machine could send to this queue.
+#
+# All three lists are empty by default and no policy is created when they all
+# are, which is the right outcome for a queue whose counterparties are ordinary
+# same-account roles.
 # =============================================================================
 
 data "aws_iam_policy_document" "queue" {

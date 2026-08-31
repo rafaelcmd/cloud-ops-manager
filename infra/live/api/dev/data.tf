@@ -5,10 +5,6 @@
 # means a consumer never needs TFC access to a producer's state.
 # =============================================================================
 
-# The account this apply runs in, used to build the provisioner's role ARN for
-# the queue policy in main.tf.
-data "aws_caller_identity" "current" {}
-
 # Shared VPC — published by the shared/vpc workspace
 data "aws_ssm_parameter" "vpc_id" {
   name = "/idp/shared/vpc/id"
