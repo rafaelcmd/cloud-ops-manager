@@ -70,7 +70,6 @@ resource "aws_iam_policy" "pipeline_vpc" {
           "ec2:DeleteRoute",
           "ec2:ReplaceRoute",
           "ec2:AssociateRouteTable",
-          "ec2:DisassociateRouteTable",
           "ec2:ReleaseAddress",
           "ec2:DeleteNatGateway",
           "ec2:DeleteSecurityGroup",
@@ -91,10 +90,19 @@ resource "aws_iam_policy" "pipeline_vpc" {
           }
         }
       },
+      # Disassociating does not name a taggable resource. The request carries an
+      # association id, which IAM resolves to arn:aws:ec2:<region>:<account>:*/*,
+      # and aws:ResourceTag/Project can never match that -- so these cannot live
+      # in the tag-scoped statement above. Listing the action there is not
+      # enough: a destroy fails with UnauthorizedOperation and "no identity-based
+      # policy allows the action", which reads like the action is missing.
       {
-        Sid      = "DisassociateAddress"
-        Effect   = "Allow"
-        Action   = ["ec2:DisassociateAddress"]
+        Sid    = "DisassociateUntaggableAttachments"
+        Effect = "Allow"
+        Action = [
+          "ec2:DisassociateAddress",
+          "ec2:DisassociateRouteTable"
+        ]
         Resource = "*"
       }
     ]
