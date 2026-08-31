@@ -1,29 +1,29 @@
-# =============================================================================
-# SQS MODULE OUTPUTS
-# Outputs for SQS queue resources
-# =============================================================================
-
 output "queue_arn" {
-  description = "ARN of the SQS queue"
-  value       = aws_sqs_queue.provisioner_queue.arn
+  description = "ARN of the queue, for IAM policies written against it"
+  value       = aws_sqs_queue.this.arn
 }
 
 output "queue_url" {
-  description = "URL of the SQS queue"
-  value       = aws_sqs_queue.provisioner_queue.url
+  description = "URL of the queue, which is what the AWS SDKs take"
+  value       = aws_sqs_queue.this.url
 }
 
 output "queue_name" {
-  description = "Name of the SQS queue"
-  value       = aws_sqs_queue.provisioner_queue.name
+  description = "Name of the queue"
+  value       = aws_sqs_queue.this.name
 }
 
-output "ssm_parameter_arn" {
-  description = "ARN of the SSM parameter storing the queue URL"
-  value       = aws_ssm_parameter.provisioner_queue_url.arn
+output "dlq_arn" {
+  description = "ARN of the dead-letter queue, or null when enable_dlq is false"
+  value       = one(aws_sqs_queue.dlq[*].arn)
 }
 
-output "ssm_parameter_name" {
-  description = "Name of the SSM parameter storing the queue URL"
-  value       = aws_ssm_parameter.provisioner_queue_url.name
+output "dlq_url" {
+  description = "URL of the dead-letter queue, or null when enable_dlq is false"
+  value       = one(aws_sqs_queue.dlq[*].url)
+}
+
+output "dlq_name" {
+  description = "Name of the dead-letter queue, or null when enable_dlq is false"
+  value       = one(aws_sqs_queue.dlq[*].name)
 }
