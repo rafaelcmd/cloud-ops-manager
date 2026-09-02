@@ -11,34 +11,26 @@
 # | Repository record | REPO#<owner>/<name>   | META              |
 # =============================================================================
 
-resource "aws_dynamodb_table" "scaffolder" {
-  name         = "${local.name_prefix}-${var.environment}"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "PK"
-  range_key    = "SK"
+module "table" {
+  source = "../../../modules/aws/dynamodb"
 
-  attribute {
-    name = "PK"
-    type = "S"
-  }
+  name      = "${local.name_prefix}-${var.environment}"
+  hash_key  = "PK"
+  range_key = "SK"
 
-  attribute {
-    name = "SK"
-    type = "S"
-  }
+  # Only the key attributes are declared: DynamoDB rejects a table that declares
+  # an attribute nothing keys on, so the item bodies above do not appear here.
+  attributes = [
+    { name = "PK", type = "S" },
+    { name = "SK", type = "S" },
+  ]
 
   # Abandoned scaffolds release their name automatically. The adapter writes
   # ExpiresAt as epoch seconds, which is the only shape DynamoDB TTL reads.
-  ttl {
-    attribute_name = "ExpiresAt"
-    enabled        = true
-  }
+  ttl_attribute_name = "ExpiresAt"
 
-  point_in_time_recovery {
-    enabled = var.point_in_time_recovery_enabled
-  }
-
-  deletion_protection_enabled = var.deletion_protection_enabled
+  point_in_time_recovery_enabled = var.point_in_time_recovery_enabled
+  deletion_protection_enabled    = var.deletion_protection_enabled
 
   tags = local.tags
 }
@@ -121,7 +113,7 @@ module "github_app_key" {
 resource "aws_ssm_parameter" "table_name" {
   name  = "/idp/${var.service_name}/${var.environment}/table_name"
   type  = "String"
-  value = aws_dynamodb_table.scaffolder.name
+  value = module.table.table_name
   tags  = local.tags
 }
 

@@ -25,15 +25,17 @@
 # side and point them at this topic. See follow-up.
 # =============================================================================
 
-resource "aws_sns_topic" "observability_alerts" {
+module "observability_alerts" {
+  source = "../../../modules/aws/sns_topic"
+
   name = "${var.project}-${var.environment}-observability-alerts"
+
+  # An empty notification_email leaves the topic with no subscribers, which is a
+  # working state: alarms still publish, and nothing is delivered until an
+  # address is set and confirmed.
+  subscriptions = var.notification_email != "" ? {
+    ops-email = { protocol = "email", endpoint = var.notification_email }
+  } : {}
+
   tags = local.tags
-}
-
-resource "aws_sns_topic_subscription" "observability_alerts_email" {
-  count = var.notification_email != "" ? 1 : 0
-
-  topic_arn = aws_sns_topic.observability_alerts.arn
-  protocol  = "email"
-  endpoint  = var.notification_email
 }
