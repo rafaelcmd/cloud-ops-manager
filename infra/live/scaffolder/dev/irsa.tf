@@ -40,8 +40,8 @@ data "aws_iam_policy_document" "worker" {
       "dynamodb:Query",
     ]
     resources = [
-      aws_dynamodb_table.scaffolder.arn,
-      "${aws_dynamodb_table.scaffolder.arn}/index/*",
+      module.table.table_arn,
+      "${module.table.table_arn}/index/*",
     ]
   }
 

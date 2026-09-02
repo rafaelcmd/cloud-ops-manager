@@ -1,11 +1,11 @@
 output "table_name" {
   description = "Name of the scaffolder's single DynamoDB table"
-  value       = aws_dynamodb_table.scaffolder.name
+  value       = module.table.table_name
 }
 
 output "table_arn" {
   description = "ARN of the scaffolder's single DynamoDB table"
-  value       = aws_dynamodb_table.scaffolder.arn
+  value       = module.table.table_arn
 }
 
 output "task_queue_names" {
