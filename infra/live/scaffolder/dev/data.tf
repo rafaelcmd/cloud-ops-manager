@@ -28,3 +28,10 @@ data "aws_ssm_parameter" "eks_oidc_provider_arn" {
 data "aws_ssm_parameter" "eks_oidc_provider_url" {
   name = "/idp/shared/eks/oidc_provider_url"
 }
+
+# The platform's alert channel, owned by the api component. Read rather than
+# re-created: an SNS email subscription has to be confirmed by a human, so a
+# second topic would mean a second confirmation for the same recipient.
+data "aws_ssm_parameter" "observability_alerts_topic_arn" {
+  name = "/idp/shared/observability/alerts_topic_arn"
+}

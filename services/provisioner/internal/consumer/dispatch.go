@@ -25,9 +25,13 @@ func Dispatch(ctx context.Context, body []byte, tracer trace.Tracer, log logger.
 	if err != nil {
 		// The API validates this shape before publishing, so a failure here
 		// indicates a message produced outside the API or divergence between the
-		// two contract definitions. Neither is resolved by a retry, and this
-		// queue has no dead-letter queue, so the message is logged and
-		// acknowledged rather than redelivered indefinitely.
+		// two contract definitions. Neither is resolved by a retry.
+		//
+		// Returning false leaves the message on the queue. It used to be
+		// acknowledged here, because the queue had no dead-letter queue and the
+		// alternative was redelivering forever; the queue has one now, so the
+		// redrive policy takes the message out of circulation after
+		// maxReceiveCount and puts it somewhere it can be read.
 		log.WithContext(ctx).Error("could not understand provision request",
 			logger.F("error", err.Error()),
 			logger.F("body", string(body)),

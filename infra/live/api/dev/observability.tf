@@ -39,3 +39,14 @@ module "observability_alerts" {
 
   tags = local.tags
 }
+
+# Published so sibling stacks can point their own alarms at this topic without
+# re-creating a channel — and without a second email confirmation. The
+# scaffolder's dead-letter queue alarms read it.
+resource "aws_ssm_parameter" "observability_alerts_topic_arn" {
+  name  = "/idp/shared/observability/alerts_topic_arn"
+  type  = "String"
+  value = module.observability_alerts.topic_arn
+
+  tags = local.tags
+}

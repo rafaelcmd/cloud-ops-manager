@@ -76,6 +76,18 @@ module "sqs" {
   message_retention_seconds = var.message_retention_seconds
   receive_wait_time_seconds = var.receive_wait_time_seconds
 
+  # Set explicitly rather than left on the module's 30s default. The consumer
+  # currently only decodes the message and splits it, but it is the platform's
+  # control plane: once it starts Step Functions executions, a message must stay
+  # invisible long enough for that call to finish, or SQS hands the same request
+  # to a second consumer and the work is started twice.
+  visibility_timeout_seconds = var.queue_visibility_timeout_seconds
+
+  # Anything reaching the dead-letter queue is a provision request that was
+  # accepted with a 202 and then never carried out. Nobody finds that out
+  # without an alarm.
+  alarm_actions = [module.observability_alerts.topic_arn]
+
   # No queue policy. Both counterparties are IAM roles in this account, and a
   # same-account role is authorized by its own identity policy: the API's grant
   # is in irsa.tf here, the provisioner's in infra/live/provisioner/dev/irsa.tf.
