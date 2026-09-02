@@ -172,6 +172,12 @@ variable "receive_wait_time_seconds" {
   type        = number
 }
 
+variable "queue_visibility_timeout_seconds" {
+  description = "Seconds a received provisioning message stays invisible to other consumers. Must exceed the consumer's slowest path through one message."
+  type        = number
+  default     = 60
+}
+
 variable "ssm_parameter_name" {
   description = "Name of the SSM parameter for storing the queue URL"
   type        = string

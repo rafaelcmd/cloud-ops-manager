@@ -56,8 +56,13 @@ delay_seconds             = 0
 max_message_size          = 262144
 message_retention_seconds = 345600
 receive_wait_time_seconds = 20
-ssm_parameter_name        = "/INTERNAL_DEVELOPER_PLATFORM/PROVISIONER_QUEUE_URL"
-ssm_parameter_type        = "String"
+
+# Raise this before the provisioner starts doing real work per message: it has
+# to cover the slowest path through one message, including the Step Functions
+# StartExecution calls that will land where the dispatch logging is today.
+queue_visibility_timeout_seconds = 60
+ssm_parameter_name               = "/INTERNAL_DEVELOPER_PLATFORM/PROVISIONER_QUEUE_URL"
+ssm_parameter_type               = "String"
 
 # Redis runs in-cluster (see /k8s/redis/). The SSM parameter publishes the
 # service DNS so the API resolves it the same way it did under the ECS module.

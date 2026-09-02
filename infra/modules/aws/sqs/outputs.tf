@@ -27,3 +27,8 @@ output "dlq_name" {
   description = "Name of the dead-letter queue, or null when enable_dlq is false"
   value       = one(aws_sqs_queue.dlq[*].name)
 }
+
+output "dlq_alarm_arn" {
+  description = "ARN of the dead-letter queue alarm, or null when it was not created"
+  value       = one(aws_cloudwatch_metric_alarm.dlq_not_empty[*].arn)
+}

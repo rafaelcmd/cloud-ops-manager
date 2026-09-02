@@ -111,8 +111,30 @@ variable "consumer_role_arns" {
   default     = []
 }
 
+# =============================================================================
+# ALARM
+# =============================================================================
+
+variable "enable_dlq_alarm" {
+  description = "Alarm when the dead-letter queue is not empty. Ignored when enable_dlq is false."
+  type        = bool
+  default     = true
+}
+
+variable "alarm_actions" {
+  description = "ARNs notified when the alarm changes state, typically an SNS topic. An alarm with none still shows in CloudWatch but tells nobody."
+  type        = list(string)
+  default     = []
+}
+
+variable "dlq_alarm_period" {
+  description = "Seconds between evaluations of the dead-letter queue alarm. SQS publishes these metrics every five minutes, so shorter periods only add empty evaluations."
+  type        = number
+  default     = 300
+}
+
 variable "tags" {
-  description = "Tags applied to the queue and its dead-letter queue"
+  description = "Tags applied to the queue, its dead-letter queue and the alarm"
   type        = map(string)
   default     = {}
 }

@@ -68,6 +68,11 @@ module "task_queue" {
 
   producer_service_principals = ["states.amazonaws.com"]
 
+  # A task that reaches the dead-letter queue is a scaffold that stopped
+  # halfway: the name is reserved, the repository may or may not exist, and the
+  # state machine is waiting for a token that will never arrive.
+  alarm_actions = [data.aws_ssm_parameter.observability_alerts_topic_arn.value]
+
   tags = local.tags
 }
 

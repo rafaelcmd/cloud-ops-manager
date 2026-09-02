@@ -11,9 +11,19 @@ import (
 	"github.com/rafaelcmd/internal-developer-platform/resource-provisioner-service/internal/logger"
 )
 
-// RunSQS long-polls the queue and deletes each message after processing
-// (at-least-once) until the context is cancelled.
-func RunSQS(ctx context.Context, client *sqs.Client, queueURL string, tracer trace.Tracer, metrics Metrics, log logger.Logger) error {
+// SQSClient is the part of the SQS API this consumer uses. Narrowed to an
+// interface so the receive/delete behaviour can be tested without AWS —
+// *sqs.Client satisfies it.
+type SQSClient interface {
+	ReceiveMessage(context.Context, *sqs.ReceiveMessageInput, ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error)
+	DeleteMessage(context.Context, *sqs.DeleteMessageInput, ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error)
+}
+
+// RunSQS long-polls the queue until the context is cancelled, deleting each
+// message once it has been handled (at-least-once). A message the consumer
+// cannot understand is left on the queue for the redrive policy to move to the
+// dead-letter queue.
+func RunSQS(ctx context.Context, client SQSClient, queueURL string, tracer trace.Tracer, metrics Metrics, log logger.Logger) error {
 	log.WithContext(ctx).Info("polling messages from SQS queue", logger.F("queue_url", queueURL))
 
 	for ctx.Err() == nil {
@@ -52,10 +62,25 @@ func RunSQS(ctx context.Context, client *sqs.Client, queueURL string, tracer tra
 			// scaffold and infrastructure halves. See Dispatch for the point at
 			// which the state machine executions will be started.
 			if !Dispatch(processCtx, []byte(aws.ToString(message.Body)), tracer, log) {
+				// Left on the queue deliberately. SQS makes it visible again
+				// after the visibility timeout and the queue's redrive policy
+				// moves it to the dead-letter queue once maxReceiveCount is
+				// reached, where it can be looked at.
+				//
+				// Deleting here discarded the only copy of a request the service
+				// could not understand, and told nobody: the API answered 202
+				// long ago, so the caller waits for an application that will
+				// never be scaffolded. It also meant the dead-letter queue could
+				// never receive anything.
 				span.SetStatus(codes.Error, "provision request could not be understood")
+				metrics.Failed.Add(processCtx, 1)
+				log.WithContext(processCtx).Error("leaving message on the queue for redelivery",
+					logger.F("message_id", aws.ToString(message.MessageId)))
+				span.End()
+				continue
 			}
 
-			// Delete the message after processing.
+			// Delete the message only once it has been handled.
 			_, err := client.DeleteMessage(processCtx, &sqs.DeleteMessageInput{
 				QueueUrl:      aws.String(queueURL),
 				ReceiptHandle: message.ReceiptHandle,

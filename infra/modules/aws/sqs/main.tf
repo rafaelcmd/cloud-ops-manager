@@ -148,3 +148,49 @@ resource "aws_sqs_queue_policy" "this" {
   queue_url = aws_sqs_queue.this.id
   policy    = data.aws_iam_policy_document.queue[0].json
 }
+
+# =============================================================================
+# DEAD-LETTER QUEUE ALARM
+#
+# A dead-letter queue nobody watches is a slower way to lose a message. Anything
+# that lands here has already been retried maxReceiveCount times and will not be
+# retried again, so the arrival is the whole signal — hence a threshold of one
+# message rather than a rate.
+#
+# ApproximateNumberOfMessagesVisible is a gauge, not a counter: it keeps
+# reporting while the message sits there, so the alarm stays ON until the queue
+# is drained. That is the intended behaviour — it should not clear itself while
+# a failed request is still unexamined.
+#
+# treat_missing_data is "notBreaching" because SQS publishes no datapoint for a
+# queue with no traffic, and an empty dead-letter queue is the good case.
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
+  count = var.enable_dlq && var.enable_dlq_alarm ? 1 : 0
+
+  alarm_name = "${var.queue_name}-dlq-not-empty"
+  # Read by whoever the alarm wakes, so it says what happened and what to do —
+  # not just which metric moved.
+  alarm_description = join(" ", [
+    "Messages are sitting in ${aws_sqs_queue.dlq[0].name}.",
+    "Each exhausted the redrive limit of ${var.max_receive_count} and will not be retried.",
+    "Read them before the ${floor(var.dlq_message_retention_seconds / 86400)}-day retention expires.",
+  ])
+
+  namespace   = "AWS/SQS"
+  metric_name = "ApproximateNumberOfMessagesVisible"
+  dimensions  = { QueueName = aws_sqs_queue.dlq[0].name }
+
+  statistic           = "Maximum"
+  period              = var.dlq_alarm_period
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = var.alarm_actions
+  ok_actions    = var.alarm_actions
+
+  tags = var.tags
+}
