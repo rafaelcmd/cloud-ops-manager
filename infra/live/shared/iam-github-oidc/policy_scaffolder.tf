@@ -25,6 +25,8 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
           "dynamodb:Describe*",
           "sqs:List*",
           "sqs:Get*",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:ListTagsForResource",
           "eks:DescribeCluster",
           "states:List*",
           "states:Describe*",
@@ -100,6 +102,41 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
           "sqs:RemovePermission"
         ]
         Resource = "arn:aws:sqs:*:*:${var.project}-scaffolder-*"
+      },
+      {
+        # The dead-letter queue alarms modules/aws/sqs creates. Nothing watched
+        # those queues before, so a scaffold task that exhausted its retries
+        # stayed unread until retention expired.
+        Sid    = "CloudWatchCreateTaggedAlarms"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:TagResource"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:RequestTag/Project" = var.project
+          }
+        }
+      },
+      {
+        # PutMetricAlarm appears here as well as above: updating an existing
+        # alarm is the same call, and a request that does not resend the tags
+        # is authorized against the alarm's tags rather than the request's.
+        Sid    = "CloudWatchManageProjectAlarms"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:UntagResource"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = var.project
+          }
+        }
       },
       {
         Sid    = "SecretsManagerCreateTagged"
