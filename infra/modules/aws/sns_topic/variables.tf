@@ -3,17 +3,14 @@ variable "name" {
   type        = string
 }
 
-# A map, not a list, and the keys are labels the caller chooses:
+# A map keyed by caller-chosen labels:
 #
 #   subscriptions = {
 #     ops-email = { protocol = "email", endpoint = var.notification_email }
 #   }
 #
-# The keys become Terraform addresses, so they must be known at plan time — which
-# is exactly why they cannot be derived from the endpoints, since an endpoint may
-# be an ARN that does not exist yet. Email subscriptions stay pending until the
-# recipient confirms them, so a stable label is also what stops an unrelated
-# change from costing another round of confirmation mail.
+# The keys become Terraform addresses and must be known at plan time, which is
+# why they cannot be derived from the endpoints. See main.tf.
 variable "subscriptions" {
   description = "Subscriptions to create, keyed by a caller-chosen label"
   type = map(object({

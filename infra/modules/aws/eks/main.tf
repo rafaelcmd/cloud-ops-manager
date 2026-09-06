@@ -1,13 +1,17 @@
+# The EKS control plane, its IAM role and security group, the access entries
+# that grant operators kubectl, and the IAM OIDC provider that makes IRSA
+# possible. Every platform workload runs on this cluster.
+#
+# Compute is Fargate only; see fargate.tf. The add-ons the cluster needs to be
+# usable are in the sibling files: coredns_fargate.tf, aws_lb_controller.tf,
+# fargate_logging.tf, otel_collector.tf and datadog_cluster_agent.tf.
+
 locals {
   common_tags = merge(var.tags, {
     Project     = var.project
     Environment = var.environment
   })
 }
-
-# =============================================================================
-# CLUSTER IAM ROLE
-# =============================================================================
 
 data "aws_iam_policy_document" "cluster_assume_role" {
   statement {
@@ -30,11 +34,8 @@ resource "aws_iam_role_policy_attachment" "cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-# =============================================================================
-# SECURITY GROUP FOR THE CLUSTER ENIs
-# EKS creates its own, but we attach one we control so other SGs can reference it.
-# =============================================================================
-
+# EKS creates a security group of its own. This one is attached in addition so
+# that other security groups have a stable, Terraform-owned group to reference.
 resource "aws_security_group" "cluster" {
   name        = "${var.cluster_name}-cluster-sg"
   description = "Additional security group for EKS control plane ENIs"
@@ -52,10 +53,6 @@ resource "aws_security_group" "cluster" {
     Name = "${var.cluster_name}-cluster-sg"
   })
 }
-
-# =============================================================================
-# CLUSTER
-# =============================================================================
 
 resource "aws_cloudwatch_log_group" "cluster" {
   name              = "/aws/eks/${var.cluster_name}/cluster"
@@ -78,8 +75,8 @@ resource "aws_eks_cluster" "this" {
     public_access_cidrs     = var.public_access_cidrs
   }
 
-  # Use the Access Entries API for cluster auth. CONFIG_MAP is kept on so that
-  # any tooling still expecting aws-auth keeps working during the transition.
+  # Cluster auth uses the Access Entries API. CONFIG_MAP remains enabled so
+  # tooling that still expects the aws-auth ConfigMap keeps working.
   access_config {
     authentication_mode                         = "API_AND_CONFIG_MAP"
     bootstrap_cluster_creator_admin_permissions = true
@@ -96,13 +93,11 @@ resource "aws_eks_cluster" "this" {
   ]
 }
 
-# =============================================================================
-# CLUSTER ADMIN ACCESS ENTRIES
-# Grants extra IAM principals (e.g. operator IAM users) cluster-admin via the
-# Access Entries API. The cluster creator (the TFC role) already has admin
-# implicitly through bootstrap_cluster_creator_admin_permissions above.
-# =============================================================================
-
+# Grants cluster-admin to additional IAM principals: operator workstations and
+# the CI roles for any stack that manages Kubernetes objects. Without an entry,
+# the kubernetes provider fails with a bare "Unauthorized" that says nothing
+# about IAM. The cluster creator already has admin through
+# bootstrap_cluster_creator_admin_permissions above.
 resource "aws_eks_access_entry" "admins" {
   for_each = toset(var.cluster_admin_principal_arns)
 
@@ -127,10 +122,8 @@ resource "aws_eks_access_policy_association" "admins" {
   depends_on = [aws_eks_access_entry.admins]
 }
 
-# =============================================================================
-# OIDC PROVIDER — required so IAM Roles for Service Accounts (IRSA) work
-# =============================================================================
-
+# Registers the cluster's OIDC issuer with IAM, which is the prerequisite for
+# IRSA. modules/aws/irsa consumes the ARN and URL emitted here.
 data "tls_certificate" "cluster_oidc" {
   url = aws_eks_cluster.this.identity[0].oidc[0].issuer
 }

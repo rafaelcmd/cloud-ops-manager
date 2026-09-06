@@ -1,3 +1,8 @@
+# The AWS side of the Datadog integration: the role Datadog assumes to crawl
+# this account, and the policies that bound what it can read. Paired with
+# modules/datadog, which registers the integration on the Datadog side and
+# supplies the External Id this role's trust policy pins.
+
 resource "aws_iam_role" "datadog_integration_role" {
   name = var.role_name
 
@@ -23,10 +28,12 @@ resource "aws_iam_role" "datadog_integration_role" {
   }
 }
 
-# Datadog's documented baseline policy for the AWS integration
-# (https://docs.datadoghq.com/integrations/amazon_web_services/). Kept verbatim
-# rather than trimmed to services in use: missing actions silently skip
-# resources during the crawl.
+# Datadog's documented baseline policy for the AWS integration:
+# https://docs.datadoghq.com/integrations/amazon_web_services/
+#
+# Kept verbatim rather than trimmed to the services in use. A missing action
+# does not fail; it silently skips resources during the crawl, so the gap shows
+# up as absent dashboards rather than as an error.
 resource "aws_iam_role_policy" "datadog_integration_policy" {
   name = "DatadogIntegrationPolicy"
   role = aws_iam_role.datadog_integration_role.id
@@ -163,8 +170,8 @@ resource "aws_iam_role_policy" "datadog_integration_policy" {
   })
 }
 
-# Resource collection (resources_config.extended_collection on the Datadog
-# side) requires AWS's managed SecurityAudit policy in addition to the
+# Resource collection, which is resources_config.extended_collection on the
+# Datadog side, requires AWS's managed SecurityAudit policy in addition to the
 # baseline above.
 resource "aws_iam_role_policy_attachment" "security_audit" {
   role       = aws_iam_role.datadog_integration_role.name

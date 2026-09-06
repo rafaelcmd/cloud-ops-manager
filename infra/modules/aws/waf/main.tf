@@ -1,8 +1,10 @@
-# =============================================================================
-# AWS WAF WEB ACL
-# Web Application Firewall for API Gateway edge protection
-# Implements DVA-C02 best practice: "Validate at the edge"
-# =============================================================================
+# WAFv2 Web ACL associated with the API Gateway stage. Rejects malformed and
+# abusive traffic at the edge so it never reaches the API pods or consumes a
+# Fargate request slot.
+#
+# The default action is allow, so rules are exceptions rather than an allowlist.
+# Priorities are evaluated in ascending order and the first terminating action
+# wins, which is why rate limiting sits after the managed rule groups.
 
 resource "aws_wafv2_web_acl" "api" {
   name        = var.web_acl_name
@@ -13,10 +15,7 @@ resource "aws_wafv2_web_acl" "api" {
     allow {}
   }
 
-  # =============================================================================
-  # RULE 1: AWS Managed Rules - Common Rule Set
-  # Protects against common web exploits (SQLi, XSS, etc.)
-  # =============================================================================
+  # AWS-maintained coverage for common web exploits, roughly the OWASP Top 10.
   rule {
     name     = "AWSManagedRulesCommonRuleSet"
     priority = 1
@@ -30,7 +29,9 @@ resource "aws_wafv2_web_acl" "api" {
         vendor_name = "AWS"
         name        = "AWSManagedRulesCommonRuleSet"
 
-        # Exclude rules that might cause false positives for API use cases
+        # Overridden to count rather than removed, so a rule that produces
+        # false positives against JSON API traffic still reports what it would
+        # have blocked.
         dynamic "rule_action_override" {
           for_each = var.common_rules_excluded
           content {
@@ -50,10 +51,8 @@ resource "aws_wafv2_web_acl" "api" {
     }
   }
 
-  # =============================================================================
-  # RULE 2: AWS Managed Rules - Known Bad Inputs
-  # Blocks requests with known malicious patterns
-  # =============================================================================
+  # Signatures for request patterns associated with known exploits, including
+  # host header and Log4j-style injection attempts.
   rule {
     name     = "AWSManagedRulesKnownBadInputsRuleSet"
     priority = 2
@@ -76,10 +75,9 @@ resource "aws_wafv2_web_acl" "api" {
     }
   }
 
-  # =============================================================================
-  # RULE 3: Rate Limiting
-  # Prevents abuse by limiting requests per IP
-  # =============================================================================
+  # Per-IP request ceiling over a five-minute sliding window. This is the only
+  # rule that bounds cost: without it a single client can drive unlimited
+  # gateway requests and Fargate scaling.
   rule {
     name     = "RateLimitRule"
     priority = 3
@@ -107,10 +105,7 @@ resource "aws_wafv2_web_acl" "api" {
     }
   }
 
-  # =============================================================================
-  # RULE 4: Request Size Constraints
-  # Validates request body size at the edge
-  # =============================================================================
+  # Rejects oversized bodies before the API deserializes them.
   rule {
     name     = "RequestSizeConstraint"
     priority = 4
@@ -147,10 +142,8 @@ resource "aws_wafv2_web_acl" "api" {
     }
   }
 
-  # =============================================================================
-  # RULE 5: SQL Injection Protection
-  # AWS Managed Rule for SQL injection protection
-  # =============================================================================
+  # Dedicated SQL injection rule group, layered on top of the common rule set's
+  # own SQLi coverage.
   rule {
     name     = "AWSManagedRulesSQLiRuleSet"
     priority = 5
@@ -173,10 +166,8 @@ resource "aws_wafv2_web_acl" "api" {
     }
   }
 
-  # =============================================================================
-  # CUSTOM RESPONSE BODIES
-  # Standardized error responses for WAF blocks
-  # =============================================================================
+  # A blocked request is answered by WAF, not by the API, so these bodies exist
+  # to keep the JSON error shape consistent with what the API itself returns.
   custom_response_body {
     key = "rate-limited"
     content = jsonencode({
@@ -217,10 +208,8 @@ resource "aws_wafv2_web_acl" "api" {
   })
 }
 
-# =============================================================================
-# CLOUDWATCH LOG GROUP FOR WAF
-# Logging for WAF requests (required prefix: aws-waf-logs-)
-# =============================================================================
+# WAF refuses to log to a group whose name does not begin with
+# "aws-waf-logs-", so the prefix below is a hard requirement, not a convention.
 
 resource "aws_cloudwatch_log_group" "waf" {
   count = var.enable_logging ? 1 : 0
@@ -241,7 +230,8 @@ resource "aws_wafv2_web_acl_logging_configuration" "waf" {
   log_destination_configs = [aws_cloudwatch_log_group.waf[0].arn]
   resource_arn            = aws_wafv2_web_acl.api.arn
 
-  # Only log blocked requests to reduce costs
+  # Only blocked requests are logged. Allowed traffic is already in the API
+  # Gateway access logs, so logging it twice adds cost without adding signal.
   logging_filter {
     default_behavior = "DROP"
 

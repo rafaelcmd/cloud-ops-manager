@@ -1,10 +1,13 @@
+# Alerting permissions for the Terraform Cloud role: the SNS topic alarms
+# publish to, and the CloudWatch alarms themselves.
+
 resource "aws_iam_policy" "provisioner_api_observability_policy" {
   name        = "${var.project}-${var.environment}-provisioner-api-observability-policy"
   description = "Least privilege policy for the observability stack (SNS alert topic + CloudWatch metric alarms)"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # SNS — observability alert topic + subscriptions
+      # The alert topic alarms publish to, and its subscriptions.
       {
         Sid    = "SNSRead"
         Effect = "Allow"
@@ -45,7 +48,7 @@ resource "aws_iam_policy" "provisioner_api_observability_policy" {
           }
         }
       },
-      # CloudWatch alarms — observability alerts
+      # The alarms themselves.
       {
         Sid    = "CloudWatchAlarmsRead"
         Effect = "Allow"

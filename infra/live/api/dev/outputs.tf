@@ -1,8 +1,6 @@
-# =============================================================================
-# EKS OUTPUTS
-# Consumed by the edge stack (infra/live/api_gateway/dev) and by
-# operators running kubectl against the cluster.
-# =============================================================================
+# Convenience values for operators running kubectl. The cross-stack contract is
+# the SSM parameters in eks_ssm.tf, not these outputs; nothing in live/ reads
+# another stack's state.
 
 output "eks_cluster_name" {
   description = "Name of the EKS cluster"

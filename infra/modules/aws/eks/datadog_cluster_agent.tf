@@ -1,21 +1,21 @@
-# =============================================================================
-# DATADOG CLUSTER AGENT + FARGATE SIDECAR INJECTION
-# The Cluster Agent (single-replica Deployment) talks to the Kubernetes API to
-# enumerate cluster-scoped objects and unscheduled pods. On its own it can NOT
-# report the live status of running pods — on Fargate that job belongs to a
-# datadog-agent sidecar inside each application pod (a DaemonSet is
-# impossible). The Cluster Agent's Admission Controller injects that sidecar
-# into any pod labeled `agent.datadoghq.com/sidecar: fargate`; without it the
-# Kubernetes Explorer freezes pods at their last reported state (Pending /
-# Terminating).
+# Datadog Cluster Agent and Fargate sidecar injection, which give Datadog's
+# Kubernetes Explorer a live view of the cluster.
 #
-# The injected sidecar resolves, by convention, a secret literally named
-# `datadog-secret` (keys `api-key` and `token`) in the *application pod's*
-# namespace — hence the per-namespace secret copies below. The `token` key is
-# the shared Cluster Agent auth token the sidecar uses to forward orchestrator
-# data. App telemetry (traces/metrics/logs) is NOT the sidecar's job — that
-# still leaves the apps as OTLP to the OTel Collector.
-# =============================================================================
+# The Cluster Agent is a single-replica Deployment that reads the Kubernetes API
+# for cluster-scoped objects and unscheduled pods. It cannot report the live
+# status of running pods. On Fargate that requires a datadog-agent sidecar in
+# each application pod, because a DaemonSet cannot run there. The Cluster
+# Agent's Admission Controller injects that sidecar into any pod labeled
+# `agent.datadoghq.com/sidecar: fargate`; without it the Explorer freezes pods
+# at their last reported state, typically Pending or Terminating.
+#
+# The injected sidecar resolves a secret named `datadog-secret`, with keys
+# `api-key` and `token`, in the application pod's own namespace. That convention
+# is why the secret is copied per namespace below. `token` is the shared Cluster
+# Agent auth token the sidecar uses to forward orchestrator data.
+#
+# This path carries cluster inventory only. Application traces, metrics and logs
+# go from the services to the OTel Collector over OTLP; see otel_collector.tf.
 
 resource "kubernetes_namespace" "datadog" {
   count = var.install_datadog_cluster_agent ? 1 : 0
@@ -30,8 +30,9 @@ resource "kubernetes_namespace" "datadog" {
   depends_on = [aws_eks_fargate_profile.this]
 }
 
-# Shared auth token between the Cluster Agent and injected sidecars. Generated
-# here (not by the chart) so it can be replicated into app namespaces.
+# Shared auth token between the Cluster Agent and the injected sidecars.
+# Generated here rather than by the chart so it can be replicated into the
+# application namespaces.
 resource "random_password" "datadog_cluster_agent_token" {
   count = var.install_datadog_cluster_agent ? 1 : 0
 
@@ -57,7 +58,7 @@ resource "kubernetes_secret" "datadog_secret" {
   type = "Opaque"
 }
 
-# Copies of the secret in every namespace hosting sidecar-labeled pods — the
+# Copies of the secret in every namespace hosting sidecar-labeled pods. The
 # injected container's secretKeyRef only resolves within its own namespace.
 resource "kubernetes_secret" "datadog_secret_sidecar" {
   for_each = var.install_datadog_cluster_agent ? toset(var.datadog_sidecar_namespaces) : toset([])
@@ -75,9 +76,9 @@ resource "kubernetes_secret" "datadog_secret_sidecar" {
   type = "Opaque"
 }
 
-# The injected sidecar queries the local kubelet with the *application pod's*
-# ServiceAccount token, so each SA behind a labeled pod needs kubelet-read
-# access (per Datadog's EKS Fargate docs).
+# The injected sidecar queries the local kubelet using the application pod's own
+# ServiceAccount token, so every ServiceAccount behind a labeled pod needs
+# kubelet-read access. Rules follow Datadog's EKS Fargate documentation.
 resource "kubernetes_cluster_role" "datadog_sidecar" {
   count = var.install_datadog_cluster_agent && length(var.datadog_sidecar_service_accounts) > 0 ? 1 : 0
 
@@ -130,22 +131,22 @@ resource "helm_release" "datadog" {
   namespace  = kubernetes_namespace.datadog[0].metadata[0].name
   version    = var.datadog_chart_version
 
-  # Every rescheduled pod on Fargate waits on a fresh microVM (1-3 min each);
-  # the 5-minute default has proven too tight for multi-deployment rollouts.
+  # Every rescheduled pod on Fargate waits on a fresh microVM, 1 to 3 minutes
+  # each, which makes the 5-minute default too tight for a rollout that moves
+  # several Deployments.
   timeout = 600
 
-  # Fargate layout: no DaemonSet (Fargate can't run them), single-replica
-  # Cluster Agent, orchestrator explorer on for live pod inventory in Datadog,
-  # kube-state-metrics subchart enabled for resource state metrics.
+  # Fargate layout: no DaemonSet, since Fargate cannot run one; a single-replica
+  # Cluster Agent; and the orchestrator explorer enabled for live pod inventory.
   set = [
     {
       name  = "datadog.apiKeyExistingSecret"
       value = kubernetes_secret.datadog_secret[0].metadata[0].name
     },
-    # The bundled datadog-operator subchart does NOT inherit
-    # datadog.apiKeyExistingSecret — when its own value is unset it falls back
-    # to a secret named `<release>-api-key` (datadog-api-key), which no longer
-    # exists. Point it at the same secret explicitly.
+    # The bundled datadog-operator subchart does not inherit
+    # datadog.apiKeyExistingSecret. With its own value unset it falls back to a
+    # secret named `<release>-api-key`, which this configuration never creates,
+    # so it must be pointed at the same secret explicitly.
     {
       name  = "operator.apiKeyExistingSecret"
       value = kubernetes_secret.datadog_secret[0].metadata[0].name
@@ -162,11 +163,10 @@ resource "helm_release" "datadog" {
       name  = "datadog.orchestratorExplorer.enabled"
       value = "true"
     },
-    # The legacy bundled kube-state-metrics (v1.9.8) uses 2019-era client-go
-    # and floods logs with "Failed to list *v1beta1.X" errors on modern EKS.
-    # The Cluster Agent's kubernetes_state_core check (kubeStateMetricsCore,
-    # default-enabled in chart 3.x) covers the same metrics with current
-    # client-go, in-process, without a separate pod.
+    # The bundled kube-state-metrics (v1.9.8) uses a 2019-era client-go and
+    # floods the logs with "Failed to list *v1beta1.X" on current EKS versions.
+    # The Cluster Agent's kubernetes_state_core check, enabled by default in
+    # chart 3.x, reports the same metrics in-process without a separate pod.
     {
       name  = "datadog.kubeStateMetricsEnabled"
       value = "false"
@@ -183,16 +183,16 @@ resource "helm_release" "datadog" {
       name  = "clusterAgent.replicas"
       value = "1"
     },
-    # Fixed token (instead of chart-generated) so sidecars in app namespaces
-    # can authenticate to the Cluster Agent with the replicated secret.
+    # A fixed token rather than a chart-generated one, so sidecars in the
+    # application namespaces can authenticate with the replicated secret.
     {
       name  = "clusterAgent.tokenExistingSecret"
       value = kubernetes_secret.datadog_secret[0].metadata[0].name
     },
-    # Admission Controller webhook injects the datadog-agent sidecar into pods
-    # labeled `agent.datadoghq.com/sidecar: fargate` at creation time; the
+    # The Admission Controller webhook injects the datadog-agent sidecar into
+    # pods labeled `agent.datadoghq.com/sidecar: fargate` at creation time. The
     # `fargate` provider preset wires DD_EKS_FARGATE and the Cluster Agent
-    # connection for orchestrator data.
+    # connection used to forward orchestrator data.
     {
       name  = "clusterAgent.admissionController.agentSidecarInjection.enabled"
       value = "true"

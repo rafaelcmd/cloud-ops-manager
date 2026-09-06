@@ -1,9 +1,6 @@
-# =============================================================================
-# SSM Parameter Store publishing
-# Publishes VPC identifiers under /idp/shared/vpc/* so downstream stacks can
-# consume them via data.aws_ssm_parameter instead of terraform_remote_state.
-# Decouples workspaces and avoids TFC state-access requirements.
-# =============================================================================
+# The network's cross-stack contract. Downstream stacks read these paths with
+# data.aws_ssm_parameter rather than terraform_remote_state, so a consumer needs
+# only IAM read on a known path, not API access to this workspace's state.
 
 locals {
   ssm_prefix = "/idp/shared/vpc"

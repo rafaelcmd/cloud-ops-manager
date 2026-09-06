@@ -1,4 +1,4 @@
-# provisioner component — infra/live/provisioner/dev.
+# CI role for the provisioner component (live/provisioner/dev).
 # The consumer's IRSA role and policy, and the ServiceAccount it annotates. That
 # is the whole of the stack, so this is the smallest of the component policies:
 # no service to create, only an identity.

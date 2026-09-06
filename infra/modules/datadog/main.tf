@@ -1,12 +1,20 @@
+# Registers this AWS account with Datadog and creates the role Datadog assumes
+# to read it. Ordering matters and is explained above the integration resource
+# below: Datadog generates the External Id, so the integration must exist before
+# the role whose trust policy pins it.
+
 data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
 
-# Datadog AWS Integration. Created BEFORE the IAM role: it references the role
-# only by name (a plain string), and Datadog responds with the External ID it
-# will present when assuming that role. The role's trust policy is then built
-# from that generated ID — a role created first with a self-chosen ID would
-# reject Datadog's AssumeRole calls.
+# The Datadog side of the AWS integration, which is what lets Datadog crawl the
+# account for infrastructure metrics and resource inventory.
+#
+# This resource is created before the IAM role, not after. It references the
+# role only by name, as a plain string, and Datadog responds with the External
+# Id it will present when assuming that role. The role's trust policy is then
+# built from that generated Id. A role created first with a self-chosen Id
+# would reject Datadog's AssumeRole calls.
 resource "datadog_integration_aws_account" "this" {
   aws_account_id = data.aws_caller_identity.current.account_id
   aws_partition  = data.aws_partition.current.partition
@@ -21,9 +29,9 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
-  # Log collection via the Datadog Lambda forwarder is retired — logs now reach
-  # Datadog through the OTel Collector's `datadog` exporter. The provider still
-  # requires this block, so keep it with no forwarder configured.
+  # Logs reach Datadog through the OTel Collector's `datadog` exporter, not
+  # through a CloudWatch Lambda forwarder. The provider requires the block
+  # regardless, so it stays with no forwarder configured.
   logs_config {
     lambda_forwarder {
       lambdas = []
@@ -58,8 +66,8 @@ resource "datadog_integration_aws_account" "this" {
     }
   }
 
-  # extended_collection populates Datadog's Resource Catalog. It additionally
-  # needs the SecurityAudit managed policy, attached in the aws_integration
+  # extended_collection populates Datadog's Resource Catalog and additionally
+  # requires the SecurityAudit managed policy, attached in the aws_integration
   # module.
   resources_config {
     cloud_security_posture_management_collection = false

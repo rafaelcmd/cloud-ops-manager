@@ -1,11 +1,9 @@
-# =============================================================================
-# DATA SOURCES
-# Cross-workspace values are sourced from SSM Parameter Store (published by the
-# producer stacks). This decouples workspaces — no terraform_remote_state reads
-# means a consumer never needs TFC access to a producer's state.
-# =============================================================================
+# Everything this stack needs from its siblings, read from SSM Parameter Store
+# rather than from their state. There are no terraform_remote_state reads
+# anywhere in live/: a consumer needs IAM read on a known path and nothing more,
+# so stacks can be applied and destroyed independently.
 
-# Shared VPC — published by the shared/vpc workspace
+# Published by shared/vpc.
 data "aws_ssm_parameter" "vpc_id" {
   name = "/idp/shared/vpc/id"
 }
@@ -14,14 +12,15 @@ data "aws_ssm_parameter" "private_subnet_ids" {
   name = "/idp/shared/vpc/private_subnet_ids"
 }
 
-# Datadog API Key (already in SSM, owned outside this stack)
+# Published by shared/datadog. Passed to the cluster's Datadog Cluster Agent
+# and to the OTel Collector's exporter.
 data "aws_ssm_parameter" "datadog_api_key" {
   name            = "/${var.project}/${var.environment}/datadog/api_key"
   with_decryption = true
 }
 
-# Cognito user pool ARN — published by the shared/identity workspace. Scoped
-# into the API's IRSA policy so the pod can call cognito-idp for signup/login.
+# Published by shared/identity. Scoped into the API's IRSA policy in irsa.tf so
+# the pod can call cognito-idp for signup and login.
 data "aws_ssm_parameter" "cognito_user_pool_arn" {
   name = "/idp/shared/identity/user_pool_arn"
 }

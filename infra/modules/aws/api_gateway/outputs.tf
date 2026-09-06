@@ -1,8 +1,3 @@
-# =============================================================================
-# API GATEWAY OUTPUTS
-# Outputs for API Gateway identification and access
-# =============================================================================
-
 output "api_gateway_id" {
   description = "ID of the REST API Gateway"
   value       = aws_api_gateway_rest_api.this.id
@@ -28,11 +23,6 @@ output "api_gateway_root_resource_id" {
   value       = aws_api_gateway_rest_api.this.root_resource_id
 }
 
-# =============================================================================
-# VPC LINK OUTPUTS
-# Outputs for VPC Link identification
-# =============================================================================
-
 output "vpc_link_id" {
   description = "ID of the VPC Link"
   value       = aws_api_gateway_vpc_link.this.id
@@ -42,11 +32,6 @@ output "vpc_link_arn" {
   description = "ARN of the VPC Link"
   value       = aws_api_gateway_vpc_link.this.arn
 }
-
-# =============================================================================
-# STAGE OUTPUTS
-# Outputs for API Gateway stage information
-# =============================================================================
 
 output "stage_name" {
   description = "Name of the API Gateway stage"
@@ -63,11 +48,6 @@ output "stage_execution_arn" {
   value       = aws_api_gateway_stage.this.execution_arn
 }
 
-# =============================================================================
-# API VERSION OUTPUTS
-# Outputs for API versioning information
-# =============================================================================
-
 output "api_version" {
   description = "Current API version"
   value       = var.api_version
@@ -82,11 +62,6 @@ output "deprecated_versions" {
   description = "List of deprecated API versions with their sunset dates"
   value       = var.deprecated_versions
 }
-
-# =============================================================================
-# CLOUDWATCH OUTPUTS
-# Outputs for logging and monitoring
-# =============================================================================
 
 output "cloudwatch_log_group_name" {
   description = "Name of the CloudWatch log group for API Gateway"

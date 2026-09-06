@@ -1,8 +1,3 @@
-# =============================================================================
-# NETWORK LOAD BALANCER CONFIGURATION
-# Variables for basic NLB setup and configuration
-# =============================================================================
-
 variable "nlb_name" {
   description = "Name of the Network Load Balancer"
   type        = string
@@ -22,11 +17,6 @@ variable "subnets" {
   description = "List of subnet IDs for the NLB"
   type        = list(string)
 }
-
-# =============================================================================
-# TARGET GROUP CONFIGURATION
-# Variables for NLB target group setup and routing
-# =============================================================================
 
 variable "target_group_name" {
   description = "The name of the target group"
@@ -52,11 +42,6 @@ variable "target_type" {
   description = "The type of target for the target group (e.g., instance, ip, lambda)"
   type        = string
 }
-
-# =============================================================================
-# HEALTH CHECK CONFIGURATION
-# Variables for target group health check configuration
-# =============================================================================
 
 variable "health_check_enabled" {
   description = "Whether health checks are enabled for the target group"
@@ -106,11 +91,6 @@ variable "unhealthy_threshold" {
   default     = 3
 }
 
-# =============================================================================
-# LISTENER CONFIGURATION
-# Variables for load balancer listener configuration
-# =============================================================================
-
 variable "listener_port" {
   description = "The port on which the listener listens"
   type        = number
@@ -126,11 +106,6 @@ variable "listener_action_type" {
   type        = string
   default     = "forward"
 }
-
-# =============================================================================
-# PROJECT AND ENVIRONMENT CONFIGURATION
-# Variables for project identification and resource tagging
-# =============================================================================
 
 variable "project" {
   description = "The name of the project"

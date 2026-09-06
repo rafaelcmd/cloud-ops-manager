@@ -1,18 +1,8 @@
-# =============================================================================
-# AWS CONFIGURATION
-# Variables for AWS region and basic deployment configuration
-# =============================================================================
-
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
   default     = "us-east-1"
 }
-
-# =============================================================================
-# VPC NETWORK CONFIGURATION
-# Variables for VPC and subnet CIDR block configuration
-# =============================================================================
 
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
@@ -38,11 +28,6 @@ variable "availability_zones" {
   default     = ["us-east-1a", "us-east-1b"]
 }
 
-# =============================================================================
-# PROJECT AND ENVIRONMENT CONFIGURATION
-# Variables for project identification and environment setup
-# =============================================================================
-
 variable "project" {
   description = "Name of the project"
   type        = string
@@ -54,11 +39,6 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
-
-# =============================================================================
-# RESOURCE TAGGING
-# Variables for resource tagging and labeling
-# =============================================================================
 
 variable "tags" {
   description = "Common resource tags"

@@ -1,4 +1,4 @@
-# vpc component — infra/live/shared/vpc.
+# CI role for the vpc component (live/shared/vpc).
 # EC2 networking only: VPC, subnets, gateways, route tables, security groups,
 # VPC endpoints and elastic IPs. Creation is gated on the Project request tag
 # and mutation on the Project resource tag, so this role cannot touch
@@ -92,10 +92,11 @@ resource "aws_iam_policy" "pipeline_vpc" {
       },
       # Disassociating does not name a taggable resource. The request carries an
       # association id, which IAM resolves to arn:aws:ec2:<region>:<account>:*/*,
-      # and aws:ResourceTag/Project can never match that -- so these cannot live
-      # in the tag-scoped statement above. Listing the action there is not
-      # enough: a destroy fails with UnauthorizedOperation and "no identity-based
-      # policy allows the action", which reads like the action is missing.
+      # and aws:ResourceTag/Project can never match that, so these actions
+      # cannot live in the tag-scoped statement above. Listing them there is
+      # not enough: a destroy then fails with UnauthorizedOperation and "no
+      # identity-based policy allows the action", which reads as if the action
+      # were missing from the policy entirely.
       {
         Sid    = "DisassociateUntaggableAttachments"
         Effect = "Allow"

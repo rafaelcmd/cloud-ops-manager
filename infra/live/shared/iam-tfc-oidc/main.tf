@@ -1,3 +1,11 @@
+# The trust anchor for Terraform Cloud remote runs, the counterpart to
+# iam-github-oidc.
+#
+# Nothing currently uses it. Terraform Cloud holds state only; runs execute on
+# the GitHub runner in Local execution mode, so a stack is always applied by its
+# own github-actions-tf-<component> role. This stack is retained for the remote
+# execution path.
+
 data "tls_certificate" "tfc_oidc" {
   url = "https://app.terraform.io"
 }

@@ -1,14 +1,10 @@
-# =============================================================================
-# EKS COORDINATES → SSM
-# This stack owns the cluster, but workloads deployed from other components need
-# to mint IRSA roles and talk to the API server. Publishing the coordinates to
-# Parameter Store keeps that decoupled: a consumer reads SSM instead of this
-# workspace's state, so it never needs TFC access to it. Same contract the vpc
-# and identity stacks expose.
+# The cluster's cross-stack contract. This stack owns the cluster, but every
+# other service stack needs to mint IRSA roles against it and reach its API
+# server. Publishing the coordinates here keeps that decoupled: a consumer reads
+# a known SSM path instead of this workspace's state.
 #
-# None of these are secret — the CA certificate is public by definition and the
-# OIDC issuer URL is discoverable from the cluster.
-# =============================================================================
+# None of these values are secret. The CA certificate is public by definition
+# and the OIDC issuer URL is discoverable from the cluster.
 
 resource "aws_ssm_parameter" "eks_cluster_name" {
   name  = "/idp/shared/eks/cluster_name"
@@ -38,9 +34,8 @@ resource "aws_ssm_parameter" "eks_oidc_provider_arn" {
   tags  = local.tags
 }
 
-# Without the https:// scheme, which is the form an IRSA trust policy condition
-# key needs ("<issuer>:sub"). Publishing it pre-stripped stops every consumer
-# from having to remember that.
+# Published without the https:// scheme, which is the form an IRSA trust policy
+# condition key requires ("<issuer>:sub"), so no consumer has to strip it.
 resource "aws_ssm_parameter" "eks_oidc_provider_url" {
   name  = "/idp/shared/eks/oidc_provider_url"
   type  = "String"

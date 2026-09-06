@@ -2,10 +2,10 @@ provider "aws" {
   region = var.aws_region
 }
 
-# The EKS module installs the AWS Load Balancer Controller via Helm, so it
-# needs working kubernetes/helm providers. We authenticate against the cluster
-# this same apply creates — `aws eks get-token` keeps the credential ephemeral
-# instead of baking it into state.
+# The EKS module installs Helm releases, so this stack needs working kubernetes
+# and helm providers pointed at the cluster the same apply creates. Credentials
+# come from `aws eks get-token` at run time rather than from a stored token, so
+# nothing long-lived is written to state.
 
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint

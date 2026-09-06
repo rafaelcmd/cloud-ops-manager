@@ -9,10 +9,6 @@ variable "role_description" {
   default     = null
 }
 
-# =============================================================================
-# CLUSTER OIDC PROVIDER
-# =============================================================================
-
 variable "oidc_provider_arn" {
   description = "ARN of the cluster's IAM OIDC provider"
   type        = string
@@ -27,10 +23,6 @@ variable "oidc_provider_url" {
     error_message = "oidc_provider_url must not include the scheme: IAM condition keys are built from the bare host and path."
   }
 }
-
-# =============================================================================
-# SERVICE ACCOUNT
-# =============================================================================
 
 variable "namespace" {
   description = "Namespace of the ServiceAccount that may assume the role"
@@ -60,15 +52,11 @@ variable "service_account_annotations" {
   default     = {}
 }
 
-# =============================================================================
-# PERMISSIONS
-# =============================================================================
-
-# Whether the role gets a policy is a separate input from what that policy says,
-# because Terraform decides how many resources to create before it knows any of
-# their contents. A policy document normally describes resources built in the
-# same apply, so it cannot also decide whether the policy exists — see the note
-# on aws_iam_policy.this in main.tf.
+# Whether the role gets a policy is a separate input from what that policy says.
+# Terraform decides how many resources to create before it knows their contents,
+# and a policy document normally describes resources built in the same apply, so
+# it cannot also decide whether the policy exists. See aws_iam_policy.this in
+# main.tf.
 variable "create_policy" {
   description = "Whether to create and attach a managed policy from policy_json. False leaves the role with no permissions of its own."
   type        = bool
@@ -93,9 +81,8 @@ variable "policy_description" {
   default     = null
 }
 
-# These become for_each keys, so they must be known at plan time: pass literal
-# ARNs or ones from variables, never an ARN produced by a resource in the same
-# apply. That would fail the plan the same way a computed count does.
+# These become for_each keys and must be known at plan time. Pass literal ARNs
+# or ARNs from variables, never one produced by a resource in the same apply.
 variable "policy_arns" {
   description = "ARNs of existing policies to attach alongside policy_json. Must be known at plan time."
   type        = list(string)

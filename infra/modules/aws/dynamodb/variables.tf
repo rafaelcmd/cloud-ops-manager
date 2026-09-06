@@ -3,10 +3,6 @@ variable "name" {
   type        = string
 }
 
-# =============================================================================
-# KEYS AND ATTRIBUTES
-# =============================================================================
-
 variable "hash_key" {
   description = "Partition key attribute name"
   type        = string
@@ -18,9 +14,9 @@ variable "range_key" {
   default     = null
 }
 
-# Only the attributes used by a key or an index belong here. DynamoDB rejects a
-# table that declares an attribute nothing keys on, which is a common surprise
-# for anyone used to declaring a full schema.
+# Only attributes used by a key or an index belong here. DynamoDB rejects a
+# table that declares an attribute nothing keys on, so plain data fields are
+# never listed.
 variable "attributes" {
   description = "Attributes used by the table's keys and indexes"
   type = list(object({
@@ -48,12 +44,8 @@ variable "global_secondary_indexes" {
   default = []
 }
 
-# =============================================================================
-# CAPACITY
-# =============================================================================
-
-# PAY_PER_REQUEST suits bursty, infrequent traffic: provisioned capacity has to
-# be sized for a peak, and is paid for whether or not the peak arrives.
+# PAY_PER_REQUEST suits bursty, infrequent traffic: provisioned capacity must be
+# sized for a peak and is billed whether or not the peak arrives.
 variable "billing_mode" {
   description = "PAY_PER_REQUEST or PROVISIONED"
   type        = string
@@ -77,10 +69,6 @@ variable "write_capacity" {
   default     = null
 }
 
-# =============================================================================
-# DATA LIFECYCLE
-# =============================================================================
-
 variable "ttl_attribute_name" {
   description = "Attribute holding an expiry as epoch seconds. Null disables TTL."
   type        = string
@@ -94,7 +82,7 @@ variable "point_in_time_recovery_enabled" {
 }
 
 variable "deletion_protection_enabled" {
-  description = "Refuse to delete the table, including by terraform destroy. On for anything holding data worth keeping."
+  description = "Refuse to delete the table, including by terraform destroy. Enable for any table holding data worth keeping."
   type        = bool
   default     = false
 }

@@ -1,4 +1,4 @@
-# api component — infra/live/api/dev.
+# CI role for the api component (live/api/dev).
 # The largest surface: EKS (cluster, Fargate profiles, addons, access entries),
 # the IRSA plumbing that needs IAM role and OIDC provider management, SQS, the
 # Terraform-managed NLB, cluster log groups, and the SNS/CloudWatch alerting

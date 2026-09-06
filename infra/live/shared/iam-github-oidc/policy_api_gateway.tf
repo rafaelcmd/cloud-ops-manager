@@ -1,4 +1,4 @@
-# api-gateway component — infra/live/api_gateway/dev.
+# CI role for the api-gateway component (live/api_gateway/dev).
 # REST API, its WAF web ACL, and the VPC Link that reaches the NLB the api
 # stack owns. API Gateway has no per-resource tagging model for authorization,
 # so its statements are action-scoped rather than tag-conditioned.
@@ -196,7 +196,7 @@ resource "aws_iam_policy" "pipeline_api_gateway" {
       },
       # A web ACL that references AWS managed rule groups is authorized against
       # those rule groups as well as the ACL itself, and managed rule groups
-      # carry no project tag — hence an untagged grant scoped to their ARNs.
+      # carry no project tag, so they need an untagged grant scoped to their ARNs.
       {
         Sid    = "WAFManagedRuleGroups"
         Effect = "Allow"

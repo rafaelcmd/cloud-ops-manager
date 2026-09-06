@@ -1,25 +1,22 @@
-# =============================================================================
-# API GATEWAY REST API
-# Main API Gateway configuration using existing OpenAPI specification
-# Supports WAFv2, request validation, and VPC Link integration
-# =============================================================================
+# The platform's public edge: a REST API Gateway fronting the Go API, with a
+# Cognito authorizer, WAF, throttling and a VPC Link into the private subnets.
+# Nothing reaches the API except through this gateway.
+#
+# The API surface is not defined here. It is imported from the Go service's own
+# OpenAPI specification, so the contract has one source of truth and the gateway
+# cannot drift from the code that serves it.
 
 locals {
   openapi_spec_path = "${path.module}/../../../../services/api/docs/swagger.yaml"
 
-  # API Versioning Configuration
-  # This API uses path-based versioning (e.g., /v1/resources)
-  # - Current version is defined in var.api_version
-  # - Deprecated versions are tracked in var.deprecated_versions
-  # - Deprecation headers (RFC 8594) are enabled via var.enable_deprecation_headers
+  # The API is versioned by path, for example /v1/resources. var.api_version
+  # selects the current one, var.deprecated_versions lists those still served,
+  # and var.enable_deprecation_headers adds the RFC 8594 headers.
   api_version_path_prefix = "/${var.api_version}"
 }
 
-# =============================================================================
-# REST API DEFINITION
-# Import API from OpenAPI specification with AWS extensions
-# =============================================================================
-
+# The OpenAPI document is a template: the VPC Link id, NLB address and Cognito
+# pool ARN are Terraform values substituted into the AWS extensions at apply.
 resource "aws_api_gateway_rest_api" "this" {
   name        = var.api_name
   description = "${var.api_description} (${var.api_version})"
@@ -36,10 +33,10 @@ resource "aws_api_gateway_rest_api" "this" {
     types = [var.endpoint_type]
   }
 
-  # Fail on warnings during import
+  # A spec that imports with warnings usually means an AWS extension was not
+  # applied, which fails silently at runtime rather than at apply.
   fail_on_warnings = true
 
-  # Minimum compression size (0 = always compress, -1 = never)
   minimum_compression_size = var.minimum_compression_size
 
   tags = merge(var.tags, {
@@ -50,12 +47,9 @@ resource "aws_api_gateway_rest_api" "this" {
   })
 }
 
-# =============================================================================
-# VPC LINK CONFIGURATION
-# VPC Link for connecting API Gateway REST API to NLB in private subnets
-# Note: REST API VPC Links connect directly to NLB (not subnets like HTTP API)
-# =============================================================================
-
+# Lets the gateway reach the internal NLB in the private subnets. A REST API
+# VPC Link targets the load balancer ARN directly; HTTP API VPC Links take
+# subnets and security groups, so examples for those do not transfer.
 resource "aws_api_gateway_vpc_link" "this" {
   name        = var.vpc_link_name
   description = "VPC Link for ${var.api_name}"
@@ -69,16 +63,13 @@ resource "aws_api_gateway_vpc_link" "this" {
   })
 }
 
-# =============================================================================
-# API GATEWAY DEPLOYMENT
-# Deployment for the REST API
-# =============================================================================
-
+# API Gateway serves the deployment a stage points at, not the REST API
+# resource, so a spec change with no new deployment leaves the old API live.
+# Hashing the rendered spec into a trigger forces the redeployment.
 resource "aws_api_gateway_deployment" "this" {
   rest_api_id = aws_api_gateway_rest_api.this.id
 
   triggers = {
-    # Redeploy when OpenAPI spec changes
     redeployment = sha1(templatefile(local.openapi_spec_path, {
       nlb_uri               = "http://${var.nlb_dns_name}"
       vpc_link_id           = aws_api_gateway_vpc_link.this.id
@@ -95,20 +86,16 @@ resource "aws_api_gateway_deployment" "this" {
   depends_on = [aws_api_gateway_rest_api.this]
 }
 
-# =============================================================================
-# API GATEWAY STAGE
-# Stage configuration for API deployment with logging and throttling
-# =============================================================================
-
 resource "aws_api_gateway_stage" "this" {
   deployment_id = aws_api_gateway_deployment.this.id
   rest_api_id   = aws_api_gateway_rest_api.this.id
   stage_name    = var.stage_name
 
-  # Enable X-Ray tracing
   xray_tracing_enabled = var.xray_tracing_enabled
 
-  # Access logging
+  # One JSON line per request. requestId is echoed back to callers in the
+  # X-Request-Id header by the gateway responses below, so a user-reported
+  # failure can be found in the logs from the id alone.
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
     format = jsonencode({
@@ -129,7 +116,6 @@ resource "aws_api_gateway_stage" "this" {
     })
   }
 
-  # Cache settings (optional)
   cache_cluster_enabled = var.cache_cluster_enabled
   cache_cluster_size    = var.cache_cluster_enabled ? var.cache_cluster_size : null
 
@@ -143,35 +129,26 @@ resource "aws_api_gateway_stage" "this" {
   depends_on = [aws_cloudwatch_log_group.api_gateway_logs]
 }
 
-# =============================================================================
-# METHOD SETTINGS
-# Default method settings for throttling and logging
-# =============================================================================
-
+# Applied to every method (*/*) rather than per route, so a new path in the
+# OpenAPI spec inherits the throttling and logging settings automatically.
 resource "aws_api_gateway_method_settings" "all" {
   rest_api_id = aws_api_gateway_rest_api.this.id
   stage_name  = aws_api_gateway_stage.this.stage_name
   method_path = "*/*"
 
   settings {
-    # Throttling
     throttling_rate_limit  = var.throttle_rate_limit
     throttling_burst_limit = var.throttle_burst_limit
 
-    # Logging
-    logging_level      = var.logging_level
+    logging_level = var.logging_level
+    # Logs full request and response bodies. Keep off outside debugging: it
+    # writes caller-supplied payloads to CloudWatch.
     data_trace_enabled = var.data_trace_enabled
     metrics_enabled    = var.metrics_enabled
 
-    # Caching (per-method override)
     caching_enabled = var.cache_cluster_enabled
   }
 }
-
-# =============================================================================
-# CLOUDWATCH LOGS
-# CloudWatch log group for API Gateway access logs
-# =============================================================================
 
 resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   name              = "/aws/apigateway/${var.api_name}"
@@ -185,11 +162,10 @@ resource "aws_cloudwatch_log_group" "api_gateway_logs" {
   })
 }
 
-# =============================================================================
-# IAM ROLE FOR CLOUDWATCH LOGGING
-# Required for REST API to write to CloudWatch
-# =============================================================================
-
+# API Gateway's CloudWatch role is a single account-wide, region-wide setting
+# rather than a per-API one. Only one stack may own it, so a second caller of
+# this module in the same account and region must set
+# create_api_gateway_account = false or it will overwrite the first.
 resource "aws_api_gateway_account" "this" {
   count               = var.create_api_gateway_account ? 1 : 0
   cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch[0].arn
@@ -227,12 +203,8 @@ resource "aws_iam_role_policy_attachment" "api_gateway_cloudwatch" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
-# =============================================================================
-# WAF ASSOCIATION
-# Associate WAF Web ACL with API Gateway stage for edge protection
-# REST APIs support direct WAFv2 association
-# =============================================================================
-
+# REST APIs support direct WAFv2 association on the stage, so no CloudFront
+# distribution is needed to put a Web ACL in front of the API.
 resource "aws_wafv2_web_acl_association" "api_gateway" {
   count = var.enable_waf ? 1 : 0
 
@@ -240,11 +212,10 @@ resource "aws_wafv2_web_acl_association" "api_gateway" {
   web_acl_arn  = var.waf_web_acl_arn
 }
 
-# =============================================================================
-# GATEWAY RESPONSES
-# Custom error responses for API Gateway errors
-# =============================================================================
-
+# Errors raised by the gateway itself, before a request ever reaches the API:
+# rejected tokens, failed request validation, throttling and WAF blocks. Without
+# these, callers get AWS's default XML-ish bodies, which do not match the JSON
+# error shape the API returns and carry no request id to quote in a bug report.
 resource "aws_api_gateway_gateway_response" "unauthorized" {
   rest_api_id   = aws_api_gateway_rest_api.this.id
   response_type = "UNAUTHORIZED"

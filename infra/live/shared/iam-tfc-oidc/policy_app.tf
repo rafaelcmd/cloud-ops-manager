@@ -1,10 +1,14 @@
+# Application-layer permissions for the Terraform Cloud role: EKS, API Gateway,
+# SQS, WAF and their log groups. One of four policies because a single document
+# would exceed IAM's 6144-character managed policy limit.
+
 resource "aws_iam_policy" "provisioner_api_app_policy" {
   name        = "${var.project}-${var.environment}-provisioner-api-app-policy"
   description = "Least privilege policy for managing Application resources (EKS, Lambda, API Gateway, SQS)"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # EKS Statements
+      # EKS
       {
         Sid    = "EKSRead"
         Effect = "Allow"
@@ -60,7 +64,7 @@ resource "aws_iam_policy" "provisioner_api_app_policy" {
           }
         }
       },
-      # IAM OIDC provider — EKS module creates one per cluster for IRSA
+      # IAM OIDC provider. The EKS module creates one per cluster for IRSA.
       {
         Sid    = "IAMOpenIDConnectProvider"
         Effect = "Allow"
@@ -93,7 +97,7 @@ resource "aws_iam_policy" "provisioner_api_app_policy" {
           }
         }
       },
-      # Lambda Statements
+      # Lambda
       {
         Sid    = "LambdaRead"
         Effect = "Allow"
@@ -144,7 +148,7 @@ resource "aws_iam_policy" "provisioner_api_app_policy" {
           }
         }
       },
-      # API Gateway Statements (REST API)
+      # API Gateway (REST API)
       {
         Sid      = "APIGatewayRead"
         Effect   = "Allow"
@@ -165,7 +169,8 @@ resource "aws_iam_policy" "provisioner_api_app_policy" {
         ]
         Resource = "*"
       },
-      # EC2 permissions for REST API VPC Link (uses VPC Endpoint Services)
+      # A REST API VPC Link is built on VPC Endpoint Services, so it needs
+      # these EC2 actions rather than API Gateway ones.
       {
         Sid    = "EC2VPCLinkPermissions"
         Effect = "Allow"
@@ -180,7 +185,7 @@ resource "aws_iam_policy" "provisioner_api_app_policy" {
         ]
         Resource = "*"
       },
-      # CloudWatch Logs Statements
+      # CloudWatch Logs
       {
         Sid    = "CloudWatchLogsRead"
         Effect = "Allow"
@@ -239,7 +244,7 @@ resource "aws_iam_policy" "provisioner_api_app_policy" {
         ]
         Resource = "*"
       },
-      # SQS Statements
+      # SQS
       {
         Sid    = "SQSRead"
         Effect = "Allow"
@@ -281,7 +286,7 @@ resource "aws_iam_policy" "provisioner_api_app_policy" {
           }
         }
       },
-      # WAFv2 Statements
+      # WAFv2
       {
         Sid    = "WAFv2Read"
         Effect = "Allow"

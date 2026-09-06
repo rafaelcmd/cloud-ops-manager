@@ -1,10 +1,13 @@
+# Identity permissions for the Terraform Cloud role: IAM, Cognito and SSM
+# Parameter Store.
+
 resource "aws_iam_policy" "provisioner_api_security_policy" {
   name        = "${var.project}-${var.environment}-provisioner-api-security-policy"
   description = "Least privilege policy for managing Security resources (IAM, Cognito, SSM)"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # IAM Statements
+      # IAM
       {
         Sid    = "IAMRead"
         Effect = "Allow"
@@ -85,7 +88,7 @@ resource "aws_iam_policy" "provisioner_api_security_policy" {
           }
         }
       },
-      # Cognito Statements
+      # Cognito
       {
         Sid    = "CognitoRead"
         Effect = "Allow"
@@ -135,7 +138,7 @@ resource "aws_iam_policy" "provisioner_api_security_policy" {
           }
         }
       },
-      # SSM Statements
+      # SSM
       {
         Sid    = "SSMRead"
         Effect = "Allow"

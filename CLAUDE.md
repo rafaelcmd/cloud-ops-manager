@@ -31,3 +31,43 @@ bare consume loop and no state machine is deployed.
   `kubectl`. The scaffolder was briefly a SAM/Lambda exception; see
   [ADR-0004](docs/adr/0004-scaffolder-runs-as-a-container-on-eks.md) for why it is not any more.
 - Services own their own data. No service reads another service's table or database.
+
+## Terraform documentation
+
+Comments in `.tf` files are written for someone reading this repository on GitHub
+for the first time, with no context on the platform. They explain **why** a thing
+exists and what breaks without it. Terraform already states what a resource is.
+
+**Every `.tf` file that declares resources opens with a 2–5 line header** saying what
+it provisions and how that fits the platform — which service depends on it, what
+would not work without it. Modules say what role they play across the platform;
+`live/` stacks say what the stack owns and which contracts it publishes or consumes.
+`backend.tf`, `versions.tf`, `providers.tf`, `outputs.tf` and `variables.tf` need no
+header: `description` is the documentation mechanism for variables and outputs, and
+every one of them must carry a meaningful one.
+
+**Inline comments are for non-obvious things only** — an AWS constraint, a
+plan-time/apply-time ordering trap, a deliberate trade-off, a value that must stay in
+sync with something outside the file. Two or three sentences at most. A parameter
+whose name already explains it gets no comment.
+
+**Do not write:**
+
+- Banner blocks (`# ====`, `# ####`, `# ----`) or section headers that restate the
+  code beneath them: `# SQS QUEUE`, `# Outputs for X`, `# Variables for Y`,
+  `# RULE 3: Rate Limiting`.
+- Changelog or history: "was removed", "no longer", "used to", "now", "the ECS-era
+  contract", "kept during the transition". Git holds that. Comments describe the code
+  as it stands.
+- Emphasis by capitalisation (`NOT`, `NEVER`, `ONLY`), rhetorical framing, or asides
+  addressed to the reader ("worth reading", "the whole point", "note that").
+- Em dashes. Use a colon, a semicolon, or a second sentence.
+- First person, singular or plural.
+- Essays. If a decision needs several paragraphs, it is an ADR under `docs/adr/`;
+  reference it from the file instead.
+
+**Keep comments true.** A comment that contradicts the code beneath it is worse than
+no comment. When a resource changes, its comment changes in the same commit.
+
+Run `terraform fmt -recursive` before committing; it parses the HCL and catches
+anything a comment edit broke.

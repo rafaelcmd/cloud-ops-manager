@@ -1,3 +1,7 @@
+# One container repository plus the lifecycle policy that bounds its size, and
+# the SSM parameter CI resolves to know where to push. Every platform service
+# image lives in a repository created by this module.
+
 resource "aws_ecr_repository" "this" {
   name                 = var.repository_name
   image_tag_mutability = var.image_tag_mutability
@@ -17,6 +21,8 @@ resource "aws_ecr_repository" "this" {
   })
 }
 
+# Published so the deploy workflows resolve the registry URL from a known path
+# rather than reconstructing it from the account id and region.
 resource "aws_ssm_parameter" "repository_url" {
   name  = "/${var.project}/${var.environment}/ecr/${var.repository_name}/repository_url"
   type  = "String"

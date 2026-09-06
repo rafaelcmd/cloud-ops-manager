@@ -1,10 +1,13 @@
+# Network and registry permissions for the Terraform Cloud role: VPC, load
+# balancing and ECR.
+
 resource "aws_iam_policy" "provisioner_api_infra_policy" {
   name        = "${var.project}-${var.environment}-provisioner-api-infra-policy"
   description = "Least privilege policy for managing Infrastructure resources (VPC, NLB, ECR)"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # VPC Statements
+      # VPC
       {
         Sid    = "ViewOnlyVPC"
         Effect = "Allow"
@@ -95,10 +98,11 @@ resource "aws_iam_policy" "provisioner_api_infra_policy" {
       },
       # Disassociating does not name a taggable resource. The request carries an
       # association id, which IAM resolves to arn:aws:ec2:<region>:<account>:*/*,
-      # and aws:ResourceTag/Project can never match that -- so these cannot live
-      # in the tag-scoped statement above. Listing the action there is not
-      # enough: a destroy fails with UnauthorizedOperation and "no identity-based
-      # policy allows the action", which reads like the action is missing.
+      # and aws:ResourceTag/Project can never match that, so these actions
+      # cannot live in the tag-scoped statement above. Listing them there is
+      # not enough: a destroy then fails with UnauthorizedOperation and "no
+      # identity-based policy allows the action", which reads as if the action
+      # were missing from the policy entirely.
       {
         Sid    = "DisassociateUntaggableAttachments"
         Effect = "Allow"
@@ -108,7 +112,7 @@ resource "aws_iam_policy" "provisioner_api_infra_policy" {
         ]
         Resource = "*"
       },
-      # NLB Statements
+      # NLB
       {
         Sid    = "NLBRead"
         Effect = "Allow"
@@ -161,7 +165,7 @@ resource "aws_iam_policy" "provisioner_api_infra_policy" {
           }
         }
       },
-      # ECR Statements
+      # ECR
       {
         Sid    = "ECRRead"
         Effect = "Allow"

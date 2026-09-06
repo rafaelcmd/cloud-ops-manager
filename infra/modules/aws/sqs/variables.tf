@@ -1,7 +1,3 @@
-# =============================================================================
-# QUEUE
-# =============================================================================
-
 variable "queue_name" {
   description = "Name of the queue. Consumers resolve queues by name, so this is a contract with the workloads that read it."
   type        = string
@@ -36,8 +32,8 @@ variable "receive_wait_time_seconds" {
   }
 }
 
-# Must exceed the slowest task the consumer runs, or SQS hands the same message
-# to a second consumer while the first is still working on it.
+# Must exceed the slowest task the consumer runs, or SQS delivers the same
+# message to a second consumer while the first is still working on it.
 variable "visibility_timeout_seconds" {
   description = "Seconds a received message stays invisible to other consumers"
   type        = number
@@ -50,17 +46,13 @@ variable "visibility_timeout_seconds" {
 }
 
 variable "sqs_managed_sse_enabled" {
-  description = "Encrypt messages at rest with the SQS-owned key. On by default: API-created queues are unencrypted otherwise, and it costs nothing."
+  description = "Encrypt messages at rest with the SQS-owned key. Enabled by default because API-created queues are otherwise unencrypted and the SQS-owned key is free."
   type        = bool
   default     = true
 }
 
-# =============================================================================
-# DEAD-LETTER QUEUE
-# =============================================================================
-
 variable "enable_dlq" {
-  description = "Create a dead-letter queue and a redrive policy pointing at it. Off only for a queue whose failures are genuinely not worth keeping."
+  description = "Create a dead-letter queue and a redrive policy pointing at it"
   type        = bool
   default     = true
 }
@@ -77,24 +69,18 @@ variable "max_receive_count" {
 }
 
 variable "dlq_message_retention_seconds" {
-  description = "Seconds the dead-letter queue keeps a message. Longer than the main queue: the DLQ is what someone reads days later to work out what broke."
+  description = "Seconds the dead-letter queue keeps a message. Longer than the main queue because failed messages are read during investigation."
   type        = number
   default     = 1209600 # 14 days, the SQS maximum
 }
 
-# =============================================================================
-# ACCESS
-#
-# For senders and receivers that cannot carry an identity policy — a service
-# principal, or a principal in another account. A same-account IAM role does not
-# need to be listed here and generally should not be: an SQS policy is an
-# additive allow, so it cannot restrict a principal its identity policy already
-# permits, and SQS rejects the whole policy if a named role does not exist yet.
-# See the note above the queue policy in main.tf.
-# =============================================================================
+# Access. These lists exist for principals that cannot carry an identity policy,
+# such as an AWS service principal or a principal in another account. A
+# same-account IAM role is authorized by its own identity policy and should not
+# be listed here. See the queue policy notes in main.tf.
 
 variable "producer_role_arns" {
-  description = "Role ARNs allowed to send. Must already exist when this queue is created — SQS validates principals."
+  description = "Role ARNs allowed to send. Must already exist when this queue is created, because SQS validates principals."
   type        = list(string)
   default     = []
 }
@@ -106,14 +92,10 @@ variable "producer_service_principals" {
 }
 
 variable "consumer_role_arns" {
-  description = "Role ARNs allowed to receive and delete. Must already exist when this queue is created — SQS validates principals."
+  description = "Role ARNs allowed to receive and delete. Must already exist when this queue is created, because SQS validates principals."
   type        = list(string)
   default     = []
 }
-
-# =============================================================================
-# ALARM
-# =============================================================================
 
 variable "enable_dlq_alarm" {
   description = "Alarm when the dead-letter queue is not empty. Ignored when enable_dlq is false."
@@ -122,7 +104,7 @@ variable "enable_dlq_alarm" {
 }
 
 variable "alarm_actions" {
-  description = "ARNs notified when the alarm changes state, typically an SNS topic. An alarm with none still shows in CloudWatch but tells nobody."
+  description = "ARNs notified when the alarm changes state, typically an SNS topic. An alarm with no actions is visible in CloudWatch but notifies nobody."
   type        = list(string)
   default     = []
 }

@@ -1,4 +1,4 @@
-# identity component — infra/live/shared/identity.
+# CI role for the identity component (live/shared/identity).
 # Cognito user pools, clients, groups and domains. The client id it publishes
 # to SSM is covered by the common policy.
 

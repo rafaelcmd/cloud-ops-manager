@@ -1,16 +1,15 @@
-# =============================================================================
-# IAM Roles for Service Accounts (IRSA)
+# IAM Roles for Service Accounts (IRSA). Binds one Kubernetes ServiceAccount to
+# one IAM role through the cluster's OIDC provider, which is how every workload
+# on this platform obtains AWS credentials without static keys.
 #
-# Binds one Kubernetes ServiceAccount to one IAM role through a cluster's OIDC
-# provider: the trust policy accepts a web identity whose `sub` claim is exactly
-# that ServiceAccount, and the ServiceAccount carries the role ARN in the
-# annotation EKS reads when it projects a token into the pod.
+# The trust policy accepts a web identity whose `sub` claim is exactly that
+# ServiceAccount, and the ServiceAccount carries the role ARN in the annotation
+# EKS reads when it projects a token into the pod.
 #
-# The `sub` condition is scoped to a single ServiceAccount rather than to the
-# namespace. Scoped to a namespace, any pod in it could assume the role, which
-# would defeat arrangements like the scaffolder's — where one Deployment may read
-# the GitHub App private key and its twin, in the same namespace, may not.
-# =============================================================================
+# The `sub` condition names a single ServiceAccount rather than a namespace.
+# Scoped to a namespace, any pod in it could assume the role, which would defeat
+# splits such as the scaffolder's: one Deployment may read the GitHub App
+# private key and its twin, in the same namespace, may not.
 
 data "aws_iam_policy_document" "assume_role" {
   statement {
@@ -43,16 +42,15 @@ resource "aws_iam_role" "this" {
   tags = var.tags
 }
 
-# A role with no policy is a valid outcome, not a mistake: the OTel Collector
-# needs an identity for its ServiceAccount but no AWS permissions until an AMP
-# workspace exists to write to.
+# A role with no policy is a valid outcome. The OTel Collector needs an identity
+# for its ServiceAccount but no AWS permissions until an AMP workspace exists to
+# write to.
 #
-# The count keys off var.create_policy and NOT off `var.policy_json != null`,
-# which is the obvious spelling and does not work. A policy document almost
-# always describes resources built in the same apply — the queue this pod reads,
-# the table it writes — so its `.json` is unknown until those exist, and a count
-# that depends on it fails the plan outright with "Invalid count argument". The
-# boolean is settled before the plan runs; the document's contents are not.
+# The count keys off var.create_policy rather than `var.policy_json != null`. A
+# policy document usually describes resources built in the same apply, such as
+# the queue the pod reads, so its `.json` is unknown until those exist and a
+# count depending on it fails the plan with "Invalid count argument". The
+# boolean is settled before the plan runs.
 resource "aws_iam_policy" "this" {
   count = var.create_policy ? 1 : 0
 
@@ -93,8 +91,8 @@ resource "kubernetes_service_account" "this" {
     name      = var.service_account_name
     namespace = var.namespace
 
-    # The role-arn annotation is the whole point of the resource, so it is
-    # merged last and cannot be overridden by a caller.
+    # Merged last so a caller cannot override the annotation that binds the
+    # ServiceAccount to the role.
     annotations = merge(
       var.service_account_annotations,
       { "eks.amazonaws.com/role-arn" = aws_iam_role.this.arn },

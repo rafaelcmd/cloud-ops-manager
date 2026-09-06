@@ -1,7 +1,3 @@
-# =============================================================================
-# API GATEWAY OUTPUTS
-# =============================================================================
-
 output "api_gateway_id" {
   description = "ID of the API Gateway"
   value       = module.api_gateway.api_gateway_id
@@ -22,9 +18,8 @@ output "vpc_link_id" {
   value       = module.api_gateway.vpc_link_id
 }
 
-# =============================================================================
-# NLB LOOKUP (passthrough — useful for debugging the integration)
-# =============================================================================
+# Passed straight through from SSM so the values behind the integration are
+# visible when debugging a gateway-to-pod failure.
 
 output "nlb_arn" {
   description = "ARN of the NLB the VPC Link targets"

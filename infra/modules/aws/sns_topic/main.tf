@@ -1,39 +1,31 @@
-# =============================================================================
-# SNS TOPIC
+# A notification topic and its subscriptions. This is the platform's alert
+# channel: CloudWatch alarms, such as the dead-letter queue alarms raised by the
+# sqs module, publish here.
 #
-# A notification topic and its subscriptions — the AWS-native alert channel that
-# CloudWatch alarms publish to.
-#
-# The topic and the subscriptions are separate on purpose: the topic is a stable
-# address that alarms reference, while an email subscription has to be confirmed
-# by a human clicking a link. Recreating the topic would invalidate every
-# confirmation, so keep the topic even when there is nothing subscribed to it.
-# =============================================================================
+# The topic is a stable address that alarms reference by ARN, while an email
+# subscription must be confirmed by a human. Recreating the topic invalidates
+# every confirmation, so the topic is kept even with nothing subscribed to it.
 
 resource "aws_sns_topic" "this" {
   name = var.name
 
-  # Alarm payloads are operational metadata rather than secrets, so the
-  # AWS-managed key is the sensible default; pass a CMK where the topic will
-  # carry anything more sensitive.
+  # Alarm payloads are operational metadata rather than secrets. Pass a CMK
+  # where the topic will carry anything more sensitive.
   kms_master_key_id = var.kms_master_key_id
 
   tags = var.tags
 }
 
-# Terraform records an email subscription as "pending confirmation" until the
-# recipient clicks the link in the mail AWS sends. It never becomes active on
-# its own, and a plan will not tell you it is still pending — check the console
-# or `aws sns list-subscriptions-by-topic` if alerts are not arriving.
-# Keyed by the caller's own label rather than by the endpoint. for_each keys must
-# be known at plan time, and an endpoint frequently is not — an SQS queue or a
-# Lambda created in the same apply has no ARN until it exists. Deriving the key
-# from the endpoint fails those callers with "the for_each value depends on
-# resource attributes that cannot be determined until apply".
+# Keyed by a caller-chosen label rather than by the endpoint. for_each keys must
+# be known at plan time, and an endpoint often is not: a queue or function
+# created in the same apply has no ARN until it exists. Deriving the key from
+# the endpoint fails with "the for_each value depends on resource attributes
+# that cannot be determined until apply". A stable label also keeps unrelated
+# subscriptions untouched when one is added or removed.
 #
-# A stable label also means adding or removing one subscription leaves the others
-# untouched, which matters for email: a recreated subscription has to be
-# confirmed again by the recipient.
+# An email subscription stays "pending confirmation" until the recipient clicks
+# the link AWS mails them. A plan does not report that it is still pending, so
+# check `aws sns list-subscriptions-by-topic` if alerts are not arriving.
 resource "aws_sns_topic_subscription" "this" {
   for_each = var.subscriptions
 
@@ -42,9 +34,9 @@ resource "aws_sns_topic_subscription" "this" {
   endpoint  = each.value.endpoint
 }
 
-# A topic policy is only created when publishers are named. Alarms in this
-# account need no policy — CloudWatch publishes through the account's own
-# permissions — so this is for services and other accounts.
+# A topic policy is created only when publishers are named. CloudWatch alarms in
+# this account publish through the account's own permissions and need no entry;
+# this exists for other AWS services and other accounts.
 data "aws_iam_policy_document" "topic" {
   count = length(var.publisher_service_principals) > 0 ? 1 : 0
 

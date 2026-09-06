@@ -1,8 +1,3 @@
-# =============================================================================
-# API GATEWAY CONFIGURATION
-# Variables for basic API Gateway setup and identification
-# =============================================================================
-
 variable "api_name" {
   description = "Name of the API Gateway"
   type        = string
@@ -18,19 +13,16 @@ variable "aws_region" {
   type        = string
 }
 
-# =============================================================================
-# VPC LINK CONFIGURATION
-# Variables for VPC Link setup and NLB integration
-# Note: REST API VPC Links connect directly to NLB ARN (not subnets)
-# =============================================================================
-
+# A REST API VPC Link targets the load balancer's ARN directly. HTTP API VPC
+# Links take subnets and security groups instead, so examples written for HTTP
+# APIs do not transfer.
 variable "vpc_link_name" {
   description = "Name of the VPC Link"
   type        = string
 }
 
 variable "nlb_arn" {
-  description = "ARN of the Network Load Balancer"
+  description = "ARN of the Network Load Balancer the VPC Link targets"
   type        = string
 }
 
@@ -39,21 +31,11 @@ variable "nlb_dns_name" {
   type        = string
 }
 
-# =============================================================================
-# STAGE CONFIGURATION
-# Variables for API Gateway stage and deployment
-# =============================================================================
-
 variable "stage_name" {
   description = "Name of the API Gateway stage"
   type        = string
   default     = "dev"
 }
-
-# =============================================================================
-# ENDPOINT CONFIGURATION
-# Variables for REST API endpoint type
-# =============================================================================
 
 variable "endpoint_type" {
   description = "Endpoint type for the REST API (EDGE, REGIONAL, or PRIVATE)"
@@ -72,11 +54,6 @@ variable "minimum_compression_size" {
   default     = -1
 }
 
-# =============================================================================
-# THROTTLING CONFIGURATION
-# Variables for API Gateway throttling and rate limiting
-# =============================================================================
-
 variable "throttle_rate_limit" {
   description = "API Gateway throttle rate limit (requests per second)"
   type        = number
@@ -88,11 +65,6 @@ variable "throttle_burst_limit" {
   type        = number
   default     = 2000
 }
-
-# =============================================================================
-# LOGGING AND MONITORING CONFIGURATION
-# Variables for CloudWatch logs and monitoring
-# =============================================================================
 
 variable "log_retention_days" {
   description = "CloudWatch log group retention period in days"
@@ -135,11 +107,6 @@ variable "create_api_gateway_account" {
   default     = true
 }
 
-# =============================================================================
-# CACHING CONFIGURATION
-# Variables for API Gateway caching (REST API feature)
-# =============================================================================
-
 variable "cache_cluster_enabled" {
   description = "Whether to enable API Gateway cache cluster"
   type        = bool
@@ -151,11 +118,6 @@ variable "cache_cluster_size" {
   type        = string
   default     = "0.5"
 }
-
-# =============================================================================
-# PROJECT AND ENVIRONMENT CONFIGURATION
-# Variables for project identification and resource tagging
-# =============================================================================
 
 variable "project" {
   description = "Name of the project"
@@ -173,20 +135,10 @@ variable "tags" {
   default     = {}
 }
 
-# =============================================================================
-# AUTHORIZATION CONFIGURATION
-# Variables for Cognito User Pool authorization
-# =============================================================================
-
 variable "cognito_user_pool_arn" {
   description = "Cognito User Pool ARN for the REST API authorizer"
   type        = string
 }
-
-# =============================================================================
-# API VERSIONING CONFIGURATION
-# Variables for API version management and deprecation headers
-# =============================================================================
 
 variable "api_version" {
   description = "Current API version (e.g., v1, v2). Used for path-based versioning."
@@ -202,11 +154,6 @@ variable "deprecated_versions" {
   }))
   default = []
 }
-
-# =============================================================================
-# WAF CONFIGURATION
-# Variables for AWS WAF integration (REST API supports direct WAF association)
-# =============================================================================
 
 variable "enable_waf" {
   description = "Whether to enable WAF protection for the API Gateway"

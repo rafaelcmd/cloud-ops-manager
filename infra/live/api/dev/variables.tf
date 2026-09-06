@@ -1,8 +1,3 @@
-# =============================================================================
-# GENERAL PROJECT CONFIGURATION
-# Core variables that define the project, environment, and AWS configuration
-# =============================================================================
-
 variable "project" {
   description = "Project name used for resource naming and tagging"
   type        = string
@@ -28,11 +23,6 @@ variable "app_version" {
   description = "Version of the application being deployed"
   type        = string
 }
-
-# =============================================================================
-# EKS CONFIGURATION
-# Variables for the EKS-on-Fargate cluster that hosts the API and Redis
-# =============================================================================
 
 variable "cluster_name" {
   description = "Name of the EKS cluster"
@@ -93,11 +83,9 @@ variable "cluster_admin_principal_arns" {
   default     = []
 }
 
-# =============================================================================
-# API NLB CONFIGURATION
-# The API NLB and target group are Terraform-managed. Kubernetes binds pods to
-# this target group through a TargetGroupBinding resource.
-# =============================================================================
+# The NLB and its target group are Terraform-owned so the gateway stack can
+# reference a stable ARN. Kubernetes binds pods into the target group through a
+# TargetGroupBinding.
 
 variable "api_nlb_name" {
   description = "Name of the Terraform-managed internal NLB for the API"
@@ -142,11 +130,6 @@ variable "api_target_group_arn_ssm_parameter_name" {
   type        = string
 }
 
-# =============================================================================
-# SQS CONFIGURATION
-# Variables for SQS queue configuration
-# =============================================================================
-
 variable "queue_name" {
   description = "Name of the SQS queue"
   type        = string
@@ -188,12 +171,9 @@ variable "ssm_parameter_type" {
   type        = string
 }
 
-# =============================================================================
-# REDIS CONFIGURATION
-# Redis runs as a k8s Deployment (see /k8s/redis/). We only need to publish the
-# in-cluster DNS endpoint to SSM so the API can resolve it at runtime — same
-# contract the ECS-era module exposed.
-# =============================================================================
+# Redis runs as a Kubernetes Deployment (k8s/redis), so this stack provisions no
+# Redis infrastructure. It only publishes the in-cluster DNS address to SSM for
+# the API to resolve at startup.
 
 variable "redis_ssm_parameter_name" {
   description = "SSM parameter name where the Redis host:port endpoint is published"

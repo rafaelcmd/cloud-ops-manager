@@ -13,8 +13,8 @@ output "table_id" {
   value       = aws_dynamodb_table.this.id
 }
 
-# The index ARNs are a separate grant from the table's: a policy allowing Query
-# on the table alone cannot query an index.
+# Index ARNs are a separate grant from the table's: a policy allowing Query on
+# the table alone cannot query an index.
 output "index_arns" {
   description = "ARNs of the table's global secondary indexes, keyed by index name"
   value       = { for gsi in var.global_secondary_indexes : gsi.name => "${aws_dynamodb_table.this.arn}/index/${gsi.name}" }

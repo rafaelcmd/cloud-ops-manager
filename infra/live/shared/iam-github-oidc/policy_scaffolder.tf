@@ -1,15 +1,15 @@
-# scaffolder component — infra/live/scaffolder/dev.
+# CI role for the scaffolder component (live/scaffolder/dev).
 # The scaffolder's own state (one DynamoDB table), its Step Functions task queue
 # and DLQ, and the IRSA role + policy its pod assumes. The kubernetes provider in
 # that stack authenticates through eks:DescribeCluster, which is why the read
-# statement includes it — the stack reads the cluster but never modifies it.
+# statement includes it. The stack reads the cluster but never modifies it.
 # The SSM parameters it publishes are covered by the common policy.
 #
 # It also creates the Secrets Manager secret that holds the GitHub App private
-# key, and the KMS key encrypting it — but is explicitly denied the ability to
-# read that secret's value. The pipeline's job is to create the container; the
-# PEM is put in out of band by a human, so it never passes through a plan, a
-# state file or a workflow log.
+# key and the KMS key encrypting it, but is explicitly denied the ability to
+# read that secret's value. The pipeline creates the container; the PEM is
+# written out of band by a person, so it never passes through a plan, a state
+# file or a workflow log.
 
 resource "aws_iam_policy" "pipeline_scaffolder" {
   name        = "${var.project}-${var.environment}-pipeline-scaffolder-policy"
@@ -90,8 +90,8 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
       },
       {
         # SQS has no resource-tag condition key for these actions, so they are
-        # scoped by queue name instead — the same prefix every resource in this
-        # stack is named with.
+        # scoped by queue name instead, using the prefix every resource in
+        # this stack shares.
         Sid    = "SQSManageScaffolderQueues"
         Effect = "Allow"
         Action = [
@@ -104,9 +104,9 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
         Resource = "arn:aws:sqs:*:*:${var.project}-scaffolder-*"
       },
       {
-        # The dead-letter queue alarms modules/aws/sqs creates. Nothing watched
-        # those queues before, so a scaffold task that exhausted its retries
-        # stayed unread until retention expired.
+        # The dead-letter queue alarms modules/aws/sqs creates. Without them a
+        # scaffold task that exhausts its retries stays unread until retention
+        # expires.
         Sid    = "CloudWatchCreateTaggedAlarms"
         Effect = "Allow"
         Action = [
@@ -196,8 +196,8 @@ resource "aws_iam_policy" "pipeline_scaffolder" {
         }
       },
       {
-        # Aliases carry no tags of their own, so they are scoped by name — the
-        # same prefix every resource in this stack is named with.
+        # Aliases carry no tags of their own, so they are scoped by name,
+        # using the prefix every resource in this stack shares.
         Sid    = "KMSManageScaffolderAliases"
         Effect = "Allow"
         Action = [
