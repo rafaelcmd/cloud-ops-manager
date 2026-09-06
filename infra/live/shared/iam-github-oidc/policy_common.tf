@@ -1,9 +1,9 @@
 # Baseline attached to every per-component pipeline role.
 #
 # Two things every stack needs regardless of what it provisions: read access
-# for Terraform's state refresh and data sources, and SSM parameter access —
-# the stacks are decoupled through SSM rather than remote state, so each one
-# reads parameters its producers published and writes its own.
+# for Terraform's state refresh and data sources, and SSM parameter access.
+# Stacks are decoupled through SSM rather than remote state, so each one reads
+# the parameters its producers published and writes its own.
 
 resource "aws_iam_policy" "pipeline_common" {
   name        = "${var.project}-${var.environment}-pipeline-common-policy"

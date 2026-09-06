@@ -1,15 +1,16 @@
 # Read-only role for pull-request plan runs.
 #
 # GitHub issues PR-triggered OIDC tokens with the subject
-# `repo:<org>/<repo>:pull_request`, which the main role's trust policy
-# (main-branch refs only) rejects — deliberately: unmerged code must never
-# hold write-capable credentials. PR plans assume this role instead; the
+# `repo:<org>/<repo>:pull_request`, which the main role's trust policy accepts
+# only main-branch refs and so rejects. That is deliberate: unmerged code must
+# never hold write-capable credentials. Pull-request plans assume this role
+# instead, and the
 # workflow selects it via the AWS_PLAN_ROLE_ARN repo variable, which must
 # hold the `github_actions_plan_role_arn` output of this stack.
 #
-# Plain resources rather than a second oidc module instance: the module also
-# creates the OIDC provider, which must exist exactly once per account, so
-# this role reuses the provider from module.github_actions_oidc.
+# Plain resources rather than a second instance of the oidc module, because
+# that module also creates the OIDC provider and an account holds exactly one
+# per issuer. This role reuses the provider from module.github_actions_oidc.
 
 resource "aws_iam_role" "github_actions_plan" {
   name = "github-actions-oidc-plan-role"

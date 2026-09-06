@@ -1,7 +1,3 @@
-# =============================================================================
-# GENERAL PROJECT CONFIGURATION
-# =============================================================================
-
 variable "project" {
   description = "Project name used for resource naming and tagging"
   type        = string
@@ -29,11 +25,6 @@ variable "api_version" {
   default     = "v1"
 }
 
-# =============================================================================
-# LOAD BALANCER LOOKUP (SSM)
-# NLB attributes are published by the api Terraform stack.
-# =============================================================================
-
 variable "api_nlb_arn_ssm_parameter_name" {
   description = "SSM parameter name containing the API NLB ARN"
   type        = string
@@ -43,10 +34,6 @@ variable "api_nlb_dns_ssm_parameter_name" {
   description = "SSM parameter name containing the API NLB DNS name"
   type        = string
 }
-
-# =============================================================================
-# API GATEWAY CONFIGURATION
-# =============================================================================
 
 variable "api_gateway_name" {
   description = "Name of the API Gateway"
@@ -69,27 +56,15 @@ variable "api_gateway_auto_deploy" {
   type        = bool
 }
 
-# =============================================================================
-# VPC LINK CONFIGURATION
-# =============================================================================
-
 variable "vpc_link_name" {
   description = "Name of the VPC Link"
   type        = string
 }
 
-# =============================================================================
-# API GATEWAY INTEGRATION CONFIGURATION
-# =============================================================================
-
 variable "integration_timeout_ms" {
   description = "Integration timeout in milliseconds"
   type        = number
 }
-
-# =============================================================================
-# API GATEWAY THROTTLING CONFIGURATION
-# =============================================================================
 
 variable "throttle_rate_limit" {
   description = "API Gateway throttle rate limit (requests per second)"
@@ -100,10 +75,6 @@ variable "throttle_burst_limit" {
   description = "API Gateway throttle burst limit"
   type        = number
 }
-
-# =============================================================================
-# CORS CONFIGURATION
-# =============================================================================
 
 variable "cors_allow_credentials" {
   description = "Whether to allow credentials in CORS requests"
@@ -135,10 +106,6 @@ variable "cors_max_age" {
   type        = number
 }
 
-# =============================================================================
-# API GATEWAY LOGGING AND MONITORING
-# =============================================================================
-
 variable "api_gateway_log_retention_days" {
   description = "CloudWatch log group retention period in days for API Gateway"
   type        = number
@@ -163,10 +130,6 @@ variable "api_gateway_xray_tracing_enabled" {
   description = "Whether to enable X-Ray tracing for API Gateway"
   type        = bool
 }
-
-# =============================================================================
-# WAF CONFIGURATION
-# =============================================================================
 
 variable "enable_waf" {
   description = "Whether to enable WAF protection for the API Gateway"

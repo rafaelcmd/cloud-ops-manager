@@ -1,3 +1,8 @@
+# The platform's identity provider. Standalone rather than nested inside the
+# gateway stack: the API workload needs the user pool ARN too, and nesting
+# Cognito under the gateway made the API stack depend on a stack that already
+# depended on it. Consumers read /idp/shared/identity/*.
+
 module "cognito" {
   source = "../../../modules/aws/cognito"
 

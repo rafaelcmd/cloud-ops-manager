@@ -1,11 +1,7 @@
-# =============================================================================
-# FARGATE POD LOGGING — Fluent Bit → CloudWatch
-# EKS Fargate's data plane runs a managed Fluent Bit sidecar per pod. It picks
-# up its config from the `aws-observability` ConfigMap and routes pod stdout/
-# stderr accordingly. We send everything to one CloudWatch log group; the live
-# stack subscribes that log group to the Datadog Lambda forwarder so logs land
-# in Datadog without a per-pod log-collection sidecar.
-# =============================================================================
+# Pod log routing on Fargate. The Fargate data plane runs a managed Fluent Bit
+# per pod, configured through the `aws-observability` ConfigMap below, which
+# routes pod stdout and stderr to a single CloudWatch log group. This avoids a
+# log-collection sidecar in every pod.
 
 resource "aws_cloudwatch_log_group" "fargate_pods" {
   count = var.enable_fargate_logging ? 1 : 0
@@ -15,9 +11,8 @@ resource "aws_cloudwatch_log_group" "fargate_pods" {
   tags              = local.common_tags
 }
 
-# The Fargate pod execution role needs write access to the log group. The
-# managed AmazonEKSFargatePodExecutionRolePolicy covers ECR pulls but not
-# CloudWatch Logs writes — that's on us.
+# The managed AmazonEKSFargatePodExecutionRolePolicy covers ECR pulls but not
+# CloudWatch Logs writes, so the execution role needs this policy as well.
 data "aws_iam_policy_document" "fargate_logging" {
   count = var.enable_fargate_logging ? 1 : 0
 
@@ -51,8 +46,8 @@ resource "aws_iam_role_policy_attachment" "fargate_logging" {
   policy_arn = aws_iam_policy.fargate_logging[0].arn
 }
 
-# The aws-observability namespace is where EKS Fargate's data plane looks for
-# the logging ConfigMap. No pods run here — it's purely a config channel.
+# Fixed name: the Fargate data plane looks for the logging ConfigMap in this
+# namespace specifically. No pods run here; it is only a configuration channel.
 resource "kubernetes_namespace" "aws_observability" {
   count = var.enable_fargate_logging ? 1 : 0
 

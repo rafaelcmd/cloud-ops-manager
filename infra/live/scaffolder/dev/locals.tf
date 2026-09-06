@@ -7,21 +7,20 @@ locals {
 
   name_prefix = "${var.project}-${var.service_name}"
 
-  # ---------------------------------------------------------------------------
-  # THE DEPLOYMENT SPLIT
-  # One container image, two Deployments, two IAM roles. ADR-0004 removed the
-  # per-function isolation Lambda gave for free and committed to restoring it
-  # this way once the GitHub adapter landed; this is that.
+  # One container image, two Deployments, two IAM roles.
   #
-  # The security property is narrow and worth stating plainly: nothing that runs
-  # name reservations can read the GitHub App private key. A bug, a dependency
-  # compromise or a malicious task payload in the state worker cannot reach the
-  # credential that can create and write to repositories across the org.
+  # The property this buys: nothing that runs name reservations can read the
+  # GitHub App private key. A bug, a compromised dependency or a hostile task
+  # payload in the state worker cannot reach the credential that can create and
+  # write to repositories across the organisation.
   #
-  # It needs a queue each. Two pods polling one queue would each receive tasks
-  # meant for the other, so the IAM split would only produce AccessDenied at
-  # random — the routing has to match the trust boundary.
-  # ---------------------------------------------------------------------------
+  # Each worker needs its own queue for this to hold. Two pods polling one queue
+  # would each receive tasks meant for the other, and the IAM split would then
+  # surface as AccessDenied at random rather than as a boundary. Routing has to
+  # match the trust boundary.
+  #
+  # See docs/adr/0004-scaffolder-runs-as-a-container-on-eks.md for why the
+  # service is a container rather than a set of Lambda functions.
   workers = {
     state = {
       description          = "name reservations and other state-only tasks"

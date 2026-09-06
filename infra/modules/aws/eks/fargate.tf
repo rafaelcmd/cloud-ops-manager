@@ -1,8 +1,5 @@
-# =============================================================================
-# FARGATE PROFILE
-# Routes pods in the configured namespaces to Fargate. Without this, no pods
-# schedule because the cluster has no EC2 node groups.
-# =============================================================================
+# Routes pods in the configured namespaces to Fargate. The cluster has no EC2
+# node groups, so a namespace without a profile schedules nothing at all.
 
 data "aws_iam_policy_document" "fargate_assume_role" {
   statement {
@@ -26,8 +23,7 @@ resource "aws_iam_role_policy_attachment" "fargate_execution" {
 }
 
 # The OTel Collector namespace is folded in automatically when the Collector is
-# installed, so operators can't forget to give it a profile (no profile => the
-# Collector pod never schedules on Fargate).
+# installed, so it cannot be left without a profile and fail to schedule.
 locals {
   fargate_namespaces = toset(concat(
     var.fargate_namespaces,

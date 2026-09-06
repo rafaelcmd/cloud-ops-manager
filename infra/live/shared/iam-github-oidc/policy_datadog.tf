@@ -1,4 +1,4 @@
-# datadog component — infra/live/shared/datadog.
+# CI role for the datadog component (live/shared/datadog).
 # Most of this stack talks to Datadog's API rather than AWS. Its AWS footprint
 # is the integration role Datadog assumes to pull metrics, so the permissions
 # are IAM role management plus attaching the AWS-managed SecurityAudit policy

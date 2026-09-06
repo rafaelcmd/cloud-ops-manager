@@ -1,17 +1,14 @@
-# =============================================================================
-# PROVISIONER IRSA
-# The provisioner consumer's IAM role and the ServiceAccount its Deployment
-# binds to (k8s/provisioner/deployment.yaml).
+# The provisioner's IAM role and the ServiceAccount its Deployment binds to, in
+# k8s/provisioner/deployment.yaml.
 #
-# This is the whole of the provisioner's AWS footprint today: the queue it reads
-# and the cluster it runs on are owned by the `api` component, and it reaches
-# both by name through SSM. The stack exists so that the service owns its own
-# identity — a permission the consumer needs is added here, in the service's own
-# component, rather than in the stack that happens to own the cluster.
-# =============================================================================
+# This is the provisioner's entire AWS footprint. The queue it reads and the
+# cluster it runs on belong to the api component, and it reaches both by name
+# through SSM. The stack exists so the service owns its own identity: a
+# permission the consumer needs is added here rather than in the stack that
+# happens to own the cluster.
 
 data "aws_iam_policy_document" "provisioner" {
-  # SSM: the consumer resolves the queue URL from
+  # The consumer resolves the queue URL from
   # /INTERNAL_DEVELOPER_PLATFORM/PROVISIONER_QUEUE_URL at startup.
   statement {
     actions = [
@@ -23,7 +20,8 @@ data "aws_iam_policy_document" "provisioner" {
     ]
   }
 
-  # SQS: consume side of the provisioning queue (the API holds the send side).
+  # The consume side of the provisioning queue. The API holds the send side, in
+  # live/api/dev/irsa.tf.
   statement {
     actions = [
       "sqs:ReceiveMessage",

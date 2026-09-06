@@ -1,22 +1,16 @@
-# =============================================================================
-# OPENTELEMETRY COLLECTOR — cluster-managed prerequisites
+# Prerequisites for the OpenTelemetry Collector, which is the single egress
+# point for the platform's traces, metrics and logs. Services emit OTLP to the
+# Collector and the Collector forwards to the observability vendor, so swapping
+# vendors is a Collector config change rather than a change to every service.
 #
-# The Collector workload itself (Deployment/Service/ConfigMap/RBAC) lives as raw
-# manifests in /k8s/otel-collector. This file provisions the pieces that must be
-# Terraform-owned because they depend on cluster identity:
+# The Collector workload itself (Deployment, Service, ConfigMap, RBAC) is raw
+# manifests in /k8s/otel-collector. Only the pieces that depend on cluster
+# identity are Terraform-owned:
 #
-#   1. The `observability` namespace (also auto-added to the Fargate profile in
-#      fargate.tf, so the pod can schedule — Fargate has no default nodes).
-#   2. An IRSA-annotated ServiceAccount. IRSA is only strictly needed once an
-#      AWS-authenticated exporter is added (Amazon Managed Prometheus remote
-#      write signs with SigV4); the datadog exporter needs no AWS auth. Wiring
-#      the role now makes adding AMP a config-only change.
-#   3. A copy of the Datadog API key secret in the observability namespace,
-#      consumed by the Collector's datadog exporter.
-#
-# Mirrors the IRSA + ServiceAccount pattern used for the AWS Load Balancer
-# Controller (aws_lb_controller.tf).
-# =============================================================================
+#   1. The observability namespace, which fargate.tf also adds to the Fargate
+#      profile so the pod can schedule.
+#   2. An IRSA-annotated ServiceAccount.
+#   3. A copy of the Datadog API key secret, read by the datadog exporter.
 
 resource "kubernetes_namespace" "observability" {
   count = var.install_otel_collector ? 1 : 0
@@ -31,13 +25,8 @@ resource "kubernetes_namespace" "observability" {
   depends_on = [aws_eks_fargate_profile.this]
 }
 
-# -----------------------------------------------------------------------------
-# IRSA ROLE + SERVICE ACCOUNT
-# -----------------------------------------------------------------------------
-
-# Amazon Managed Prometheus remote-write permission — attached only when an AMP
-# workspace ARN is supplied. Until then the Collector role has no policies and
-# the datadog exporter path works without any AWS permissions.
+# Amazon Managed Prometheus remote-write permission, attached only when an AMP
+# workspace ARN is supplied.
 data "aws_iam_policy_document" "otel_collector_amp" {
   count = var.install_otel_collector && var.amp_workspace_arn != null ? 1 : 0
 
@@ -48,12 +37,14 @@ data "aws_iam_policy_document" "otel_collector_amp" {
 }
 
 # Role, trust relationship and the annotated ServiceAccount the Collector
-# Deployment binds to. Without an AMP workspace the role is created with no
-# permissions attached — deliberate: the datadog exporter needs no AWS auth, and
-# having the identity in place makes adding AMP a config-only change.
+# Deployment binds to. With no AMP workspace the role is created with no
+# permissions attached, which is intended: the datadog exporter needs no AWS
+# credentials, and having the identity in place makes adding AMP remote write a
+# configuration-only change.
 #
-# create_policy keys off the variable, not off whether the document came out
-# null: the module decides how many policies to build before it can read one.
+# create_policy keys off the variable rather than off whether the document came
+# out null, because the module decides how many policies to build before it can
+# read one. See modules/aws/irsa.
 module "otel_collector_irsa" {
   count  = var.install_otel_collector ? 1 : 0
   source = "../irsa"
@@ -77,10 +68,8 @@ module "otel_collector_irsa" {
   tags = local.common_tags
 }
 
-# -----------------------------------------------------------------------------
-# DATADOG API KEY SECRET — consumed by the Collector's datadog exporter
-# -----------------------------------------------------------------------------
-
+# Read by the Collector's datadog exporter. Fixed name, because the manifests in
+# /k8s/otel-collector reference it.
 resource "kubernetes_secret" "otel_datadog_api_key" {
   count = var.install_otel_collector ? 1 : 0
 

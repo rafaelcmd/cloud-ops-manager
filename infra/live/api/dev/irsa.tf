@@ -1,10 +1,9 @@
-# =============================================================================
-# API IRSA
-# The API pod's IAM role and the ServiceAccount its Deployment binds to
-# (k8s/api/deployment.yaml). The role and the trust relationship come from
-# modules/aws/irsa; what stays here is the part that is specific to this
-# pod — which AWS resources it may touch.
-# =============================================================================
+# The API pod's IAM role and the ServiceAccount its Deployment binds to, defined
+# in k8s/api/deployment.yaml.
+#
+# The role and its trust relationship come from modules/aws/irsa. What lives
+# here is the part specific to this pod: exactly which AWS resources it may
+# touch, each scoped to a concrete ARN.
 
 locals {
   api_service_account_name      = "internal-developer-platform-api"
@@ -12,9 +11,9 @@ locals {
 }
 
 data "aws_iam_policy_document" "api" {
-  # SSM: the API reads its runtime config from two prefixes —
-  #   /INTERNAL_DEVELOPER_PLATFORM/*   (queue URL, Redis addr)
-  #   /idp/shared/identity/*           (Cognito user-pool / client IDs)
+  # The API resolves its runtime configuration at startup from two prefixes:
+  # /INTERNAL_DEVELOPER_PLATFORM/* for the queue URL and Redis address, and
+  # /idp/shared/identity/* for the Cognito pool and client ids.
   statement {
     actions = [
       "ssm:GetParameter",
@@ -26,7 +25,8 @@ data "aws_iam_policy_document" "api" {
     ]
   }
 
-  # SQS: the API publishes provisioning requests to the provisioner queue.
+  # The API's only write to the rest of the platform: it publishes provision
+  # requests and returns 202. Everything downstream happens off this queue.
   statement {
     actions = [
       "sqs:SendMessage",
@@ -36,9 +36,8 @@ data "aws_iam_policy_document" "api" {
     resources = [module.sqs.queue_arn]
   }
 
-  # Cognito: signup/login flow. User pool ARN is read from SSM (published by
-  # shared/identity) instead of terraform_remote_state, matching the rest of
-  # the SSM-decoupled graph.
+  # Signup and login. The pool ARN comes from SSM rather than from the identity
+  # stack's state, like every other cross-stack value here.
   statement {
     actions = [
       "cognito-idp:SignUp",

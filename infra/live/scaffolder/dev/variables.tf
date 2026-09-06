@@ -1,7 +1,3 @@
-# =============================================================================
-# GENERAL PROJECT CONFIGURATION
-# =============================================================================
-
 variable "project" {
   description = "Project name used for resource naming and tagging"
   type        = string
@@ -24,11 +20,8 @@ variable "service_name" {
   default     = "scaffolder"
 }
 
-# =============================================================================
-# DYNAMODB
 # One table for the whole service: name reservations today, template versions
-# and repository records to come.
-# =============================================================================
+# and repository records to come. See the key layout in main.tf.
 
 variable "point_in_time_recovery_enabled" {
   description = "Continuous backups for the scaffolder table. Off in dev, on everywhere else."
@@ -42,11 +35,8 @@ variable "deletion_protection_enabled" {
   default     = false
 }
 
-# =============================================================================
-# TASK QUEUE
-# Step Functions drops .waitForTaskToken messages here; the worker pod consumes
-# them and reports back with SendTaskSuccess / SendTaskFailure.
-# =============================================================================
+# Step Functions drops .waitForTaskToken messages on these queues; the worker
+# pod consumes them and reports back with SendTaskSuccess or SendTaskFailure.
 
 variable "task_visibility_timeout_seconds" {
   description = "How long a received task is hidden from other consumers. Must exceed the slowest task (a template render plus a GitHub push)."
@@ -72,11 +62,8 @@ variable "dlq_message_retention_seconds" {
   default     = 1209600
 }
 
-# =============================================================================
-# GITHUB APP CREDENTIAL
-# The secret holding the App's PEM private key, and the customer-managed key
-# that encrypts it. Terraform owns both; the PEM itself is put in out of band.
-# =============================================================================
+# The secret holding the GitHub App's PEM private key and the customer-managed
+# key that encrypts it. Terraform owns both; the PEM is written out of band.
 
 variable "secret_recovery_window_in_days" {
   description = "Secrets Manager recovery window. 0 in dev so a destroy/apply cycle can reuse the name; 7 or more anywhere the secret matters."

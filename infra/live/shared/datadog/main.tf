@@ -1,3 +1,10 @@
+# The AWS side of the Datadog account integration, plus the API key every
+# telemetry component reads.
+#
+# The key is passed in as a variable and stored as a SecureString. It is the one
+# secret this repository's Terraform holds a value for, supplied by CI from the
+# DD_API_KEY repository secret rather than committed.
+
 module "datadog" {
   source = "../../../modules/datadog"
 

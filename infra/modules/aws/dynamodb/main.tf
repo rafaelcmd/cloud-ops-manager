@@ -1,11 +1,6 @@
-# =============================================================================
-# DYNAMODB TABLE
-#
-# A single table with an optional TTL attribute and optional global secondary
-# indexes. Attributes are declared once, in var.attributes, and DynamoDB only
-# wants the ones a key or an index actually uses — listing a plain data field
-# there is rejected at apply.
-# =============================================================================
+# A single DynamoDB table with an optional TTL attribute and optional global
+# secondary indexes. Backs the per-service state stores in the platform, such as
+# the scaffolder's template, reservation and repository records.
 
 resource "aws_dynamodb_table" "this" {
   name         = var.name
@@ -28,7 +23,7 @@ resource "aws_dynamodb_table" "this" {
   }
 
   # Null disables TTL. When set, the application must write the attribute as
-  # epoch seconds — the only shape DynamoDB evaluates.
+  # epoch seconds, which is the only shape DynamoDB evaluates.
   dynamic "ttl" {
     for_each = var.ttl_attribute_name != null ? [1] : []
 
@@ -57,8 +52,8 @@ resource "aws_dynamodb_table" "this" {
   }
 
   # Server-side encryption is always on in DynamoDB; this block only chooses the
-  # key. Without it the table uses the AWS-owned key, which is free and cannot be
-  # scoped — pass a CMK ARN where access to the key itself needs to be a control.
+  # key. Without it the table uses the free AWS-owned key, which cannot be
+  # scoped. Pass a CMK ARN where access to the key itself must be a control.
   dynamic "server_side_encryption" {
     for_each = var.kms_key_arn != null ? [1] : []
 

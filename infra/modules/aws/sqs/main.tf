@@ -1,23 +1,14 @@
-# =============================================================================
-# SQS QUEUE
+# SQS work queue with an optional dead-letter queue, resource policy and
+# not-empty alarm. Used for every asynchronous hop in the platform: the API to
+# the provisioner, and the provisioner's state machine to each task worker.
 #
-# One work queue, its dead-letter queue, and a resource policy naming the
-# principals allowed on each side.
-#
-# Consumers resolve queues by name, so the caller owns the name; everything
-# else has a default that is safe for a work queue and can be overridden where
-# a service needs something different.
-# =============================================================================
+# Consumers resolve queues by name, so the caller owns the name. Every other
+# setting defaults to a value that is safe for a work queue.
 
 data "aws_caller_identity" "current" {}
 
-# The dead-letter queue exists so that a message the consumer can never handle
-# stops being redelivered forever. Without one, a payload that fails to parse
-# comes back every visibility timeout until it ages out of retention — for days,
-# at the consumer's expense, drowning real traffic in the same log line.
-#
-# It retains longer than the main queue on purpose: the DLQ is what someone
-# reads days later to work out what broke.
+# Retained longer than the main queue because it is read during investigation,
+# often days after the failure.
 resource "aws_sqs_queue" "dlq" {
   count = var.enable_dlq ? 1 : 0
 
@@ -37,11 +28,9 @@ resource "aws_sqs_queue" "this" {
   receive_wait_time_seconds  = var.receive_wait_time_seconds
   visibility_timeout_seconds = var.visibility_timeout_seconds
 
-  # Queues created through the API — which is what Terraform does — are not
-  # encrypted by default; only ones created in the console are. These messages
-  # carry application names, requester identities and free-form specification
-  # maps, so they are worth encrypting at rest. The SQS-owned key costs nothing,
-  # unlike a customer-managed KMS key.
+  # Queues created through the API are unencrypted by default; only queues
+  # created in the console are encrypted. Platform messages carry application
+  # names, requester identities and free-form specification maps.
   sqs_managed_sse_enabled = var.sqs_managed_sse_enabled
 
   redrive_policy = var.enable_dlq ? jsonencode({
@@ -52,32 +41,22 @@ resource "aws_sqs_queue" "this" {
   tags = var.tags
 }
 
-# =============================================================================
-# QUEUE POLICY
+# Queue policy. An SQS queue policy is an additive allow, so it grants nothing
+# that a same-account role's identity policy does not already grant. It is
+# needed only for principals with no identity policy to attach: an AWS service
+# principal, or a principal in another account.
 #
-# For principals that cannot be authorized any other way. An SQS queue policy is
-# an additive allow, not a restriction, so for a role in this account it adds
-# nothing that the role's own identity policy does not already grant. Reach for
-# it when the sender has no identity policy to attach:
+# Two constraints apply to any ARN passed here:
 #
-#   - an AWS service principal (states.amazonaws.com delivering task tokens)
-#   - a principal in another account
+#   - SQS validates principals when the policy is set, so a role that does not
+#     exist yet fails the apply with "InvalidAttributeValue: Invalid value for
+#     the parameter Policy". A queue cannot name a role created by a stack that
+#     applies later.
+#   - Service principals need aws:SourceAccount, or any account's state machine
+#     could send to this queue.
 #
-# TWO THINGS TO KNOW BEFORE PASSING AN ARN HERE:
-#
-# SQS validates principals when the policy is set. Naming a role that does not
-# exist yet fails with "InvalidAttributeValue: Invalid value for the parameter
-# Policy" — so a queue in one stack cannot name a role created by a stack that
-# applies later, however stable that role's name is.
-#
-# aws:SourceAccount is what makes a service principal safe: without it, any
-# account's state machine could send to this queue.
-#
-# All three lists are empty by default and no policy is created when they all
-# are, which is the right outcome for a queue whose counterparties are ordinary
-# same-account roles.
-# =============================================================================
-
+# All three principal lists default to empty, and no policy is created when they
+# all are.
 data "aws_iam_policy_document" "queue" {
   count = local.create_queue_policy ? 1 : 0
 
@@ -96,9 +75,6 @@ data "aws_iam_policy_document" "queue" {
     }
   }
 
-  # A service principal — Step Functions delivering task tokens, say — is not an
-  # ARN in this account, so aws:SourceAccount is what stops another account's
-  # state machine from sending here. The confused-deputy guard.
   dynamic "statement" {
     for_each = length(var.producer_service_principals) > 0 ? [1] : []
 
@@ -112,6 +88,8 @@ data "aws_iam_policy_document" "queue" {
         identifiers = var.producer_service_principals
       }
 
+      # Confused-deputy guard: restricts the service principal to state machines
+      # in this account.
       condition {
         test     = "StringEquals"
         variable = "aws:SourceAccount"
@@ -149,29 +127,17 @@ resource "aws_sqs_queue_policy" "this" {
   policy    = data.aws_iam_policy_document.queue[0].json
 }
 
-# =============================================================================
-# DEAD-LETTER QUEUE ALARM
+# A message reaching the dead-letter queue has already exhausted the redrive
+# limit and will not be retried, so its arrival is the whole signal and the
+# threshold is one message rather than a rate.
 #
-# A dead-letter queue nobody watches is a slower way to lose a message. Anything
-# that lands here has already been retried maxReceiveCount times and will not be
-# retried again, so the arrival is the whole signal — hence a threshold of one
-# message rather than a rate.
-#
-# ApproximateNumberOfMessagesVisible is a gauge, not a counter: it keeps
-# reporting while the message sits there, so the alarm stays ON until the queue
-# is drained. That is the intended behaviour — it should not clear itself while
-# a failed request is still unexamined.
-#
-# treat_missing_data is "notBreaching" because SQS publishes no datapoint for a
-# queue with no traffic, and an empty dead-letter queue is the good case.
-# =============================================================================
-
+# ApproximateNumberOfMessagesVisible is a gauge, so the alarm stays in ALARM
+# until the queue is drained. Missing data is not breaching because SQS
+# publishes no datapoint for an idle queue.
 resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
   count = var.enable_dlq && var.enable_dlq_alarm ? 1 : 0
 
   alarm_name = "${var.queue_name}-dlq-not-empty"
-  # Read by whoever the alarm wakes, so it says what happened and what to do —
-  # not just which metric moved.
   alarm_description = join(" ", [
     "Messages are sitting in ${aws_sqs_queue.dlq[0].name}.",
     "Each exhausted the redrive limit of ${var.max_receive_count} and will not be retried.",

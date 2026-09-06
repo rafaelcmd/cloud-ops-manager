@@ -1,18 +1,8 @@
-# =============================================================================
-# AWS CONFIGURATION
-# Variables for AWS region and deployment configuration
-# =============================================================================
-
 variable "aws_region" {
   description = "AWS region"
   type        = string
   default     = "us-east-1"
 }
-
-# =============================================================================
-# DATADOG API CONFIGURATION
-# Variables for Datadog API authentication and access
-# =============================================================================
 
 variable "datadog_api_key" {
   description = "Datadog API key"
@@ -26,21 +16,11 @@ variable "datadog_app_key" {
   sensitive   = true
 }
 
-# =============================================================================
-# IAM ROLE CONFIGURATION
-# Variables for Datadog AWS integration IAM role setup
-# =============================================================================
-
 variable "role_name" {
   description = "Name of the IAM role for Datadog integration"
   type        = string
   default     = "DatadogIntegrationRole"
 }
-
-# =============================================================================
-# PROJECT AND ENVIRONMENT CONFIGURATION
-# Variables for project identification and environment setup
-# =============================================================================
 
 variable "environment" {
   description = "Environment name"

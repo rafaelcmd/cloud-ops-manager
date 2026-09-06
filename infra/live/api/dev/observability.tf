@@ -1,38 +1,23 @@
-# =============================================================================
-# LOG DELIVERY — logs reach Datadog through the OTel Collector, not CloudWatch
+# The platform's alert channel, and the SSM parameter that publishes it.
 #
-# Logs now travel the vendor-agnostic seam: services emit OTLP -> the OTel
-# Collector (k8s/otel-collector) -> the Collector's `datadog` exporter. The old
-# path (Fargate Fluent Bit -> this CloudWatch log group -> Datadog Lambda
-# forwarder) is retired to stop double-ingestion and the vendor coupling of
-# logs; the subscription filter and forwarder Lambda that made it work are gone.
+# Logs do not pass through here. Services emit OTLP to the OTel Collector
+# (k8s/otel-collector), which exports to Datadog, so log delivery is a
+# Collector concern rather than a CloudWatch one. The Fargate pod log group is
+# still enabled on the cluster as a vendor-neutral archive: it captures pod
+# stdout, including early crash output a process never gets onto OTLP.
 #
-# The Fargate pod log group itself is KEPT (EKS module, enable_fargate_logging =
-# true) as a vendor-neutral, break-glass archive: it still captures pod stdout —
-# including very-early crash output an app can't get onto OTLP — without shipping
-# anything to a specific backend.
-# =============================================================================
-
-# =============================================================================
-# ALERTING — reusable notification channel
-# The SNS topic + email subscription are the AWS-native alert channel, kept so
-# any out-of-band alarm can publish here without re-confirming the email.
-#
-# NOTE: the two alarms that watched the Datadog forwarder Lambda were removed
-# with the forwarder. The equivalent health signal for the new path is the OTel
-# Collector's own export metrics (otelcol_exporter_send_failed_log_records /
-# _sent_log_records on :8888) — alarm on those from the Prometheus/monitoring
-# side and point them at this topic. See follow-up.
-# =============================================================================
+# The Collector's own export counters, otelcol_exporter_send_failed_log_records
+# and otelcol_exporter_sent_log_records on port 8888, are the health signal for
+# that path. Nothing alarms on them yet.
 
 module "observability_alerts" {
   source = "../../../modules/aws/sns_topic"
 
   name = "${var.project}-${var.environment}-observability-alerts"
 
-  # An empty notification_email leaves the topic with no subscribers, which is a
+  # An empty notification_email leaves the topic with no subscribers. That is a
   # working state: alarms still publish, and nothing is delivered until an
-  # address is set and confirmed.
+  # address is set and the recipient confirms it.
   subscriptions = var.notification_email != "" ? {
     ops-email = { protocol = "email", endpoint = var.notification_email }
   } : {}
@@ -40,9 +25,9 @@ module "observability_alerts" {
   tags = local.tags
 }
 
-# Published so sibling stacks can point their own alarms at this topic without
-# re-creating a channel — and without a second email confirmation. The
-# scaffolder's dead-letter queue alarms read it.
+# Published so sibling stacks point their alarms at this topic instead of
+# creating a channel of their own, which would cost another email confirmation.
+# The scaffolder's dead-letter queue alarms read it.
 resource "aws_ssm_parameter" "observability_alerts_topic_arn" {
   name  = "/idp/shared/observability/alerts_topic_arn"
   type  = "String"

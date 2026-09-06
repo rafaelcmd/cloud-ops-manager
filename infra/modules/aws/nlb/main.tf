@@ -1,3 +1,12 @@
+# An internal Network Load Balancer, its target group and its listener. This is
+# the seam between the two halves of the request path: the API Gateway VPC Link
+# targets the load balancer from outside the cluster, and the AWS Load Balancer
+# Controller registers Fargate pod IPs into the target group from inside it.
+#
+# The target group is Terraform-owned rather than controller-created so its ARN
+# is a stable value other stacks can reference. It holds no targets at apply
+# time; a TargetGroupBinding in /k8s/api fills it.
+
 resource "aws_lb" "this" {
   name               = var.nlb_name
   internal           = var.internal
@@ -29,6 +38,8 @@ resource "aws_lb_target_group" "this" {
     unhealthy_threshold = var.unhealthy_threshold
   }
 
+  # A target group cannot be deleted while a listener forwards to it, so any
+  # change forcing replacement deadlocks without this.
   lifecycle {
     create_before_destroy = true
   }

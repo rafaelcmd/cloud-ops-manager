@@ -1,4 +1,4 @@
-# ecr component — infra/live/shared/ecr.
+# CI role for the ecr component (live/shared/ecr).
 # Repository lifecycle plus the image push the apply performs afterwards: the
 # workflow mirrors the Datadog agent from public ECR into the private registry,
 # which needs both registries' auth tokens and the layer upload actions.

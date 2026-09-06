@@ -1,6 +1,10 @@
-########################################
-# Locals
-########################################
+# The platform's only VPC: two public and two private subnets across the given
+# availability zones, a NAT gateway for private egress, and interface endpoints
+# for the AWS services workloads call.
+#
+# Every other stack consumes this network by reading the SSM parameters written
+# in ssm.tf, never by reading this module's state.
+
 locals {
   az_count             = length(var.availability_zones)
   public_subnet_count  = length(var.public_subnet_cidrs)
@@ -12,9 +16,6 @@ locals {
   }
 }
 
-########################################
-# VPC
-########################################
 resource "aws_vpc" "this" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -25,9 +26,6 @@ resource "aws_vpc" "this" {
   })
 }
 
-########################################
-# Internet Gateway (for public stuff / bastion / ALB)
-########################################
 resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
 
@@ -36,9 +34,9 @@ resource "aws_internet_gateway" "this" {
   })
 }
 
-########################################
-# Public subnets
-########################################
+# The kubernetes.io/role tags are what the AWS Load Balancer Controller looks
+# for when choosing subnets: /elb for internet-facing load balancers on the
+# public subnets, /internal-elb for internal ones on the private subnets.
 resource "aws_subnet" "public" {
   count                   = local.public_subnet_count
   vpc_id                  = aws_vpc.this.id
@@ -52,9 +50,6 @@ resource "aws_subnet" "public" {
   })
 }
 
-########################################
-# Public route table
-########################################
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.this.id
 
@@ -75,9 +70,8 @@ resource "aws_route_table_association" "public_subnets" {
   route_table_id = aws_route_table.public.id
 }
 
-########################################
-# Private subnets
-########################################
+# Fargate pods and the internal NLB run here. Nothing in the private subnets
+# receives inbound traffic from the internet.
 resource "aws_subnet" "private" {
   count             = local.private_subnet_count
   vpc_id            = aws_vpc.this.id
@@ -90,9 +84,6 @@ resource "aws_subnet" "private" {
   })
 }
 
-########################################
-# Private route table (NO default route, no NAT)
-########################################
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.this.id
 
@@ -107,9 +98,10 @@ resource "aws_route_table_association" "private_subnets" {
   route_table_id = aws_route_table.private.id
 }
 
-########################################
-# NAT Gateway (for private outbound)
-########################################
+# Outbound internet for the private subnets. Fargate needs it to pull images
+# from registries that have no VPC endpoint and to reach third-party APIs such
+# as GitHub and Datadog. A single NAT gateway is a deliberate cost trade-off: it
+# is a per-AZ single point of failure that a production network would duplicate.
 resource "aws_eip" "nat" {
   domain = "vpc"
 
@@ -135,24 +127,24 @@ resource "aws_route" "private_nat" {
   nat_gateway_id         = aws_nat_gateway.this.id
 }
 
-########################################
-# SG for interface endpoints
-########################################
+# Interface endpoints below keep AWS API calls from the private subnets on the
+# AWS network instead of routing them through the NAT gateway, which both
+# reduces data processing charges and keeps the traffic off the public internet.
 resource "aws_security_group" "endpoints" {
   name        = "${var.project}-${var.environment}-vpce-sg"
   description = "Allow VPC endpoint traffic"
   vpc_id      = aws_vpc.this.id
 
-  # allow TLS from inside the VPC
   ingress {
+    description = "TLS from inside the VPC"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = [aws_vpc.this.cidr_block]
   }
 
-  # endpoints may need to reply out
   egress {
+    description = "Endpoint responses"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -164,9 +156,8 @@ resource "aws_security_group" "endpoints" {
   })
 }
 
-########################################
-# SQS VPC Endpoint (Interface)
-########################################
+# Reached by the API publishing provision requests and the provisioner consuming
+# them.
 resource "aws_vpc_endpoint" "sqs" {
   vpc_id              = aws_vpc.this.id
   service_name        = "com.amazonaws.${var.aws_region}.sqs"
@@ -180,9 +171,9 @@ resource "aws_vpc_endpoint" "sqs" {
   })
 }
 
-########################################
-# ECR API VPC Endpoint (Interface)
-########################################
+# Image pulls need both ECR endpoints: ecr.api for authentication and metadata,
+# ecr.dkr for the layer transfers. Layers themselves come from S3, which is why
+# the S3 gateway endpoint below is also required for pulls to stay off the NAT.
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id              = aws_vpc.this.id
   service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
@@ -196,9 +187,6 @@ resource "aws_vpc_endpoint" "ecr_api" {
   })
 }
 
-########################################
-# ECR DKR VPC Endpoint (Interface)
-########################################
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id              = aws_vpc.this.id
   service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
@@ -212,9 +200,7 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   })
 }
 
-########################################
-# CloudWatch Logs VPC Endpoint (Interface)
-########################################
+# Used by Fargate log routing and by the workloads' own log writes.
 resource "aws_vpc_endpoint" "logs" {
   vpc_id              = aws_vpc.this.id
   service_name        = "com.amazonaws.${var.aws_region}.logs"
@@ -228,9 +214,8 @@ resource "aws_vpc_endpoint" "logs" {
   })
 }
 
-########################################
-# SSM VPC Endpoint (Interface)
-########################################
+# Workloads resolve their configuration from Parameter Store at startup, so this
+# endpoint is on the boot path for every service.
 resource "aws_vpc_endpoint" "ssm" {
   vpc_id              = aws_vpc.this.id
   service_name        = "com.amazonaws.${var.aws_region}.ssm"
@@ -244,9 +229,8 @@ resource "aws_vpc_endpoint" "ssm" {
   })
 }
 
-########################################
-# S3 VPC Endpoint (Gateway)
-########################################
+# A gateway endpoint, so it attaches to the route table rather than to subnets
+# and costs nothing. Required for ECR image layers, which are stored in S3.
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.this.id
   service_name      = "com.amazonaws.${var.aws_region}.s3"

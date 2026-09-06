@@ -1,6 +1,6 @@
 # Workload deploy workflows (api, provisioner, otel-collector, redis).
 # These run no Terraform: they read a handful of SSM parameters, push images,
-# and apply Kubernetes manifests. Cluster authorization is separate — the role
+# and apply Kubernetes manifests. Cluster authorization is separate: the role
 # must also appear in cluster_admin_principal_arns so EKS grants it kubectl
 # access through an access entry.
 

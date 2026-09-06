@@ -1,3 +1,10 @@
+# The platform's only network, and the first stack to apply. Everything else
+# runs inside it and finds it through the /idp/shared/vpc/* parameters the
+# module publishes.
+#
+# Values are literal rather than variables: there is one VPC, it is not
+# parameterized per environment, and a second one would be a new stack.
+
 module "vpc" {
   source = "../../../modules/aws/vpc"
 

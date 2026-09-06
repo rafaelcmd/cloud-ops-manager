@@ -1,3 +1,12 @@
+# The platform's identity provider. The API Gateway authorizer validates caller
+# tokens against this user pool, so it is the only way a request is attributed
+# to a person.
+#
+# It lives in its own stack (live/shared/identity) rather than inside the
+# gateway stack: the API workload also needs the pool ARN, and nesting Cognito
+# under the gateway made the API stack depend on a stack that already depended
+# on it.
+
 resource "aws_cognito_user_pool" "this" {
   name = var.user_pool_name
 
@@ -30,6 +39,8 @@ resource "aws_cognito_user_pool_client" "this" {
 
   user_pool_id = aws_cognito_user_pool.this.id
 
+  # No client secret: a public client cannot keep one, and the gateway
+  # authorizer validates the token's signature rather than the client.
   generate_secret     = false
   explicit_auth_flows = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
 }
@@ -41,7 +52,10 @@ locals {
   })
 }
 
-# Legacy path consumed by the Go API runtime (see application.go).
+# Two SSM namespaces, one per kind of consumer.
+#
+# /INTERNAL_DEVELOPER_PLATFORM/* is the Terraform-to-runtime contract: the path
+# the Go API reads at startup (see application.go).
 resource "aws_ssm_parameter" "cognito_client_id_legacy" {
   name  = "/INTERNAL_DEVELOPER_PLATFORM/COGNITO_CLIENT_ID"
   type  = "String"
@@ -50,10 +64,9 @@ resource "aws_ssm_parameter" "cognito_client_id_legacy" {
   tags = local.cognito_common_tags
 }
 
-# Normalized identity parameters consumed by sibling Terraform stacks (gateway
-# authorizer, API IRSA scope). Centralizing under /idp/shared/identity/* makes
-# the cross-stack contract explicit and decouples consumers from the producer
-# workspace.
+# /idp/shared/* is the cross-stack contract, read by sibling Terraform stacks:
+# the gateway's authorizer and the API's IRSA scope. A consumer needs IAM read
+# on the path and nothing from this workspace's state.
 resource "aws_ssm_parameter" "user_pool_id" {
   name  = "/idp/shared/identity/user_pool_id"
   type  = "String"

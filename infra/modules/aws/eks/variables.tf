@@ -1,7 +1,3 @@
-# =============================================================================
-# INFRASTRUCTURE DEPENDENCIES
-# =============================================================================
-
 variable "vpc_id" {
   description = "The ID of the VPC where the EKS cluster will be deployed"
   type        = string
@@ -11,10 +7,6 @@ variable "private_subnet_ids" {
   description = "Private subnets for the EKS control plane ENIs and Fargate pods"
   type        = list(string)
 }
-
-# =============================================================================
-# GENERAL PROJECT CONFIGURATION
-# =============================================================================
 
 variable "aws_region" {
   description = "AWS region where the EKS cluster lives"
@@ -30,10 +22,6 @@ variable "project" {
   description = "Project name"
   type        = string
 }
-
-# =============================================================================
-# CLUSTER CONFIGURATION
-# =============================================================================
 
 variable "cluster_name" {
   description = "Name of the EKS cluster"
@@ -53,7 +41,7 @@ variable "endpoint_private_access" {
 }
 
 variable "endpoint_public_access" {
-  description = "Whether the EKS API server is reachable from the public internet — kept open so kubectl works from operator workstations; lock down by CIDR for production"
+  description = "Whether the EKS API server is reachable from the public internet. Open so kubectl works from operator workstations; restrict by CIDR for production."
   type        = bool
   default     = true
 }
@@ -64,34 +52,23 @@ variable "public_access_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
-# =============================================================================
-# CLUSTER ACCESS
-# IAM principals granted cluster-admin via the Access Entries API. Use this to
-# add operator IAM users/roles so `kubectl` works from their workstations — the
-# cluster creator (the TFC role) already has admin implicitly.
-# =============================================================================
-
+# Every principal that runs kubectl or manages Kubernetes objects needs an entry
+# here: operator workstations, the deploy role, and the CI role of any stack
+# whose Terraform uses the kubernetes provider. The cluster creator already has
+# admin implicitly.
 variable "cluster_admin_principal_arns" {
   description = "List of IAM principal ARNs to grant cluster-admin via EKS Access Entries"
   type        = list(string)
   default     = []
 }
 
-# =============================================================================
-# FARGATE PROFILE CONFIGURATION
-# Namespaces routed to Fargate. Anything outside this list won't schedule
-# because there are no EC2 nodes attached to this cluster.
-# =============================================================================
-
+# The cluster has no EC2 nodes, so a namespace missing from this list schedules
+# nothing at all.
 variable "fargate_namespaces" {
   description = "Kubernetes namespaces whose pods should run on Fargate. kube-system is included so CoreDNS schedules without EC2 nodes."
   type        = list(string)
   default     = ["default", "kube-system"]
 }
-
-# =============================================================================
-# LOGGING
-# =============================================================================
 
 variable "enabled_cluster_log_types" {
   description = "EKS control plane log types to ship to CloudWatch"
@@ -117,10 +94,8 @@ variable "enable_fargate_logging" {
   default     = false
 }
 
-# =============================================================================
-# AWS LOAD BALANCER CONTROLLER
-# Installed by this module so Service type=LoadBalancer can provision NLBs.
-# =============================================================================
+# The controller reconciles TargetGroupBinding, which keeps Fargate pod IPs
+# registered in the Terraform-owned target group. See aws_lb_controller.tf.
 
 variable "install_aws_load_balancer_controller" {
   description = "Install AWS Load Balancer Controller via Helm. Required for Service type=LoadBalancer with NLB target-type=ip on Fargate."
@@ -140,14 +115,9 @@ variable "aws_load_balancer_controller_namespace" {
   default     = "kube-system"
 }
 
-# =============================================================================
-# DATADOG CLUSTER AGENT + FARGATE SIDECAR INJECTION
-# Cluster-level visibility (pod inventory, orchestrator explorer) on Fargate.
-# Fargate can't run a Datadog node-agent DaemonSet; the Cluster Agent covers
-# cluster-scoped objects, and its Admission Controller injects a datadog-agent
-# sidecar into labeled pods so running pods report live status. App telemetry
-# (traces/metrics/logs) still flows via OTLP to the OTel Collector.
-# =============================================================================
+# Cluster-level visibility on Fargate: pod inventory and the orchestrator
+# explorer. Application telemetry does not travel this path; it goes to the OTel
+# Collector over OTLP. See datadog_cluster_agent.tf.
 
 variable "install_datadog_cluster_agent" {
   description = "Install the Datadog Cluster Agent via Helm. Requires datadog_cluster_agent_namespace to be in fargate_namespaces."
@@ -189,14 +159,9 @@ variable "datadog_sidecar_service_accounts" {
   default = []
 }
 
-# =============================================================================
-# OPENTELEMETRY COLLECTOR
-# Cluster-managed prerequisites for the vendor-agnostic telemetry pipeline: the
-# observability namespace, an IRSA-annotated ServiceAccount, and a copy of the
-# Datadog API key secret. The Collector workload itself is raw manifests under
-# /k8s/otel-collector. When enabled, otel_collector_namespace is auto-added to
-# the Fargate profile.
-# =============================================================================
+# Prerequisites for the telemetry pipeline every service emits into. The
+# Collector workload itself is raw manifests under /k8s/otel-collector. See
+# otel_collector.tf.
 
 variable "install_otel_collector" {
   description = "Provision the OTel Collector's cluster prerequisites (namespace, IRSA ServiceAccount, Datadog secret). Reuses datadog_api_key."
@@ -221,10 +186,6 @@ variable "amp_workspace_arn" {
   type        = string
   default     = null
 }
-
-# =============================================================================
-# TAGS
-# =============================================================================
 
 variable "tags" {
   description = "Common tags applied to all resources"

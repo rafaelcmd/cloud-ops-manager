@@ -1,15 +1,18 @@
-# =============================================================================
-# AWS LOAD BALANCER CONTROLLER
-# Required so Kubernetes Services of type=LoadBalancer (with the NLB+IP-target
-# annotations used by /k8s/api/service.yaml) actually provision an NLB pointed
-# at Fargate pod IPs. Installed via Helm with an IRSA-backed ServiceAccount.
-# =============================================================================
+# The AWS Load Balancer Controller, installed by Helm with an IRSA-backed
+# ServiceAccount.
+#
+# This platform keeps the load balancer itself in Terraform (modules/aws/nlb)
+# and uses the controller only to reconcile TargetGroupBinding, which registers
+# Fargate pod IPs into that Terraform-owned target group. Pod IPs change on
+# every reschedule, so something in-cluster has to keep the target group
+# current; owning the NLB in Terraform keeps its ARN a stable cross-stack value
+# the API Gateway VPC Link can reference.
 
-# The controller's permissions. Kept in a local rather than inline in the module
-# call because it is the one part of this file worth reading — it mirrors the
-# upstream recommended policy
-# (https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/docs/install/iam_policy.json)
-# trimmed to the actions this project uses (NLB + target-group-binding paths).
+# The controller's IAM permissions, held in a local rather than inline in the
+# module call to keep the module block readable. Mirrors the upstream
+# recommended policy, trimmed to the NLB and TargetGroupBinding paths this
+# project uses:
+# https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/docs/install/iam_policy.json
 locals {
   lbc_policy_json = jsonencode({
     Version = "2012-10-17"
@@ -171,9 +174,10 @@ locals {
           }
         }
       },
-      # AddTags during CreateLoadBalancer/CreateTargetGroup. Required because
-      # the LBC tags the resource in the same API call that creates it, before
-      # the elbv2.k8s.aws/cluster ResourceTag exists.
+      # AddTags during CreateLoadBalancer and CreateTargetGroup. The controller
+      # tags the resource in the same API call that creates it, before the
+      # elbv2.k8s.aws/cluster resource tag the other statements condition on
+      # exists.
       {
         Effect = "Allow"
         Action = [
@@ -239,8 +243,8 @@ locals {
 }
 
 # Role, trust relationship and annotated ServiceAccount. The chart is told not
-# to create its own ServiceAccount (serviceAccount.create = false below) so that
-# the IRSA annotation is Terraform's to manage.
+# to create its own ServiceAccount (serviceAccount.create = false below) so the
+# IRSA annotation stays Terraform-managed.
 module "lbc_irsa" {
   count  = var.install_aws_load_balancer_controller ? 1 : 0
   source = "../irsa"
@@ -269,8 +273,8 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace  = var.aws_load_balancer_controller_namespace
   version    = var.aws_load_balancer_controller_chart_version
 
-  # region + vpcId are mandatory on Fargate — pods can't reach EC2 IMDS,
-  # so the controller can't auto-discover them.
+  # Mandatory on Fargate: pods cannot reach EC2 IMDS, so the controller has no
+  # way to auto-discover its region and VPC.
   set = [
     {
       name  = "clusterName"
@@ -292,22 +296,22 @@ resource "helm_release" "aws_load_balancer_controller" {
       name  = "vpcId"
       value = var.vpc_id
     },
-    # The Service mutator webhook only acts on Service type=LoadBalancer (to
-    # set loadBalancerClass). This project routes NLB-to-pod via
+    # The Service mutator webhook only acts on Service type=LoadBalancer, to
+    # set loadBalancerClass. This project routes NLB traffic to pods through
     # TargetGroupBinding and never uses Service type=LoadBalancer, so the
-    # webhook is dead weight — and worse, it races with subsequent Helm
-    # installs (any downstream chart that creates a Service has its create
-    # rejected if the LBC webhook pods aren't ready yet, which on Fargate
-    # they often aren't immediately after the LBC helm release returns).
+    # webhook does nothing useful and races with later Helm installs: a
+    # downstream chart creating a Service is rejected while the webhook pods
+    # are not ready, which on Fargate is common immediately after this release
+    # returns.
     {
       name  = "enableServiceMutatorWebhook"
       value = "false"
     },
   ]
 
-  # The chart must not start before the role its ServiceAccount points at can
-  # actually do anything: without the policy attached, the controller comes up
-  # and fails every reconcile with AccessDenied.
+  # The chart must not start before the policy is attached to the role its
+  # ServiceAccount points at, or the controller comes up and fails every
+  # reconcile with AccessDenied.
   depends_on = [
     module.lbc_irsa,
     aws_eks_fargate_profile.this,
