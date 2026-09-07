@@ -229,6 +229,25 @@ resource "aws_vpc_endpoint" "ssm" {
   })
 }
 
+# The scaffolder's github worker reads the GitHub App private key from Secrets
+# Manager at pod startup, so without this endpoint the one call that carries a
+# credential leaves the VPC through the NAT gateway. Secrets Manager decrypts
+# with the customer-managed key on the caller's behalf, so the pod makes no
+# direct KMS call and no KMS endpoint is needed.
+# See docs/adr/0005-secrets-manager-vpc-interface-endpoint.md.
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id              = aws_vpc.this.id
+  service_name        = "com.amazonaws.${var.aws_region}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, local.common_tags, {
+    Name = "${var.project}-${var.environment}-vpce-secretsmanager"
+  })
+}
+
 # A gateway endpoint, so it attaches to the route table rather than to subnets
 # and costs nothing. Required for ECR image layers, which are stored in S3.
 resource "aws_vpc_endpoint" "s3" {
