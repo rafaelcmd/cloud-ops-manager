@@ -57,6 +57,7 @@ service scales, deploys, and fails independently — a core tenet of reliable di
 |-------------------|-----------------------------------------------------------|
 | **Languages**     | Go (API, Provisioner)                                     |
 | **Compute**       | AWS EKS on Fargate, Kubernetes                            |
+| **Networking**    | VPC with private subnets, interface + gateway VPC endpoints, NAT gateway |
 | **Messaging**     | AWS SQS (production), Kafka (local dev)                   |
 | **Infra as Code** | Terraform (`modules/` + `live/` pattern)                 |
 | **Auth**          | AWS Cognito                                               |
@@ -70,6 +71,7 @@ service scales, deploys, and fails independently — a core tenet of reliable di
 - **Asynchronous, at-least-once processing** built on SQS for durability and back-pressure tolerance.
 - **Infrastructure as code** — the entire AWS footprint (EKS, SQS, Cognito) is reproducible through Terraform.
 - **Runs serverless-ly** on EKS + Fargate — no node management, pay-per-pod.
+- **Private-by-default networking** — workloads in the private subnets reach AWS services (SQS, ECR, CloudWatch Logs, SSM, S3 and Secrets Manager) over VPC endpoints rather than the public internet. The NAT gateway remains for third-party services that have no AWS-network path, such as GitHub and Datadog.
 - **First-class observability** with Datadog metrics and distributed tracing via AWS X-Ray.
 
 ---

@@ -27,6 +27,7 @@ None exist yet; create them only when the first such decision arises.
 | 0002 | [API-edge idempotency layer](0002-idempotency-layer.md)      | Accepted | 2026-05-03 |
 | 0003 | [Redis on ECS as the idempotency store](0003-redis-on-ecs-for-idempotency-store.md) | Accepted | 2026-05-03 |
 | 0004 | [Scaffolder runs as a container on EKS](0004-scaffolder-runs-as-a-container-on-eks.md) | Accepted | 2026-08-19 |
+| 0005 | [Secrets Manager is reached through a VPC interface endpoint](0005-secrets-manager-vpc-interface-endpoint.md) | Proposed | 2026-09-07 |
 
 ## How to add a new ADR
 
